@@ -1,5 +1,6 @@
 import { Command } from 'commander'
-import { execSync } from 'child_process'
+import { execSync, exec } from 'child_process'
+import { promisify } from 'util'
 import { createHash } from 'crypto'
 import path from 'path'
 import os from 'os'
@@ -9,6 +10,7 @@ import { LRUCache } from 'lru-cache'
 import packageJson from '../package.json' assert { type: 'json' }
 import { cleanContent, matchesPattern } from './matcher.js'
 
+const execAsync = promisify(exec)
 const TMUX_SOCKET_PATH = path.join(os.tmpdir(), 'control-app-tmux')
 const POLL_INTERVAL = 500
 const WEBSOCKET_PORT = 8080
@@ -61,6 +63,7 @@ class TmuxMonitor {
   private socketExistenceLogged = false
   private lastSocketState = false
   private executedMatchers = new Set<string>()
+  private knownWindows = new Set<string>()
 
   constructor(websocketEnabled: boolean) {
     this.websocketEnabled = websocketEnabled
@@ -239,9 +242,11 @@ class TmuxMonitor {
 
         const windows = this.listWindows(sessionName)
 
-        for (const windowName of windows) {
-          await this.captureWindow(sessionName, windowName)
-        }
+        await Promise.all(
+          windows.map(windowName =>
+            this.captureWindow(sessionName, windowName),
+          ),
+        )
       }
     } catch (error) {
       console.error(
@@ -282,26 +287,43 @@ class TmuxMonitor {
     const initialModeCacheKey = `${sessionName}:${windowName}:initial-mode-configured`
 
     try {
-      const rawContent = execSync(
+      const startTime = Date.now()
+      const { stdout: rawContent } = await execAsync(
         `tmux -S ${TMUX_SOCKET_PATH} capture-pane -p -t ${sessionName}:${windowName}`,
         {
           encoding: 'utf-8',
           maxBuffer: 10 * 1024 * 1024,
-          stdio: ['pipe', 'pipe', 'ignore'],
         },
       )
+      const captureTime = Date.now() - startTime
+      if (captureTime > 100) {
+        console.log(
+          `[${new Date().toISOString()}] Slow capture for ${sessionName}:${windowName}: ${captureTime}ms`,
+        )
+      }
 
       const checksum = this.calculateChecksum(rawContent)
       const previousChecksum = this.checksumCache.get(cacheKey)
       const windowKey = `${sessionName}:${windowName}`
 
+      const isNewWindow = !this.knownWindows.has(windowKey)
+      if (isNewWindow) {
+        this.knownWindows.add(windowKey)
+      }
+
       let needsBroadcast = false
-      if (checksum !== previousChecksum) {
+      if (checksum !== previousChecksum || isNewWindow) {
         needsBroadcast = true
         this.checksumCache.set(cacheKey, checksum)
-        console.log(
-          `[${new Date().toISOString()}] Window content changed: ${sessionName}:${windowName}`,
-        )
+        if (isNewWindow) {
+          console.log(
+            `[${new Date().toISOString()}] New window detected: ${sessionName}:${windowName}`,
+          )
+        } else {
+          console.log(
+            `[${new Date().toISOString()}] Window content changed: ${sessionName}:${windowName}`,
+          )
+        }
       } else {
         for (const client of this.clients) {
           const sentWindows = this.clientSentWindows.get(client)
