@@ -328,6 +328,10 @@ class TmuxMonitor {
               console.log(
                 `[${new Date().toISOString()}] Executed matcher '${matcher.name}' for ${sessionName}:${windowName}`,
               )
+
+              if (matcher.name === 'ensure-plan-mode') {
+                console.log('ENSURE-PLAN-MODE MATCHED AND EXECUTED!')
+              }
             }
           }
         }
