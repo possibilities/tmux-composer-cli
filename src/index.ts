@@ -3,6 +3,7 @@ import { execSync } from 'child_process'
 import { createHash } from 'crypto'
 import path from 'path'
 import os from 'os'
+import fs from 'fs'
 import { WebSocketServer, WebSocket } from 'ws'
 import packageJson from '../package.json' assert { type: 'json' }
 
@@ -16,6 +17,8 @@ class TmuxMonitor {
   private wss: WebSocketServer | null = null
   private clients = new Set<WebSocket>()
   private websocketEnabled: boolean
+  private socketExistenceLogged = false
+  private lastSocketState = false
 
   constructor(websocketEnabled: boolean) {
     this.websocketEnabled = websocketEnabled
@@ -106,7 +109,38 @@ class TmuxMonitor {
     })
   }
 
+  private socketExists(): boolean {
+    try {
+      return fs.existsSync(TMUX_SOCKET_PATH)
+    } catch {
+      return false
+    }
+  }
+
   private async pollAllWindows() {
+    const socketExists = this.socketExists()
+
+    if (socketExists !== this.lastSocketState) {
+      this.lastSocketState = socketExists
+      if (!socketExists) {
+        if (!this.socketExistenceLogged) {
+          console.log(
+            `[${new Date().toISOString()}] Waiting for tmux socket at ${TMUX_SOCKET_PATH}...`,
+          )
+          this.socketExistenceLogged = true
+        }
+      } else {
+        console.log(
+          `[${new Date().toISOString()}] Tmux socket detected at ${TMUX_SOCKET_PATH}`,
+        )
+        this.socketExistenceLogged = false
+      }
+    }
+
+    if (!socketExists) {
+      return
+    }
+
     try {
       const sessions = this.listSessions()
 
@@ -155,7 +189,7 @@ class TmuxMonitor {
     try {
       const output = execSync(
         `tmux -S ${TMUX_SOCKET_PATH} list-sessions -F "#{session_name}"`,
-        { encoding: 'utf-8' },
+        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
       ).trim()
 
       return output ? output.split('\n') : []
@@ -168,7 +202,7 @@ class TmuxMonitor {
     try {
       const output = execSync(
         `tmux -S ${TMUX_SOCKET_PATH} list-windows -t ${sessionName} -F "#{window_name}"`,
-        { encoding: 'utf-8' },
+        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
       ).trim()
 
       return output ? output.split('\n') : []
@@ -186,6 +220,7 @@ class TmuxMonitor {
         {
           encoding: 'utf-8',
           maxBuffer: 10 * 1024 * 1024,
+          stdio: ['pipe', 'pipe', 'ignore'],
         },
       )
 
@@ -222,7 +257,7 @@ class TmuxMonitor {
     try {
       const output = execSync(
         `tmux -S ${TMUX_SOCKET_PATH} list-clients -t ${sessionName} -F "#{client_name}"`,
-        { encoding: 'utf-8' },
+        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
       ).trim()
 
       const clientCount = output ? output.split('\n').length : 0
@@ -240,7 +275,7 @@ class TmuxMonitor {
         try {
           execSync(
             `tmux -S ${TMUX_SOCKET_PATH} resize-window -t ${sessionName}:${windowName} -x 72 -y 21`,
-            { encoding: 'utf-8' },
+            { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
           )
           console.log(
             `[${new Date().toISOString()}] Resized window ${sessionName}:${windowName} to 72x21`,
