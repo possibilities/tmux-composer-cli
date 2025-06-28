@@ -143,16 +143,19 @@ class TmuxMonitor {
 
               // Send list of all sessions
               const sessions = await getAllSessions()
+              const sessionsWithStatus = await Promise.all(
+                sessions.map(async session => ({
+                  sessionName: session.sessionName,
+                  projectName: session.projectName,
+                  createdAt: session.createdAt,
+                  isActive: await this.isSessionActive(session.sessionName),
+                })),
+              )
               this.sendMessage(
                 ws,
                 {
                   type: 'sessions-list',
-                  sessions: sessions.map(session => ({
-                    sessionName: session.sessionName,
-                    projectName: session.projectName,
-                    createdAt: session.createdAt,
-                    isActive: this.isSessionActive(session.sessionName),
-                  })),
+                  sessions: sessionsWithStatus,
                   timestamp: new Date().toISOString(),
                 },
                 message.requestId,
@@ -259,8 +262,8 @@ class TmuxMonitor {
     ws.send(JSON.stringify(message))
   }
 
-  private isSessionActive(sessionName: string): boolean {
-    const activeSessions = this.listSessions()
+  private async isSessionActive(sessionName: string): Promise<boolean> {
+    const activeSessions = await this.listSessions()
     return activeSessions.includes(sessionName)
   }
 
@@ -383,10 +386,10 @@ class TmuxMonitor {
     }
 
     try {
-      const sessions = this.listSessions()
+      const sessions = await this.listSessions()
 
       for (const sessionName of sessions) {
-        const isHumanControlled = this.checkHumanControl(sessionName)
+        const isHumanControlled = await this.checkHumanControl(sessionName)
         const wasHumanControlled =
           this.controlStateCache.get(sessionName) || false
 
@@ -409,7 +412,7 @@ class TmuxMonitor {
           continue
         }
 
-        const windows = this.listWindows(sessionName)
+        const windows = await this.listWindows(sessionName)
 
         await Promise.all(
           windows.map(windowName =>
@@ -425,27 +428,27 @@ class TmuxMonitor {
     }
   }
 
-  private listSessions(): string[] {
+  private async listSessions(): Promise<string[]> {
     try {
-      const output = execSync(
+      const { stdout } = await execAsync(
         `tmux -S ${TMUX_SOCKET_PATH} list-sessions -F "#{session_name}"`,
-        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
-      ).trim()
+        { encoding: 'utf-8' },
+      )
 
-      return output ? output.split('\n') : []
+      return stdout.trim() ? stdout.trim().split('\n') : []
     } catch {
       return []
     }
   }
 
-  private listWindows(sessionName: string): string[] {
+  private async listWindows(sessionName: string): Promise<string[]> {
     try {
-      const output = execSync(
+      const { stdout } = await execAsync(
         `tmux -S ${TMUX_SOCKET_PATH} list-windows -t ${sessionName} -F "#{window_name}"`,
-        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
-      ).trim()
+        { encoding: 'utf-8' },
+      )
 
-      return output ? output.split('\n') : []
+      return stdout.trim() ? stdout.trim().split('\n') : []
     } catch {
       return []
     }
@@ -692,14 +695,14 @@ class TmuxMonitor {
     return keyName
   }
 
-  private checkHumanControl(sessionName: string): boolean {
+  private async checkHumanControl(sessionName: string): Promise<boolean> {
     try {
-      const output = execSync(
+      const { stdout } = await execAsync(
         `tmux -S ${TMUX_SOCKET_PATH} list-clients -t ${sessionName} -F "#{client_name}"`,
-        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
-      ).trim()
+        { encoding: 'utf-8' },
+      )
 
-      const clientCount = output ? output.split('\n').length : 0
+      const clientCount = stdout.trim() ? stdout.trim().split('\n').length : 0
       return clientCount > 0
     } catch {
       return false
@@ -1146,23 +1149,25 @@ class TmuxMonitor {
     }
   }
 
-  private resizeSessionWindows(sessionName: string) {
+  private async resizeSessionWindows(sessionName: string) {
     try {
-      const windows = this.listWindows(sessionName)
+      const windows = await this.listWindows(sessionName)
 
-      for (const windowName of windows) {
-        try {
-          execSync(
-            `tmux -S ${TMUX_SOCKET_PATH} resize-window -t ${sessionName}:${windowName} -x 80 -y 24`,
-            { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
-          )
-        } catch (error) {
-          console.error(
-            `[${new Date().toISOString()}] Failed to resize ${sessionName}:${windowName}:`,
-            error instanceof Error ? error.message : String(error),
-          )
-        }
-      }
+      await Promise.all(
+        windows.map(async windowName => {
+          try {
+            await execAsync(
+              `tmux -S ${TMUX_SOCKET_PATH} resize-window -t ${sessionName}:${windowName} -x 80 -y 24`,
+              { encoding: 'utf-8' },
+            )
+          } catch (error) {
+            console.error(
+              `[${new Date().toISOString()}] Failed to resize ${sessionName}:${windowName}:`,
+              error instanceof Error ? error.message : String(error),
+            )
+          }
+        }),
+      )
     } catch (error) {
       console.error(
         `[${new Date().toISOString()}] Error resizing windows for ${sessionName}:`,
