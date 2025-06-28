@@ -58,7 +58,6 @@ class TmuxMonitor {
         }),
       )
 
-      // Send current control states for all sessions
       for (const [sessionName, isHumanControlled] of this.controlStateCache) {
         ws.send(
           JSON.stringify({
@@ -246,7 +245,6 @@ class TmuxMonitor {
           timestamp: new Date().toISOString(),
         })
 
-        // Check for "Enter to confirm · Esc to exit" in "work" window
         if (
           windowName === 'work' &&
           content.includes('Enter to confirm · Esc to exit')
@@ -257,7 +255,6 @@ class TmuxMonitor {
             this.sendEnterToPane(sessionName, windowName)
             this.checksumCache.set(initialModeCacheKey, 'sent')
 
-            // Broadcast initial mode configured event
             this.broadcast({
               type: 'initial-mode-configured',
               sessionName,
@@ -266,7 +263,6 @@ class TmuxMonitor {
             })
           }
         } else if (windowName === 'work') {
-          // Reset configuration flag if content changed and doesn't contain the pattern
           this.checksumCache.delete(initialModeCacheKey)
         }
       }
