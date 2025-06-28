@@ -124,7 +124,6 @@ class TmuxMonitor {
       if (client.readyState === WebSocket.OPEN) {
         client.send(messageStr)
 
-        // Track sent windows for update messages
         if (
           message.type === 'update' &&
           message.sessionName &&
@@ -285,7 +284,6 @@ class TmuxMonitor {
       const previousChecksum = this.checksumCache.get(cacheKey)
       const windowKey = `${sessionName}:${windowName}`
 
-      // Check if any client needs this window's content
       let needsBroadcast = false
       if (checksum !== previousChecksum) {
         needsBroadcast = true
@@ -294,7 +292,6 @@ class TmuxMonitor {
           `[${new Date().toISOString()}] Updated: ${sessionName}:${windowName} (checksum: ${checksum})`,
         )
       } else {
-        // Check if any connected client hasn't received this window yet
         for (const client of this.clients) {
           const sentWindows = this.clientSentWindows.get(client)
           if (sentWindows && !sentWindows.has(windowKey)) {
@@ -317,7 +314,6 @@ class TmuxMonitor {
         })
       }
 
-      // Only run matchers when content actually changes
       if (checksum !== previousChecksum && windowName === 'work') {
         const cleanedContent = cleanContent(rawContent)
 
@@ -420,20 +416,16 @@ class TmuxMonitor {
           i = closeIndex + 1
         }
       } else if (response[i] === '{') {
-        // Save any accumulated text
         if (currentText) {
           parts.push({ type: 'text', value: currentText })
           currentText = ''
         }
 
-        // Find the closing brace
         const closeIndex = response.indexOf('}', i)
         if (closeIndex === -1) {
-          // No closing brace, treat as text
           currentText += response[i]
           i++
         } else {
-          // Extract the command name
           const commandName = response.substring(i + 1, closeIndex)
           parts.push({ type: 'command', value: commandName })
           i = closeIndex + 1
@@ -444,24 +436,20 @@ class TmuxMonitor {
       }
     }
 
-    // Add any remaining text
     if (currentText) {
       parts.push({ type: 'text', value: currentText })
     }
 
-    // Send each part to tmux
     for (let index = 0; index < parts.length; index++) {
       const part = parts[index]
       try {
         if (part.type === 'text') {
-          // Send literal text - need to escape special characters
           const escapedText = part.value.replace(/'/g, "'\"'\"'")
           execSync(
             `tmux -S ${TMUX_SOCKET_PATH} send-keys -t ${sessionName}:${windowName} -l '${escapedText}'`,
             { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
           )
         } else if (part.type === 'key') {
-          // Send special key
           const tmuxKey = this.convertToTmuxKey(part.value)
           console.log(
             `[${new Date().toISOString()}] Sending special key: ${part.value} -> ${tmuxKey}`,
@@ -471,8 +459,6 @@ class TmuxMonitor {
             { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
           )
 
-          // Add a small delay after special keys to ensure they're processed properly
-          // Only add delay if this is not the last part
           if (index < parts.length - 1) {
             execSync('sleep 0.1', {
               encoding: 'utf-8',
@@ -480,7 +466,6 @@ class TmuxMonitor {
             })
           }
         } else if (part.type === 'command') {
-          // Execute tmux command
           console.log(
             `[${new Date().toISOString()}] Executing tmux command: ${part.value}`,
           )
@@ -490,7 +475,6 @@ class TmuxMonitor {
               { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
             )
           }
-          // Add delay after commands if not the last part
           if (index < parts.length - 1) {
             execSync('sleep 0.1', {
               encoding: 'utf-8',
@@ -512,12 +496,11 @@ class TmuxMonitor {
   }
 
   private convertToTmuxKey(keyName: string): string {
-    // Handle common key names
     const keyMap: Record<string, string> = {
       Enter: 'Enter',
       Return: 'Enter',
       Tab: 'Tab',
-      'S-Tab': 'BTab', // Shift+Tab is BTab in tmux
+      'S-Tab': 'BTab',
       Space: 'Space',
       Escape: 'Escape',
       Esc: 'Escape',
@@ -534,22 +517,18 @@ class TmuxMonitor {
       Insert: 'Insert',
     }
 
-    // Check for direct mapping
     if (keyMap[keyName]) {
       return keyMap[keyName]
     }
 
-    // Handle modifier keys (C-x, M-x, S-x)
     if (keyName.match(/^[CMS]-./)) {
       return keyName
     }
 
-    // Handle function keys (F1-F12)
     if (keyName.match(/^F\d{1,2}$/)) {
       return keyName
     }
 
-    // Default: return as-is
     return keyName
   }
 
