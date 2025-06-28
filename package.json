@@ -24,7 +24,6 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/ws": "^8.18.1",
-    "dedent": "^1.6.0",
     "nodemon": "^3.1.10",
     "prettier": "^3.5.3",
     "tsup": "^8.0.0",

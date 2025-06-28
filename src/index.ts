@@ -27,11 +27,16 @@ export const MATCHERS: Matcher[] = [
     name: 'do-you-trust-this-folder',
     trigger: [
       'Do you trust the files in this folder?',
-      '❯ 1. Yes, proceed',
-      '  2. No, exit',
       ' Enter to confirm · Esc to exit',
     ],
     response: '<Enter>',
+    runOnce: true,
+    windowName: 'work',
+  },
+  {
+    name: 'ensure-plan-mode',
+    trigger: [' ? for shortcuts'],
+    response: '<S-Tab><S-Tab>',
     runOnce: true,
     windowName: 'work',
   },
@@ -280,13 +285,29 @@ class TmuxMonitor {
           const cleanedLines = cleanedContent.split('\n')
 
           for (const matcher of MATCHERS) {
-            if (
-              windowName === matcher.windowName &&
-              matchesPattern(cleanedLines, matcher.trigger)
-            ) {
+            if (matcher.name === 'ensure-plan-mode') {
+              console.log(
+                `[${new Date().toISOString()}] Checking ensure-plan-mode matcher for ${sessionName}:${windowName}`,
+              )
+              console.log(`  Pattern: ${JSON.stringify(matcher.trigger)}`)
+              console.log(
+                `  Last 3 lines of content: ${JSON.stringify(cleanedLines.slice(-3))}`,
+              )
+            }
+
+            const patternMatches = matchesPattern(cleanedLines, matcher.trigger)
+
+            if (matcher.name === 'ensure-plan-mode') {
+              console.log(`  Pattern matches: ${patternMatches}`)
+            }
+
+            if (windowName === matcher.windowName && patternMatches) {
               const matcherKey = `${sessionName}:${windowName}:${matcher.name}`
 
               if (matcher.runOnce && this.executedMatchers.has(matcherKey)) {
+                if (matcher.name === 'ensure-plan-mode') {
+                  console.log(`  Skipping (already executed)`)
+                }
                 continue
               }
 
@@ -364,7 +385,8 @@ class TmuxMonitor {
     }
 
     // Send each part to tmux
-    for (const part of parts) {
+    for (let index = 0; index < parts.length; index++) {
+      const part = parts[index]
       try {
         if (part.type === 'text') {
           // Send literal text - need to escape special characters
@@ -376,10 +398,22 @@ class TmuxMonitor {
         } else {
           // Send special key
           const tmuxKey = this.convertToTmuxKey(part.value)
+          console.log(
+            `[${new Date().toISOString()}] Sending special key: ${part.value} -> ${tmuxKey}`,
+          )
           execSync(
             `tmux -S ${TMUX_SOCKET_PATH} send-keys -t ${sessionName}:${windowName} ${tmuxKey}`,
             { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
           )
+
+          // Add a small delay after special keys to ensure they're processed properly
+          // Only add delay if this is not the last part
+          if (index < parts.length - 1) {
+            execSync('sleep 0.1', {
+              encoding: 'utf-8',
+              stdio: ['pipe', 'pipe', 'ignore'],
+            })
+          }
         }
       } catch (error) {
         console.error(
@@ -400,6 +434,7 @@ class TmuxMonitor {
       Enter: 'Enter',
       Return: 'Enter',
       Tab: 'Tab',
+      'S-Tab': 'BTab', // Shift+Tab is BTab in tmux
       Space: 'Space',
       Escape: 'Escape',
       Esc: 'Escape',
