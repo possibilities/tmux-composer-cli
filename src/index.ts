@@ -217,6 +217,7 @@ class TmuxMonitor {
 
   private async captureWindow(sessionName: string, windowName: string) {
     const cacheKey = `${sessionName}:${windowName}`
+    const initialModeCacheKey = `${sessionName}:${windowName}:initial-mode-configured`
 
     try {
       const content = execSync(
@@ -244,6 +245,30 @@ class TmuxMonitor {
           content,
           timestamp: new Date().toISOString(),
         })
+
+        // Check for "Enter to confirm · Esc to exit" in "work" window
+        if (
+          windowName === 'work' &&
+          content.includes('Enter to confirm · Esc to exit')
+        ) {
+          const alreadyConfigured = this.checksumCache.get(initialModeCacheKey)
+
+          if (!alreadyConfigured) {
+            this.sendEnterToPane(sessionName, windowName)
+            this.checksumCache.set(initialModeCacheKey, 'sent')
+
+            // Broadcast initial mode configured event
+            this.broadcast({
+              type: 'initial-mode-configured',
+              sessionName,
+              windowName,
+              timestamp: new Date().toISOString(),
+            })
+          }
+        } else if (windowName === 'work') {
+          // Reset configuration flag if content changed and doesn't contain the pattern
+          this.checksumCache.delete(initialModeCacheKey)
+        }
       }
     } catch (error) {
       console.error(
@@ -294,6 +319,44 @@ class TmuxMonitor {
     } catch (error) {
       console.error(
         `[${new Date().toISOString()}] Error resizing windows for ${sessionName}:`,
+        error instanceof Error ? error.message : String(error),
+      )
+    }
+  }
+
+  private sendTextToPane(
+    sessionName: string,
+    windowName: string,
+    text: string,
+  ) {
+    try {
+      execSync(
+        `tmux -S ${TMUX_SOCKET_PATH} send-keys -t ${sessionName}:${windowName} "${text}"`,
+        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
+      )
+      console.log(
+        `[${new Date().toISOString()}] Sent text to ${sessionName}:${windowName}: ${text}`,
+      )
+    } catch (error) {
+      console.error(
+        `[${new Date().toISOString()}] Failed to send text to ${sessionName}:${windowName}:`,
+        error instanceof Error ? error.message : String(error),
+      )
+    }
+  }
+
+  private sendEnterToPane(sessionName: string, windowName: string) {
+    try {
+      execSync(
+        `tmux -S ${TMUX_SOCKET_PATH} send-keys -t ${sessionName}:${windowName} Enter`,
+        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
+      )
+      console.log(
+        `[${new Date().toISOString()}] Sent Enter key to ${sessionName}:${windowName}`,
+      )
+    } catch (error) {
+      console.error(
+        `[${new Date().toISOString()}] Failed to send Enter key to ${sessionName}:${windowName}:`,
         error instanceof Error ? error.message : String(error),
       )
     }
