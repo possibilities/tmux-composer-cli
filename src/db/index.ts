@@ -57,3 +57,18 @@ export async function deleteSession(sessionName: string) {
     .delete(schema.sessions)
     .where(sql`${schema.sessions.sessionName} = ${sessionName}`)
 }
+
+export async function getAllSessions() {
+  return db.select().from(schema.sessions)
+}
+
+export async function getSessionWithWindows(sessionName: string) {
+  const session = await getSession(sessionName)
+  if (!session) return null
+
+  const windows = await getWindowsForSession(sessionName)
+  return {
+    ...session,
+    windows,
+  }
+}

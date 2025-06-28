@@ -15,6 +15,8 @@ import {
   saveSession,
   saveWindow,
   getSession,
+  getAllSessions,
+  getSessionWithWindows,
 } from './db/index.js'
 import type { NewSession, NewWindow } from './db/schema.js'
 
@@ -53,6 +55,7 @@ interface ClientMessage {
   projectPath?: string
   projectName?: string
   sessionName?: string
+  requestId?: string
 }
 
 export const MATCHERS: Matcher[] = [
@@ -137,6 +140,23 @@ class TmuxMonitor {
           switch (message.type) {
             case 'list-sessions':
               this.clientModes.set(ws, { mode: 'list-sessions' })
+
+              // Send list of all sessions
+              const sessions = await getAllSessions()
+              this.sendMessage(
+                ws,
+                {
+                  type: 'sessions-list',
+                  sessions: sessions.map(session => ({
+                    sessionName: session.sessionName,
+                    projectName: session.projectName,
+                    createdAt: session.createdAt,
+                    isActive: this.isSessionActive(session.sessionName),
+                  })),
+                  timestamp: new Date().toISOString(),
+                },
+                message.requestId,
+              )
               break
 
             case 'start-session':
@@ -161,6 +181,33 @@ class TmuxMonitor {
                 mode: 'show-session',
                 sessionName: message.sessionName,
               })
+
+              // Send session info immediately
+              const sessionInfo = await getSessionWithWindows(
+                message.sessionName,
+              )
+              if (sessionInfo) {
+                this.sendMessage(
+                  ws,
+                  {
+                    type: 'session-info',
+                    sessionName: sessionInfo.sessionName,
+                    projectName: sessionInfo.projectName,
+                    worktreePath: sessionInfo.worktreePath,
+                    hostname: os.hostname(),
+                    windows: sessionInfo.windows.map(window => ({
+                      name: window.name,
+                      command: window.command,
+                      description: window.description,
+                      port: window.port,
+                    })),
+                    timestamp: new Date().toISOString(),
+                  },
+                  message.requestId,
+                )
+              } else {
+                this.sendError(ws, `Session ${message.sessionName} not found`)
+              }
               break
           }
         } catch (error) {
@@ -205,8 +252,16 @@ class TmuxMonitor {
     )
   }
 
-  private sendMessage(ws: WebSocket, message: any) {
+  private sendMessage(ws: WebSocket, message: any, requestId?: string) {
+    if (requestId) {
+      message.requestId = requestId
+    }
     ws.send(JSON.stringify(message))
+  }
+
+  private isSessionActive(sessionName: string): boolean {
+    const activeSessions = this.listSessions()
+    return activeSessions.includes(sessionName)
   }
 
   private broadcast(message: any) {
