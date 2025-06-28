@@ -38,15 +38,16 @@ export function matchesPattern(
     }
 
     // Check if current lines match
-    if (contentLines[contentIndex] !== patternLines[patternIndex]) {
-      return false
+    if (contentLines[contentIndex] === patternLines[patternIndex]) {
+      // Found a match, move to next pattern line
+      patternIndex--
+      contentIndex--
+    } else {
+      // No match, just move up in content to keep searching
+      contentIndex--
     }
-
-    // Move to next lines
-    contentIndex--
-    patternIndex--
   }
 
-  // All pattern lines matched
+  // All pattern lines matched if we've gone through all of them
   return patternIndex < 0
 }

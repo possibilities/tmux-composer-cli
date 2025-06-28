@@ -32,6 +32,7 @@ describe('Matcher mechanism', () => {
     `
 
     const folderIsTrustedPattern = [
+      ' Do you trust the files in this folder?',
       ' ❯ 1. Yes, proceed',
       '   2. No, exit',
       '   Enter to confirm · Esc to exit',
