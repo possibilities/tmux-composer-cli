@@ -171,3 +171,128 @@ export function convertToTmuxKey(keyName: string): string {
 
   return keyName
 }
+
+export interface Pane {
+  sessionId: string
+  windowIndex: string
+  paneIndex: string
+  pid: string
+}
+
+export function getTmuxPanes(socketOptions: TmuxSocketOptions = {}): Pane[] {
+  try {
+    const socketArgs = getTmuxSocketString(socketOptions)
+    const format = '#{session_id} #{window_index} #{pane_index} #{pane_pid}'
+    const output = execSync(`tmux ${socketArgs} list-panes -a -F "${format}"`, {
+      encoding: 'utf-8',
+    })
+
+    return output
+      .trim()
+      .split('\n')
+      .filter(line => line.trim())
+      .map(line => {
+        const [sessionId, windowIndex, paneIndex, pid] = line.trim().split(' ')
+        return { sessionId, windowIndex, paneIndex, pid }
+      })
+  } catch {
+    return []
+  }
+}
+
+export function getProcessTree(): Map<string, string[]> {
+  const tree = new Map<string, string[]>()
+
+  try {
+    const psOutput = execSync(`ps -eo pid=,ppid=,comm=`, { encoding: 'utf-8' })
+    psOutput.split('\n').forEach(line => {
+      const parts = line.trim().split(/\s+/, 3)
+      if (parts.length === 3) {
+        const [pid, ppid, command] = parts
+        if (!tree.has(ppid)) tree.set(ppid, [])
+        tree.get(ppid)!.push(pid + ':' + command)
+      }
+    })
+  } catch {
+    // Return empty tree on error
+  }
+
+  return tree
+}
+
+export function findDescendant(
+  pid: string,
+  command: string,
+  tree: Map<string, string[]>,
+): boolean {
+  const stack = [pid]
+  while (stack.length) {
+    const current = stack.pop()!
+    const children = tree.get(current) || []
+    for (const entry of children) {
+      const [childPid, childCmd] = entry.split(':')
+      if (childCmd.includes(command)) return true
+      stack.push(childPid)
+    }
+  }
+  return false
+}
+
+export interface PaneWithCommand {
+  sessionId: string
+  windowIndex: string
+  paneIndex: string
+  paneId: string
+}
+
+export async function findPanesWithCommand(
+  command: string,
+  socketOptions: TmuxSocketOptions = {},
+): Promise<PaneWithCommand[]> {
+  const panes = getTmuxPanes(socketOptions)
+  const tree = getProcessTree()
+  const matchingPanes: PaneWithCommand[] = []
+
+  for (const pane of panes) {
+    if (findDescendant(pane.pid, command, tree)) {
+      const paneId = `${pane.sessionId}:${pane.windowIndex}.${pane.paneIndex}`
+      matchingPanes.push({
+        sessionId: pane.sessionId,
+        windowIndex: pane.windowIndex,
+        paneIndex: pane.paneIndex,
+        paneId,
+      })
+    }
+  }
+
+  return matchingPanes
+}
+
+export async function getWindowInfo(
+  sessionName: string,
+  windowName: string,
+  socketOptions: TmuxSocketOptions = {},
+): Promise<{ sessionId: string; windowIndex: string } | null> {
+  try {
+    const socketArgs = getTmuxSocketString(socketOptions)
+    const { stdout } = await execAsync(
+      `tmux ${socketArgs} list-windows -t ${sessionName} -F "#{session_id} #{window_index} #{window_name}"`,
+      { encoding: 'utf-8' },
+    )
+
+    const lines = stdout.trim().split('\n')
+    for (const line of lines) {
+      const parts = line.split(' ')
+      if (parts.length >= 3) {
+        const [sessionId, windowIndex, ...windowNameParts] = parts
+        const winName = windowNameParts.join(' ')
+        if (winName === windowName) {
+          return { sessionId, windowIndex }
+        }
+      }
+    }
+    return null
+  } catch {
+    return null
+  }
+}

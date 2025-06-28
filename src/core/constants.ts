@@ -7,7 +7,6 @@ export interface Matcher {
   trigger: string[]
   response: string
   runOnce: boolean
-  windowName: string
 }
 
 export const MATCHERS: Matcher[] = [
@@ -19,21 +18,18 @@ export const MATCHERS: Matcher[] = [
     ],
     response: '<Enter>',
     runOnce: true,
-    windowName: 'work',
   },
   {
     name: 'ensure-plan-mode',
     trigger: [' ? for shortcuts'],
     response: '<S-Tab><S-Tab>',
     runOnce: true,
-    windowName: 'work',
   },
   {
     name: 'inject-initial-context',
     trigger: [' ⏸ plan mode on (shift+tab to cycle)'],
     response: '{paste-buffer}<Enter>',
     runOnce: true,
-    windowName: 'work',
   },
 ]
 

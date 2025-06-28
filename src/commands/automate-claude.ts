@@ -14,6 +14,8 @@ import {
   resizeWindow,
   convertToTmuxKey,
   socketExists,
+  findPanesWithCommand,
+  getWindowInfo,
 } from '../core/tmux-utils.js'
 import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 import {
@@ -39,6 +41,10 @@ export class TmuxAutomator {
   private eventBus: EventBus
   private socketOptions: TmuxSocketOptions
   private pollInterval: number
+  private claudeWindowsCache = new Set<string>()
+  private claudeSeenWindows = new Set<string>()
+  private lastClaudeCheck = 0
+  private readonly CLAUDE_CHECK_INTERVAL = 1000 // Check every 1 second
 
   constructor(eventBus: EventBus, options: AutomateTmuxOptions = {}) {
     this.eventBus = eventBus
@@ -85,6 +91,45 @@ export class TmuxAutomator {
     return socketExists(this.socketOptions)
   }
 
+  private async updateClaudeWindowsCache() {
+    const now = Date.now()
+    if (now - this.lastClaudeCheck < this.CLAUDE_CHECK_INTERVAL) {
+      return
+    }
+
+    this.lastClaudeCheck = now
+    this.claudeWindowsCache.clear()
+
+    try {
+      const panesWithClaude = await findPanesWithCommand(
+        'claude',
+        this.socketOptions,
+      )
+      for (const pane of panesWithClaude) {
+        const windowKey = `${pane.sessionId}:${pane.windowIndex}`
+        this.claudeWindowsCache.add(windowKey)
+      }
+
+      if (process.env.VERBOSE) {
+        console.log(
+          `Found claude running in ${this.claudeWindowsCache.size} windows:`,
+          Array.from(this.claudeWindowsCache),
+        )
+      }
+    } catch (error) {
+      this.eventBus.emitEvent({
+        type: 'error',
+        message: 'Error finding claude processes',
+        error: error instanceof Error ? error : new Error(String(error)),
+      })
+    }
+  }
+
+  private hasClaudeRunning(sessionId: string, windowIndex: string): boolean {
+    const windowKey = `${sessionId}:${windowIndex}`
+    return this.claudeWindowsCache.has(windowKey)
+  }
+
   private async pollAllWindows() {
     const socketExists = this.socketExists()
 
@@ -97,6 +142,8 @@ export class TmuxAutomator {
           this.executedMatchers.clear() // Clear executed matchers so they run again on reconnect
           this.knownWindows.clear() // Clear known windows
           this.checksumCache.clear() // Clear checksums
+          this.claudeWindowsCache.clear() // Clear claude windows cache
+          this.claudeSeenWindows.clear() // Clear claude seen windows
         } else {
           console.log(`Waiting for tmux socket...`)
         }
@@ -112,6 +159,9 @@ export class TmuxAutomator {
     if (!socketExists) {
       return
     }
+
+    // Update claude windows cache periodically
+    await this.updateClaudeWindowsCache()
 
     try {
       const sessions = await listSessions(this.socketOptions)
@@ -201,18 +251,41 @@ export class TmuxAutomator {
         })
       }
 
-      if (checksum !== previousChecksum && windowName === 'work') {
+      // Get window info to check for claude
+      const windowInfo = await getWindowInfo(
+        sessionName,
+        windowName,
+        this.socketOptions,
+      )
+      const hasClaude = windowInfo
+        ? this.hasClaudeRunning(windowInfo.sessionId, windowInfo.windowIndex)
+        : false
+
+      // Check if claude is newly detected in this window
+      const isClaudeNewlyDetected =
+        hasClaude && !this.claudeSeenWindows.has(windowKey)
+      if (isClaudeNewlyDetected) {
+        this.claudeSeenWindows.add(windowKey)
+        if (process.env.VERBOSE) {
+          console.log(`Claude newly detected in ${sessionName}:${windowName}`)
+        }
+      }
+
+      if (
+        (checksum !== previousChecksum && hasClaude) ||
+        isClaudeNewlyDetected
+      ) {
         const cleanedContent = cleanContent(rawContent)
         const cleanedLines = cleanedContent.split('\n')
 
         console.log(
-          `Checking ${sessionName}:${windowName} for automation patterns...`,
+          `Checking ${sessionName}:${windowName} for automation patterns (claude detected)...`,
         )
 
         for (const matcher of MATCHERS) {
           const patternMatches = matchesPattern(cleanedLines, matcher.trigger)
 
-          if (windowName === matcher.windowName && patternMatches) {
+          if (patternMatches) {
             const matcherKey = `${sessionName}:${windowName}:${matcher.name}`
 
             if (matcher.runOnce && this.executedMatchers.has(matcherKey)) {
