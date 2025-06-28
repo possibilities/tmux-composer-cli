@@ -40,6 +40,13 @@ export const MATCHERS: Matcher[] = [
     runOnce: true,
     windowName: 'work',
   },
+  {
+    name: 'plan-mode-on',
+    trigger: [' ⏸ plan mode on (shift+tab to cycle)'],
+    response: '{paste-buffer}<Enter>',
+    runOnce: true,
+    windowName: 'work',
+  },
 ]
 
 class TmuxMonitor {
@@ -49,6 +56,7 @@ class TmuxMonitor {
   private controlStateCache = new Map<string, boolean>()
   private wss: WebSocketServer | null = null
   private clients = new Set<WebSocket>()
+  private clientSentWindows = new WeakMap<WebSocket, Set<string>>()
   private websocketEnabled: boolean
   private socketExistenceLogged = false
   private lastSocketState = false
@@ -68,17 +76,20 @@ class TmuxMonitor {
     this.wss.on('connection', (ws: WebSocket) => {
       console.log(`[${new Date().toISOString()}] WebSocket client connected`)
       this.clients.add(ws)
+      this.clientSentWindows.set(ws, new Set<string>())
 
       ws.on('close', () => {
         console.log(
           `[${new Date().toISOString()}] WebSocket client disconnected`,
         )
         this.clients.delete(ws)
+        this.clientSentWindows.delete(ws)
       })
 
       ws.on('error', error => {
         console.error(`[${new Date().toISOString()}] WebSocket error:`, error)
         this.clients.delete(ws)
+        this.clientSentWindows.delete(ws)
       })
 
       ws.send(
@@ -105,13 +116,25 @@ class TmuxMonitor {
     )
   }
 
-  private broadcast(message: unknown) {
+  private broadcast(message: any) {
     if (!this.websocketEnabled) return
 
     const messageStr = JSON.stringify(message)
     this.clients.forEach(client => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(messageStr)
+
+        // Track sent windows for update messages
+        if (
+          message.type === 'update' &&
+          message.sessionName &&
+          message.windowName
+        ) {
+          const sentWindows = this.clientSentWindows.get(client)
+          if (sentWindows) {
+            sentWindows.add(`${message.sessionName}:${message.windowName}`)
+          }
+        }
       }
     })
   }
@@ -260,13 +283,31 @@ class TmuxMonitor {
 
       const checksum = this.calculateChecksum(rawContent)
       const previousChecksum = this.checksumCache.get(cacheKey)
+      const windowKey = `${sessionName}:${windowName}`
 
+      // Check if any client needs this window's content
+      let needsBroadcast = false
       if (checksum !== previousChecksum) {
+        needsBroadcast = true
         this.checksumCache.set(cacheKey, checksum)
         console.log(
           `[${new Date().toISOString()}] Updated: ${sessionName}:${windowName} (checksum: ${checksum})`,
         )
+      } else {
+        // Check if any connected client hasn't received this window yet
+        for (const client of this.clients) {
+          const sentWindows = this.clientSentWindows.get(client)
+          if (sentWindows && !sentWindows.has(windowKey)) {
+            needsBroadcast = true
+            console.log(
+              `[${new Date().toISOString()}] Sending initial content for ${sessionName}:${windowName} to new client`,
+            )
+            break
+          }
+        }
+      }
 
+      if (needsBroadcast) {
         this.broadcast({
           type: 'update',
           sessionName,
@@ -274,64 +315,65 @@ class TmuxMonitor {
           content: rawContent,
           timestamp: new Date().toISOString(),
         })
+      }
 
-        if (windowName === 'work') {
-          const cleanedContent = cleanContent(rawContent)
+      // Only run matchers when content actually changes
+      if (checksum !== previousChecksum && windowName === 'work') {
+        const cleanedContent = cleanContent(rawContent)
 
-          console.log(
-            `[${new Date().toISOString()}] Captured content from ${sessionName}:${windowName}:\n---\n${cleanedContent}\n---`,
-          )
+        console.log(
+          `[${new Date().toISOString()}] Captured content from ${sessionName}:${windowName}:\n---\n${cleanedContent}\n---`,
+        )
 
-          const cleanedLines = cleanedContent.split('\n')
+        const cleanedLines = cleanedContent.split('\n')
 
-          for (const matcher of MATCHERS) {
-            if (matcher.name === 'ensure-plan-mode') {
-              console.log(
-                `[${new Date().toISOString()}] Checking ensure-plan-mode matcher for ${sessionName}:${windowName}`,
-              )
-              console.log(`  Pattern: ${JSON.stringify(matcher.trigger)}`)
-              console.log(
-                `  Last 3 lines of content: ${JSON.stringify(cleanedLines.slice(-3))}`,
-              )
-            }
+        for (const matcher of MATCHERS) {
+          if (matcher.name === 'ensure-plan-mode') {
+            console.log(
+              `[${new Date().toISOString()}] Checking ensure-plan-mode matcher for ${sessionName}:${windowName}`,
+            )
+            console.log(`  Pattern: ${JSON.stringify(matcher.trigger)}`)
+            console.log(
+              `  Last 3 lines of content: ${JSON.stringify(cleanedLines.slice(-3))}`,
+            )
+          }
 
-            const patternMatches = matchesPattern(cleanedLines, matcher.trigger)
+          const patternMatches = matchesPattern(cleanedLines, matcher.trigger)
 
-            if (matcher.name === 'ensure-plan-mode') {
-              console.log(`  Pattern matches: ${patternMatches}`)
-            }
+          if (matcher.name === 'ensure-plan-mode') {
+            console.log(`  Pattern matches: ${patternMatches}`)
+          }
 
-            if (windowName === matcher.windowName && patternMatches) {
-              const matcherKey = `${sessionName}:${windowName}:${matcher.name}`
+          if (windowName === matcher.windowName && patternMatches) {
+            const matcherKey = `${sessionName}:${windowName}:${matcher.name}`
 
-              if (matcher.runOnce && this.executedMatchers.has(matcherKey)) {
-                if (matcher.name === 'ensure-plan-mode') {
-                  console.log(`  Skipping (already executed)`)
-                }
-                continue
-              }
-
-              this.parseAndSendKeys(sessionName, windowName, matcher.response)
-
-              if (matcher.runOnce) {
-                this.executedMatchers.add(matcherKey)
-              }
-
-              this.broadcast({
-                type: 'matcher-executed',
-                sessionName,
-                windowName,
-                matcherName: matcher.name,
-                timestamp: new Date().toISOString(),
-              })
-
-              console.log(
-                `[${new Date().toISOString()}] Executed matcher '${matcher.name}' for ${sessionName}:${windowName}`,
-              )
-
+            if (matcher.runOnce && this.executedMatchers.has(matcherKey)) {
               if (matcher.name === 'ensure-plan-mode') {
-                console.log('ENSURE-PLAN-MODE MATCHED AND EXECUTED!')
+                console.log(`  Skipping (already executed)`)
               }
+              continue
+            }
+
+            this.parseAndSendKeys(sessionName, windowName, matcher.response)
+
+            if (matcher.runOnce) {
+              this.executedMatchers.add(matcherKey)
+            }
+
+            this.broadcast({
+              type: 'matcher-executed',
+              sessionName,
+              windowName,
+              matcherName: matcher.name,
+              timestamp: new Date().toISOString(),
+            })
+
+            console.log(
+              `[${new Date().toISOString()}] Executed matcher '${matcher.name}' for ${sessionName}:${windowName}`,
+            )
+
+            if (matcher.name === 'ensure-plan-mode') {
+              console.log('ENSURE-PLAN-MODE MATCHED AND EXECUTED!')
             }
           }
         }
@@ -353,7 +395,7 @@ class TmuxMonitor {
     windowName: string,
     response: string,
   ) {
-    const parts: Array<{ type: 'text' | 'key'; value: string }> = []
+    const parts: Array<{ type: 'text' | 'key' | 'command'; value: string }> = []
     let currentText = ''
     let i = 0
 
@@ -375,6 +417,25 @@ class TmuxMonitor {
           // Extract the key name
           const keyName = response.substring(i + 1, closeIndex)
           parts.push({ type: 'key', value: keyName })
+          i = closeIndex + 1
+        }
+      } else if (response[i] === '{') {
+        // Save any accumulated text
+        if (currentText) {
+          parts.push({ type: 'text', value: currentText })
+          currentText = ''
+        }
+
+        // Find the closing brace
+        const closeIndex = response.indexOf('}', i)
+        if (closeIndex === -1) {
+          // No closing brace, treat as text
+          currentText += response[i]
+          i++
+        } else {
+          // Extract the command name
+          const commandName = response.substring(i + 1, closeIndex)
+          parts.push({ type: 'command', value: commandName })
           i = closeIndex + 1
         }
       } else {
@@ -399,7 +460,7 @@ class TmuxMonitor {
             `tmux -S ${TMUX_SOCKET_PATH} send-keys -t ${sessionName}:${windowName} -l '${escapedText}'`,
             { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
           )
-        } else {
+        } else if (part.type === 'key') {
           // Send special key
           const tmuxKey = this.convertToTmuxKey(part.value)
           console.log(
@@ -412,6 +473,24 @@ class TmuxMonitor {
 
           // Add a small delay after special keys to ensure they're processed properly
           // Only add delay if this is not the last part
+          if (index < parts.length - 1) {
+            execSync('sleep 0.1', {
+              encoding: 'utf-8',
+              stdio: ['pipe', 'pipe', 'ignore'],
+            })
+          }
+        } else if (part.type === 'command') {
+          // Execute tmux command
+          console.log(
+            `[${new Date().toISOString()}] Executing tmux command: ${part.value}`,
+          )
+          if (part.value === 'paste-buffer') {
+            execSync(
+              `tmux -S ${TMUX_SOCKET_PATH} paste-buffer -t ${sessionName}:${windowName}`,
+              { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
+            )
+          }
+          // Add delay after commands if not the last part
           if (index < parts.length - 1) {
             execSync('sleep 0.1', {
               encoding: 'utf-8',

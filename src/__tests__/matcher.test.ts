@@ -45,4 +45,19 @@ describe('Matcher mechanism', () => {
 
     expect(result).toBe(true)
   })
+
+  it('should match plan-mode-on pattern', () => {
+    const fixturePath = join(__dirname, '../../fixtures/plan-mode-on.txt')
+    const tmuxOutput = readFileSync(fixturePath, 'utf-8')
+    const planModeOnMatcher = MATCHERS.find(m => m.name === 'plan-mode-on')
+    if (!planModeOnMatcher) {
+      throw new Error('plan-mode-on matcher not found')
+    }
+
+    const cleanedContent = cleanContent(tmuxOutput)
+    const contentLines = cleanedContent.split('\n')
+    const result = matchesPattern(contentLines, planModeOnMatcher.trigger)
+
+    expect(result).toBe(true)
+  })
 })
