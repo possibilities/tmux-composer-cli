@@ -1,0 +1,4 @@
+name: Control CLI
+agents:
+  act: context-composer work-on-typescript-cli | claude
+  plan: context-composer work-on-typescript-cli | claude

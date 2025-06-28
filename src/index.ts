@@ -274,11 +274,11 @@ class TmuxMonitor {
       for (const windowName of windows) {
         try {
           execSync(
-            `tmux -S ${TMUX_SOCKET_PATH} resize-window -t ${sessionName}:${windowName} -x 72 -y 21`,
+            `tmux -S ${TMUX_SOCKET_PATH} resize-window -t ${sessionName}:${windowName} -x 80 -y 24`,
             { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
           )
           console.log(
-            `[${new Date().toISOString()}] Resized window ${sessionName}:${windowName} to 72x21`,
+            `[${new Date().toISOString()}] Resized window ${sessionName}:${windowName} to 80x24`,
           )
         } catch (error) {
           console.error(
