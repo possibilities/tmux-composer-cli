@@ -1,9 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import dedent from 'dedent'
 import { cleanContent, matchesPattern } from '../matcher.js'
+import { MATCHERS } from '../index.js'
 
 describe('Matcher mechanism', () => {
-  it('should match folder-is-trusted pattern', () => {
+  it('should match do-you-trust-this-folder pattern', () => {
     const tmuxOutput = dedent`
       ┌─╼[02:25:14]
       └─╼[~/code/worktrees/icon-creator-ui-worktree-130]
@@ -31,16 +32,16 @@ describe('Matcher mechanism', () => {
       
     `
 
-    const folderIsTrustedPattern = [
-      'Do you trust the files in this folder?',
-      '❯ 1. Yes, proceed',
-      '  2. No, exit',
-      ' Enter to confirm · Esc to exit',
-    ]
+    const folderIsTrustedMatcher = MATCHERS.find(
+      m => m.name === 'do-you-trust-this-folder',
+    )
+    if (!folderIsTrustedMatcher) {
+      throw new Error('do-you-trust-this-folder matcher not found')
+    }
 
     const cleanedContent = cleanContent(tmuxOutput)
     const contentLines = cleanedContent.split('\n')
-    const result = matchesPattern(contentLines, folderIsTrustedPattern)
+    const result = matchesPattern(contentLines, folderIsTrustedMatcher.trigger)
 
     expect(result).toBe(true)
   })

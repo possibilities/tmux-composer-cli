@@ -22,18 +22,19 @@ interface Matcher {
   windowName: string
 }
 
-const MATCHERS: Matcher[] = [
-  // {
-  //   name: 'folder-is-trusted',
-  //   trigger: [
-  //     ' ❯ 1. Yes, proceed',
-  //     '   2. No, exit',
-  //     '   Enter to confirm · Esc to exit',
-  //   ],
-  //   response: '<Enter>',
-  //   runOnce: true,
-  //   windowName: 'work',
-  // },
+export const MATCHERS: Matcher[] = [
+  {
+    name: 'do-you-trust-this-folder',
+    trigger: [
+      'Do you trust the files in this folder?',
+      '❯ 1. Yes, proceed',
+      '  2. No, exit',
+      ' Enter to confirm · Esc to exit',
+    ],
+    response: '<Enter>',
+    runOnce: true,
+    windowName: 'work',
+  },
 ]
 
 class TmuxMonitor {
