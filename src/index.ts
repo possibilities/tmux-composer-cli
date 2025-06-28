@@ -15,7 +15,8 @@ const MAX_CHECKSUM_CACHE_SIZE = 1000
 
 interface Matcher {
   name: string
-  trigger: string
+  trigger: string[]
+  response: string
   runOnce: boolean
   windowName: string
 }
@@ -23,7 +24,12 @@ interface Matcher {
 const MATCHERS: Matcher[] = [
   {
     name: 'folder-is-trusted',
-    trigger: 'Enter to confirm · Esc to exit',
+    trigger: [
+      ' ❯ 1. Yes, proceed',
+      '   2. No, exit',
+      '   Enter to confirm · Esc to exit',
+    ],
+    response: '<Enter>',
     runOnce: true,
     windowName: 'work',
   },
@@ -231,12 +237,83 @@ class TmuxMonitor {
     }
   }
 
+  private cleanContent(content: string): string {
+    const boxChars = /[╭╮╰╯│─┌┐└┘├┤┬┴┼]/g
+
+    const lines = content
+      .split('\n')
+      .map(line => line.replace(boxChars, '').trimEnd())
+
+    // Remove leading empty lines
+    while (lines.length > 0 && lines[0] === '') {
+      lines.shift()
+    }
+
+    // Remove trailing empty lines
+    while (lines.length > 0 && lines[lines.length - 1] === '') {
+      lines.pop()
+    }
+
+    return lines.join('\n')
+  }
+
+  private matchesPattern(
+    contentLines: string[],
+    patternLines: string[],
+  ): boolean {
+    // Start from the bottom of both arrays
+    let contentIndex = contentLines.length - 1
+    let patternIndex = patternLines.length - 1
+
+    console.log(
+      `[${new Date().toISOString()}] Matching pattern, content has ${contentLines.length} lines, pattern has ${patternLines.length} lines`,
+    )
+
+    while (patternIndex >= 0 && contentIndex >= 0) {
+      // Skip empty lines in content
+      while (contentIndex >= 0 && contentLines[contentIndex] === '') {
+        contentIndex--
+      }
+
+      // If we've run out of content lines but still have pattern lines, no match
+      if (contentIndex < 0) {
+        console.log(
+          `[${new Date().toISOString()}] No match - ran out of content lines`,
+        )
+        return false
+      }
+
+      // Check if current lines match
+      if (contentLines[contentIndex] !== patternLines[patternIndex]) {
+        console.log(
+          `[${new Date().toISOString()}] No match at line ${contentIndex}: "${contentLines[contentIndex]}" !== "${patternLines[patternIndex]}"`,
+        )
+        return false
+      }
+
+      console.log(
+        `[${new Date().toISOString()}] Matched line ${contentIndex}: "${contentLines[contentIndex]}"`,
+      )
+
+      // Move to next lines
+      contentIndex--
+      patternIndex--
+    }
+
+    // All pattern lines matched
+    const matched = patternIndex < 0
+    console.log(
+      `[${new Date().toISOString()}] Pattern ${matched ? 'MATCHED' : 'DID NOT MATCH'}`,
+    )
+    return matched
+  }
+
   private async captureWindow(sessionName: string, windowName: string) {
     const cacheKey = `${sessionName}:${windowName}`
     const initialModeCacheKey = `${sessionName}:${windowName}:initial-mode-configured`
 
     try {
-      const content = execSync(
+      const rawContent = execSync(
         `tmux -S ${TMUX_SOCKET_PATH} capture-pane -p -t ${sessionName}:${windowName}`,
         {
           encoding: 'utf-8',
@@ -245,7 +322,7 @@ class TmuxMonitor {
         },
       )
 
-      const checksum = this.calculateChecksum(content)
+      const checksum = this.calculateChecksum(rawContent)
       const previousChecksum = this.checksumCache.get(cacheKey)
 
       if (checksum !== previousChecksum) {
@@ -258,38 +335,48 @@ class TmuxMonitor {
           type: 'update',
           sessionName,
           windowName,
-          content,
+          content: rawContent,
           timestamp: new Date().toISOString(),
         })
 
-        for (const matcher of MATCHERS) {
-          if (
-            windowName === matcher.windowName &&
-            content.includes(matcher.trigger)
-          ) {
-            const matcherKey = `${sessionName}:${windowName}:${matcher.name}`
+        if (windowName === 'work') {
+          const cleanedContent = this.cleanContent(rawContent)
 
-            if (matcher.runOnce && this.executedMatchers.has(matcherKey)) {
-              continue
+          console.log(
+            `[${new Date().toISOString()}] Captured content from ${sessionName}:${windowName}:\n---\n${cleanedContent}\n---`,
+          )
+
+          const cleanedLines = cleanedContent.split('\n')
+
+          for (const matcher of MATCHERS) {
+            if (
+              windowName === matcher.windowName &&
+              this.matchesPattern(cleanedLines, matcher.trigger)
+            ) {
+              const matcherKey = `${sessionName}:${windowName}:${matcher.name}`
+
+              if (matcher.runOnce && this.executedMatchers.has(matcherKey)) {
+                continue
+              }
+
+              this.parseAndSendKeys(sessionName, windowName, matcher.response)
+
+              if (matcher.runOnce) {
+                this.executedMatchers.add(matcherKey)
+              }
+
+              this.broadcast({
+                type: 'matcher-executed',
+                sessionName,
+                windowName,
+                matcherName: matcher.name,
+                timestamp: new Date().toISOString(),
+              })
+
+              console.log(
+                `[${new Date().toISOString()}] Executed matcher '${matcher.name}' for ${sessionName}:${windowName}`,
+              )
             }
-
-            this.sendEnterToPane(sessionName, windowName)
-
-            if (matcher.runOnce) {
-              this.executedMatchers.add(matcherKey)
-            }
-
-            this.broadcast({
-              type: 'matcher-executed',
-              sessionName,
-              windowName,
-              matcherName: matcher.name,
-              timestamp: new Date().toISOString(),
-            })
-
-            console.log(
-              `[${new Date().toISOString()}] Executed matcher '${matcher.name}' for ${sessionName}:${windowName}`,
-            )
           }
         }
       }
@@ -303,6 +390,118 @@ class TmuxMonitor {
 
   private calculateChecksum(content: string): string {
     return createHash('md5').update(content).digest('hex')
+  }
+
+  private parseAndSendKeys(
+    sessionName: string,
+    windowName: string,
+    response: string,
+  ) {
+    const parts: Array<{ type: 'text' | 'key'; value: string }> = []
+    let currentText = ''
+    let i = 0
+
+    while (i < response.length) {
+      if (response[i] === '<') {
+        // Save any accumulated text
+        if (currentText) {
+          parts.push({ type: 'text', value: currentText })
+          currentText = ''
+        }
+
+        // Find the closing bracket
+        const closeIndex = response.indexOf('>', i)
+        if (closeIndex === -1) {
+          // No closing bracket, treat as text
+          currentText += response[i]
+          i++
+        } else {
+          // Extract the key name
+          const keyName = response.substring(i + 1, closeIndex)
+          parts.push({ type: 'key', value: keyName })
+          i = closeIndex + 1
+        }
+      } else {
+        currentText += response[i]
+        i++
+      }
+    }
+
+    // Add any remaining text
+    if (currentText) {
+      parts.push({ type: 'text', value: currentText })
+    }
+
+    // Send each part to tmux
+    for (const part of parts) {
+      try {
+        if (part.type === 'text') {
+          // Send literal text - need to escape special characters
+          const escapedText = part.value.replace(/'/g, "'\"'\"'")
+          execSync(
+            `tmux -S ${TMUX_SOCKET_PATH} send-keys -t ${sessionName}:${windowName} -l '${escapedText}'`,
+            { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
+          )
+        } else {
+          // Send special key
+          const tmuxKey = this.convertToTmuxKey(part.value)
+          execSync(
+            `tmux -S ${TMUX_SOCKET_PATH} send-keys -t ${sessionName}:${windowName} ${tmuxKey}`,
+            { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
+          )
+        }
+      } catch (error) {
+        console.error(
+          `[${new Date().toISOString()}] Failed to send keys to ${sessionName}:${windowName}:`,
+          error instanceof Error ? error.message : String(error),
+        )
+      }
+    }
+
+    console.log(
+      `[${new Date().toISOString()}] Sent response '${response}' to ${sessionName}:${windowName}`,
+    )
+  }
+
+  private convertToTmuxKey(keyName: string): string {
+    // Handle common key names
+    const keyMap: Record<string, string> = {
+      Enter: 'Enter',
+      Return: 'Enter',
+      Tab: 'Tab',
+      Space: 'Space',
+      Escape: 'Escape',
+      Esc: 'Escape',
+      Up: 'Up',
+      Down: 'Down',
+      Left: 'Left',
+      Right: 'Right',
+      Home: 'Home',
+      End: 'End',
+      PageUp: 'PageUp',
+      PageDown: 'PageDown',
+      Delete: 'Delete',
+      Backspace: 'BSpace',
+      Insert: 'Insert',
+    }
+
+    // Check for direct mapping
+    if (keyMap[keyName]) {
+      return keyMap[keyName]
+    }
+
+    // Handle modifier keys (C-x, M-x, S-x)
+    if (keyName.match(/^[CMS]-./)) {
+      return keyName
+    }
+
+    // Handle function keys (F1-F12)
+    if (keyName.match(/^F\d{1,2}$/)) {
+      return keyName
+    }
+
+    // Default: return as-is
+    return keyName
   }
 
   private checkHumanControl(sessionName: string): boolean {
@@ -342,44 +541,6 @@ class TmuxMonitor {
     } catch (error) {
       console.error(
         `[${new Date().toISOString()}] Error resizing windows for ${sessionName}:`,
-        error instanceof Error ? error.message : String(error),
-      )
-    }
-  }
-
-  private sendTextToPane(
-    sessionName: string,
-    windowName: string,
-    text: string,
-  ) {
-    try {
-      execSync(
-        `tmux -S ${TMUX_SOCKET_PATH} send-keys -t ${sessionName}:${windowName} "${text}"`,
-        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
-      )
-      console.log(
-        `[${new Date().toISOString()}] Sent text to ${sessionName}:${windowName}: ${text}`,
-      )
-    } catch (error) {
-      console.error(
-        `[${new Date().toISOString()}] Failed to send text to ${sessionName}:${windowName}:`,
-        error instanceof Error ? error.message : String(error),
-      )
-    }
-  }
-
-  private sendEnterToPane(sessionName: string, windowName: string) {
-    try {
-      execSync(
-        `tmux -S ${TMUX_SOCKET_PATH} send-keys -t ${sessionName}:${windowName} Enter`,
-        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
-      )
-      console.log(
-        `[${new Date().toISOString()}] Sent Enter key to ${sessionName}:${windowName}`,
-      )
-    } catch (error) {
-      console.error(
-        `[${new Date().toISOString()}] Failed to send Enter key to ${sessionName}:${windowName}:`,
         error instanceof Error ? error.message : String(error),
       )
     }
