@@ -13,6 +13,22 @@ const POLL_INTERVAL = 500
 const WEBSOCKET_PORT = 8080
 const MAX_CHECKSUM_CACHE_SIZE = 1000
 
+interface Matcher {
+  name: string
+  trigger: string
+  runOnce: boolean
+  windowName: string
+}
+
+const MATCHERS: Matcher[] = [
+  {
+    name: 'folder-is-trusted',
+    trigger: 'Enter to confirm · Esc to exit',
+    runOnce: true,
+    windowName: 'work',
+  },
+]
+
 class TmuxMonitor {
   private checksumCache = new LRUCache<string, string>({
     max: MAX_CHECKSUM_CACHE_SIZE,
@@ -23,6 +39,7 @@ class TmuxMonitor {
   private websocketEnabled: boolean
   private socketExistenceLogged = false
   private lastSocketState = false
+  private executedMatchers = new Set<string>()
 
   constructor(websocketEnabled: boolean) {
     this.websocketEnabled = websocketEnabled
@@ -245,25 +262,35 @@ class TmuxMonitor {
           timestamp: new Date().toISOString(),
         })
 
-        if (
-          windowName === 'work' &&
-          content.includes('Enter to confirm · Esc to exit')
-        ) {
-          const alreadyConfigured = this.checksumCache.get(initialModeCacheKey)
+        for (const matcher of MATCHERS) {
+          if (
+            windowName === matcher.windowName &&
+            content.includes(matcher.trigger)
+          ) {
+            const matcherKey = `${sessionName}:${windowName}:${matcher.name}`
 
-          if (!alreadyConfigured) {
+            if (matcher.runOnce && this.executedMatchers.has(matcherKey)) {
+              continue
+            }
+
             this.sendEnterToPane(sessionName, windowName)
-            this.checksumCache.set(initialModeCacheKey, 'sent')
+
+            if (matcher.runOnce) {
+              this.executedMatchers.add(matcherKey)
+            }
 
             this.broadcast({
-              type: 'initial-mode-configured',
+              type: 'matcher-executed',
               sessionName,
               windowName,
+              matcherName: matcher.name,
               timestamp: new Date().toISOString(),
             })
+
+            console.log(
+              `[${new Date().toISOString()}] Executed matcher '${matcher.name}' for ${sessionName}:${windowName}`,
+            )
           }
-        } else if (windowName === 'work') {
-          this.checksumCache.delete(initialModeCacheKey)
         }
       }
     } catch (error) {
