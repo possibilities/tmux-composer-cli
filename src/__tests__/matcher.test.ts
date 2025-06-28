@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { cleanContent, matchesPattern } from '../matcher.js'
-import { MATCHERS } from '../index.js'
+import { MATCHERS } from '../core/constants.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
