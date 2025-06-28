@@ -46,12 +46,17 @@ describe('Matcher mechanism', () => {
     expect(result).toBe(true)
   })
 
-  it('should match plan-mode-on pattern', () => {
-    const fixturePath = join(__dirname, '../../fixtures/plan-mode-on.txt')
+  it('should match inject-initial-input pattern', () => {
+    const fixturePath = join(
+      __dirname,
+      '../../fixtures/inject-initial-input.txt',
+    )
     const tmuxOutput = readFileSync(fixturePath, 'utf-8')
-    const planModeOnMatcher = MATCHERS.find(m => m.name === 'plan-mode-on')
+    const planModeOnMatcher = MATCHERS.find(
+      m => m.name === 'inject-initial-input',
+    )
     if (!planModeOnMatcher) {
-      throw new Error('plan-mode-on matcher not found')
+      throw new Error('inject-initial-input matcher not found')
     }
 
     const cleanedContent = cleanContent(tmuxOutput)

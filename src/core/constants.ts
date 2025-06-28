@@ -29,7 +29,7 @@ export const MATCHERS: Matcher[] = [
     windowName: 'work',
   },
   {
-    name: 'plan-mode-on',
+    name: 'inject-initial-input',
     trigger: [' ⏸ plan mode on (shift+tab to cycle)'],
     response: '{paste-buffer}<Enter>',
     runOnce: true,
