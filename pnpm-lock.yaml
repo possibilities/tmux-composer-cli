@@ -10,6 +10,9 @@ importers:
       commander:
         specifier: ^12.0.0
         version: 12.1.0
+      lru-cache:
+        specifier: ^11.1.0
+        version: 11.1.0
       ws:
         specifier: ^8.18.2
         version: 8.18.2
@@ -838,6 +841,13 @@ packages:
         integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==,
       }
 
+  lru-cache@11.1.0:
+    resolution:
+      {
+        integrity: sha512-QIXZUBJUx+2zHUdQujWejBkcD9+cs94tLn0+YL8UrCh+D5sCXZ4c7LaEH48pNwRY3MLDgqUFyhlCyjJPf1WP0A==,
+      }
+    engines: { node: 20 || >=22 }
+
   magic-string@0.30.17:
     resolution:
       {
@@ -1644,6 +1654,8 @@ snapshots:
   lodash.sortby@4.7.0: {}
 
   lru-cache@10.4.3: {}
+
+  lru-cache@11.1.0: {}
 
   magic-string@0.30.17:
     dependencies:

@@ -5,14 +5,18 @@ import path from 'path'
 import os from 'os'
 import fs from 'fs'
 import { WebSocketServer, WebSocket } from 'ws'
+import { LRUCache } from 'lru-cache'
 import packageJson from '../package.json' assert { type: 'json' }
 
 const TMUX_SOCKET_PATH = path.join(os.tmpdir(), 'control-app-tmux')
 const POLL_INTERVAL = 500
 const WEBSOCKET_PORT = 8080
+const MAX_CHECKSUM_CACHE_SIZE = 1000
 
 class TmuxMonitor {
-  private checksumCache = new Map<string, string>()
+  private checksumCache = new LRUCache<string, string>({
+    max: MAX_CHECKSUM_CACHE_SIZE,
+  })
   private controlStateCache = new Map<string, boolean>()
   private wss: WebSocketServer | null = null
   private clients = new Set<WebSocket>()
