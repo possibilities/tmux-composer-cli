@@ -46,17 +46,17 @@ describe('Matcher mechanism', () => {
     expect(result).toBe(true)
   })
 
-  it('should match inject-initial-input pattern', () => {
+  it('should match inject-initial-context pattern', () => {
     const fixturePath = join(
       __dirname,
-      '../../fixtures/inject-initial-input.txt',
+      '../../fixtures/inject-initial-context.txt',
     )
     const tmuxOutput = readFileSync(fixturePath, 'utf-8')
     const planModeOnMatcher = MATCHERS.find(
-      m => m.name === 'inject-initial-input',
+      m => m.name === 'inject-initial-context',
     )
     if (!planModeOnMatcher) {
-      throw new Error('inject-initial-input matcher not found')
+      throw new Error('inject-initial-context matcher not found')
     }
 
     const cleanedContent = cleanContent(tmuxOutput)
