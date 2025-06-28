@@ -12,7 +12,9 @@
     "build": "tsup",
     "build:watch": "nodemon --watch src/ --ext ts --exec tsup",
     "dev": "nodemon --watch dist/cli.js --exec 'node ./dist/cli.js --websocket'",
-    "format": "prettier --write \"**/*.{js,mjs,jsx,ts,tsx,json,md,mdx,css,yml,yaml}\""
+    "format": "prettier --write \"**/*.{js,mjs,jsx,ts,tsx,json,md,mdx,css,yml,yaml}\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "commander": "^12.0.0",
@@ -22,10 +24,12 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/ws": "^8.18.1",
+    "dedent": "^1.6.0",
     "nodemon": "^3.1.10",
     "prettier": "^3.5.3",
     "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=18"

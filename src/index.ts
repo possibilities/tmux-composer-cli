@@ -7,6 +7,7 @@ import fs from 'fs'
 import { WebSocketServer, WebSocket } from 'ws'
 import { LRUCache } from 'lru-cache'
 import packageJson from '../package.json' assert { type: 'json' }
+import { cleanContent, matchesPattern } from './matcher.js'
 
 const TMUX_SOCKET_PATH = path.join(os.tmpdir(), 'control-app-tmux')
 const POLL_INTERVAL = 500
@@ -22,17 +23,17 @@ interface Matcher {
 }
 
 const MATCHERS: Matcher[] = [
-  {
-    name: 'folder-is-trusted',
-    trigger: [
-      ' ❯ 1. Yes, proceed',
-      '   2. No, exit',
-      '   Enter to confirm · Esc to exit',
-    ],
-    response: '<Enter>',
-    runOnce: true,
-    windowName: 'work',
-  },
+  // {
+  //   name: 'folder-is-trusted',
+  //   trigger: [
+  //     ' ❯ 1. Yes, proceed',
+  //     '   2. No, exit',
+  //     '   Enter to confirm · Esc to exit',
+  //   ],
+  //   response: '<Enter>',
+  //   runOnce: true,
+  //   windowName: 'work',
+  // },
 ]
 
 class TmuxMonitor {
@@ -237,77 +238,6 @@ class TmuxMonitor {
     }
   }
 
-  private cleanContent(content: string): string {
-    const boxChars = /[╭╮╰╯│─┌┐└┘├┤┬┴┼]/g
-
-    const lines = content
-      .split('\n')
-      .map(line => line.replace(boxChars, '').trimEnd())
-
-    // Remove leading empty lines
-    while (lines.length > 0 && lines[0] === '') {
-      lines.shift()
-    }
-
-    // Remove trailing empty lines
-    while (lines.length > 0 && lines[lines.length - 1] === '') {
-      lines.pop()
-    }
-
-    return lines.join('\n')
-  }
-
-  private matchesPattern(
-    contentLines: string[],
-    patternLines: string[],
-  ): boolean {
-    // Start from the bottom of both arrays
-    let contentIndex = contentLines.length - 1
-    let patternIndex = patternLines.length - 1
-
-    console.log(
-      `[${new Date().toISOString()}] Matching pattern, content has ${contentLines.length} lines, pattern has ${patternLines.length} lines`,
-    )
-
-    while (patternIndex >= 0 && contentIndex >= 0) {
-      // Skip empty lines in content
-      while (contentIndex >= 0 && contentLines[contentIndex] === '') {
-        contentIndex--
-      }
-
-      // If we've run out of content lines but still have pattern lines, no match
-      if (contentIndex < 0) {
-        console.log(
-          `[${new Date().toISOString()}] No match - ran out of content lines`,
-        )
-        return false
-      }
-
-      // Check if current lines match
-      if (contentLines[contentIndex] !== patternLines[patternIndex]) {
-        console.log(
-          `[${new Date().toISOString()}] No match at line ${contentIndex}: "${contentLines[contentIndex]}" !== "${patternLines[patternIndex]}"`,
-        )
-        return false
-      }
-
-      console.log(
-        `[${new Date().toISOString()}] Matched line ${contentIndex}: "${contentLines[contentIndex]}"`,
-      )
-
-      // Move to next lines
-      contentIndex--
-      patternIndex--
-    }
-
-    // All pattern lines matched
-    const matched = patternIndex < 0
-    console.log(
-      `[${new Date().toISOString()}] Pattern ${matched ? 'MATCHED' : 'DID NOT MATCH'}`,
-    )
-    return matched
-  }
-
   private async captureWindow(sessionName: string, windowName: string) {
     const cacheKey = `${sessionName}:${windowName}`
     const initialModeCacheKey = `${sessionName}:${windowName}:initial-mode-configured`
@@ -340,7 +270,7 @@ class TmuxMonitor {
         })
 
         if (windowName === 'work') {
-          const cleanedContent = this.cleanContent(rawContent)
+          const cleanedContent = cleanContent(rawContent)
 
           console.log(
             `[${new Date().toISOString()}] Captured content from ${sessionName}:${windowName}:\n---\n${cleanedContent}\n---`,
@@ -351,7 +281,7 @@ class TmuxMonitor {
           for (const matcher of MATCHERS) {
             if (
               windowName === matcher.windowName &&
-              this.matchesPattern(cleanedLines, matcher.trigger)
+              matchesPattern(cleanedLines, matcher.trigger)
             ) {
               const matcherKey = `${sessionName}:${windowName}:${matcher.name}`
 
