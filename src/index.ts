@@ -119,6 +119,20 @@ class TmuxMonitor {
   private broadcast(message: any) {
     if (!this.websocketEnabled) return
 
+    if (message.type === 'update') {
+      console.log(
+        `[${new Date().toISOString()}] Broadcasting update: ${message.sessionName}:${message.windowName}`,
+      )
+    } else if (message.type === 'control-state') {
+      console.log(
+        `[${new Date().toISOString()}] Broadcasting control-state: ${message.sessionName} (${message.isHumanControlled ? 'Human' : 'Agent'})`,
+      )
+    } else if (message.type === 'matcher-executed') {
+      console.log(
+        `[${new Date().toISOString()}] Broadcasting matcher-executed: ${message.matcherName} for ${message.sessionName}:${message.windowName}`,
+      )
+    }
+
     const messageStr = JSON.stringify(message)
     this.clients.forEach(client => {
       if (client.readyState === WebSocket.OPEN) {
@@ -206,9 +220,6 @@ class TmuxMonitor {
 
         if (isHumanControlled !== wasHumanControlled) {
           this.controlStateCache.set(sessionName, isHumanControlled)
-          console.log(
-            `[${new Date().toISOString()}] Control state changed for ${sessionName}: ${isHumanControlled ? 'Human' : 'Agent'}`,
-          )
 
           this.broadcast({
             type: 'control-state',
@@ -289,16 +300,13 @@ class TmuxMonitor {
         needsBroadcast = true
         this.checksumCache.set(cacheKey, checksum)
         console.log(
-          `[${new Date().toISOString()}] Updated: ${sessionName}:${windowName} (checksum: ${checksum})`,
+          `[${new Date().toISOString()}] Window content changed: ${sessionName}:${windowName}`,
         )
       } else {
         for (const client of this.clients) {
           const sentWindows = this.clientSentWindows.get(client)
           if (sentWindows && !sentWindows.has(windowKey)) {
             needsBroadcast = true
-            console.log(
-              `[${new Date().toISOString()}] Sending initial content for ${sessionName}:${windowName} to new client`,
-            )
             break
           }
         }
@@ -317,36 +325,15 @@ class TmuxMonitor {
       if (checksum !== previousChecksum && windowName === 'work') {
         const cleanedContent = cleanContent(rawContent)
 
-        console.log(
-          `[${new Date().toISOString()}] Captured content from ${sessionName}:${windowName}:\n---\n${cleanedContent}\n---`,
-        )
-
         const cleanedLines = cleanedContent.split('\n')
 
         for (const matcher of MATCHERS) {
-          if (matcher.name === 'ensure-plan-mode') {
-            console.log(
-              `[${new Date().toISOString()}] Checking ensure-plan-mode matcher for ${sessionName}:${windowName}`,
-            )
-            console.log(`  Pattern: ${JSON.stringify(matcher.trigger)}`)
-            console.log(
-              `  Last 3 lines of content: ${JSON.stringify(cleanedLines.slice(-3))}`,
-            )
-          }
-
           const patternMatches = matchesPattern(cleanedLines, matcher.trigger)
-
-          if (matcher.name === 'ensure-plan-mode') {
-            console.log(`  Pattern matches: ${patternMatches}`)
-          }
 
           if (windowName === matcher.windowName && patternMatches) {
             const matcherKey = `${sessionName}:${windowName}:${matcher.name}`
 
             if (matcher.runOnce && this.executedMatchers.has(matcherKey)) {
-              if (matcher.name === 'ensure-plan-mode') {
-                console.log(`  Skipping (already executed)`)
-              }
               continue
             }
 
@@ -363,14 +350,6 @@ class TmuxMonitor {
               matcherName: matcher.name,
               timestamp: new Date().toISOString(),
             })
-
-            console.log(
-              `[${new Date().toISOString()}] Executed matcher '${matcher.name}' for ${sessionName}:${windowName}`,
-            )
-
-            if (matcher.name === 'ensure-plan-mode') {
-              console.log('ENSURE-PLAN-MODE MATCHED AND EXECUTED!')
-            }
           }
         }
       }
@@ -451,9 +430,6 @@ class TmuxMonitor {
           )
         } else if (part.type === 'key') {
           const tmuxKey = this.convertToTmuxKey(part.value)
-          console.log(
-            `[${new Date().toISOString()}] Sending special key: ${part.value} -> ${tmuxKey}`,
-          )
           execSync(
             `tmux -S ${TMUX_SOCKET_PATH} send-keys -t ${sessionName}:${windowName} ${tmuxKey}`,
             { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
@@ -466,9 +442,6 @@ class TmuxMonitor {
             })
           }
         } else if (part.type === 'command') {
-          console.log(
-            `[${new Date().toISOString()}] Executing tmux command: ${part.value}`,
-          )
           if (part.value === 'paste-buffer') {
             execSync(
               `tmux -S ${TMUX_SOCKET_PATH} paste-buffer -t ${sessionName}:${windowName}`,
@@ -489,10 +462,6 @@ class TmuxMonitor {
         )
       }
     }
-
-    console.log(
-      `[${new Date().toISOString()}] Sent response '${response}' to ${sessionName}:${windowName}`,
-    )
   }
 
   private convertToTmuxKey(keyName: string): string {
@@ -555,9 +524,6 @@ class TmuxMonitor {
           execSync(
             `tmux -S ${TMUX_SOCKET_PATH} resize-window -t ${sessionName}:${windowName} -x 80 -y 24`,
             { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'ignore'] },
-          )
-          console.log(
-            `[${new Date().toISOString()}] Resized window ${sessionName}:${windowName} to 80x24`,
           )
         } catch (error) {
           console.error(
