@@ -8,10 +8,8 @@ import os from 'os'
 import fs from 'fs'
 import type { LibSQLDatabase } from 'drizzle-orm/libsql'
 
-// Default database path for backward compatibility
 const DEFAULT_DB_PATH = path.join(os.homedir(), '.control', 'cli.db')
 
-// Database connections cache
 const dbConnections = new Map<string, LibSQLDatabase<typeof schema>>()
 
 function ensureDbDirectory(dbPath: string) {
@@ -24,26 +22,22 @@ function ensureDbDirectory(dbPath: string) {
 export function getDbConnection(
   dbPath: string = DEFAULT_DB_PATH,
 ): LibSQLDatabase<typeof schema> {
-  // Check if we already have a connection for this path
   const existingDb = dbConnections.get(dbPath)
   if (existingDb) {
     return existingDb
   }
 
-  // Create new connection
   ensureDbDirectory(dbPath)
   const client = createClient({
     url: `file:${dbPath}`,
   })
   const newDb = drizzle(client, { schema })
 
-  // Cache the connection
   dbConnections.set(dbPath, newDb)
 
   return newDb
 }
 
-// Default db instance for backward compatibility
 export const db = getDbConnection()
 
 export function runMigrations(dbPath?: string) {
