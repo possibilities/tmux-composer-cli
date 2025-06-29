@@ -24,6 +24,7 @@ export class TmuxAutomatorNew {
   private hasDisplayedInitialList = false
   private claudeCheckInterval: NodeJS.Timeout | null = null
   private isCheckingClaude = false
+  private claudeCheckResults = new Map<string, boolean>()
 
   constructor(eventBus: EventBus, options: AutomateNewOptions = {}) {
     this.eventBus = eventBus
@@ -160,6 +161,8 @@ export class TmuxAutomatorNew {
       // Don't display window list if we're just checking for claude
       if (this.isCheckingClaude) {
         this.isCheckingClaude = false
+        // Process the claude check results
+        this.processClaudeCheckResults()
         return
       }
       // Display window list after command output if we have windows
@@ -233,17 +236,10 @@ export class TmuxAutomatorNew {
         if (checkMatch) {
           const [_, sessionName, windowIndex, command] = checkMatch
           const key = `${sessionName}:${windowIndex}`
-          const existingWindow = this.windows.get(key)
 
-          if (existingWindow) {
-            const hadClaude = existingWindow.hasClaude
-            const hasClaude = command === 'claude' || hadClaude
-
-            if (hasClaude !== hadClaude) {
-              // Claude status changed, update and redisplay
-              this.windows.set(key, { ...existingWindow, hasClaude })
-              this.displayWindowList()
-            }
+          // Mark that this window has claude if the command is claude
+          if (command === 'claude') {
+            this.claudeCheckResults.set(key, true)
           }
         }
       } else {
@@ -307,6 +303,26 @@ export class TmuxAutomatorNew {
     }
   }
 
+  private processClaudeCheckResults() {
+    let hasChanges = false
+
+    // Update all windows based on check results
+    for (const [key, window] of this.windows) {
+      const hadClaude = window.hasClaude
+      const hasClaude = this.claudeCheckResults.has(key)
+
+      if (hasClaude !== hadClaude) {
+        this.windows.set(key, { ...window, hasClaude })
+        hasChanges = true
+      }
+    }
+
+    // Only redisplay if something changed
+    if (hasChanges) {
+      this.displayWindowList()
+    }
+  }
+
   private startClaudeChecking() {
     if (this.claudeCheckInterval) {
       clearInterval(this.claudeCheckInterval)
@@ -346,7 +362,8 @@ export class TmuxAutomatorNew {
       }, 3000)
     }
 
-    // Request updated pane info to check for claude
+    // Clear previous results and request updated pane info to check for claude
+    this.claudeCheckResults.clear()
     this.isCheckingClaude = true
     this.controlModeProcess.stdin.write(
       'list-panes -a -F "CHECK #{session_name}:#{window_index} #{pane_current_command}"\n',
