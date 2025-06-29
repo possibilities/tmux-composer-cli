@@ -48,7 +48,7 @@ export class TmuxAutomator {
   private claudeSeenWindows = new Set<string>()
   private checkedPanes = new Set<string>()
   private lastClaudeCheck = 0
-  private readonly CLAUDE_CHECK_INTERVAL = 1000
+  private readonly CLAUDE_CHECK_INTERVAL = 500
 
   constructor(eventBus: EventBus, options: AutomateTmuxOptions = {}) {
     this.eventBus = eventBus
