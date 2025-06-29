@@ -135,10 +135,13 @@ export class TmuxAutomatorNew {
       return
     } else if (parts[0] === '%end') {
       this.inCommandOutput = false
-      // Only display initial list once
-      if (this.windows.size > 0 && !this.hasDisplayedInitialList) {
+      // Display window list after command output if we have windows
+      if (this.windows.size > 0) {
+        // On startup, only display once
+        if (!this.hasDisplayedInitialList) {
+          this.hasDisplayedInitialList = true
+        }
         this.displayWindowList()
-        this.hasDisplayedInitialList = true
       }
       return
     }
@@ -147,7 +150,11 @@ export class TmuxAutomatorNew {
       // Format: %window-add @window_id
       const windowId = parts[1]
       // During startup, this is just the initial window being added
-      // The full window list will be displayed after the initial list-windows command completes
+      // After startup, refresh the window list to include the new window
+      if (this.hasDisplayedInitialList) {
+        console.log(`Window added: ${windowId}`)
+        this.refreshWindowList()
+      }
     } else if (parts[0] === '%window-close') {
       // Format: %window-close @window_id
       const windowId = parts[1]
@@ -221,6 +228,7 @@ export class TmuxAutomatorNew {
       this.controlModeProcess.stdin.write(
         'list-windows -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}]"\n',
       )
+      // The window list will be displayed when the %end marker is received
     }
   }
 
