@@ -9,7 +9,7 @@ import { TERMINAL_SIZES } from '../core/constants.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 describe('Matcher mechanism', () => {
-  TERMINAL_SIZES.forEach(terminalSize => {
+  Object.entries(TERMINAL_SIZES).forEach(([sizeName, terminalSize]) => {
     describe(`Terminal size ${terminalSize.width}x${terminalSize.height}`, () => {
       MATCHERS.forEach(matcher => {
         it(`should match ${matcher.name} pattern`, () => {

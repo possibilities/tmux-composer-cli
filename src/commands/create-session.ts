@@ -13,11 +13,7 @@ import {
   CODE_PATH,
   WORKTREES_PATH,
 } from '../core/git-utils.js'
-import {
-  ControlConfig,
-  BIG_TERMINAL_WIDTH,
-  BIG_TERMINAL_HEIGHT,
-} from '../core/constants.js'
+import { ControlConfig, TERMINAL_SIZES } from '../core/constants.js'
 import { saveSession, saveWindow } from '../db/index.js'
 import type { NewSession, NewWindow } from '../db/schema.js'
 
@@ -204,9 +200,9 @@ export class SessionCreator {
           '-c',
           worktreePath,
           '-x',
-          String(terminalWidth || BIG_TERMINAL_WIDTH),
+          String(terminalWidth || TERMINAL_SIZES.big.width),
           '-y',
-          String(terminalHeight || BIG_TERMINAL_HEIGHT),
+          String(terminalHeight || TERMINAL_SIZES.big.height),
         ],
         {
           detached: true,

@@ -2,7 +2,7 @@ import { execSync, exec } from 'child_process'
 import { promisify } from 'util'
 import { getTmuxSocketString } from './tmux-socket.js'
 import type { TmuxSocketOptions } from './tmux-socket.js'
-import { BIG_TERMINAL_WIDTH, BIG_TERMINAL_HEIGHT } from './constants.js'
+import { TERMINAL_SIZES } from './constants.js'
 
 const execAsync = promisify(exec)
 
@@ -110,8 +110,8 @@ export function hasBufferContent(
 export async function resizeWindow(
   sessionName: string,
   windowName: string,
-  width: number = BIG_TERMINAL_WIDTH,
-  height: number = BIG_TERMINAL_HEIGHT,
+  width: number = TERMINAL_SIZES.big.width,
+  height: number = TERMINAL_SIZES.big.height,
   socketOptions: TmuxSocketOptions = {},
 ) {
   const socketArgs = getTmuxSocketString(socketOptions)

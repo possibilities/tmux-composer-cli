@@ -2,13 +2,10 @@ export const POLL_INTERVAL = 500
 export const MAX_CHECKSUM_CACHE_SIZE = 1000
 export const AUTOMATION_PAUSE_MS = 500
 
-export const BIG_TERMINAL_WIDTH = 80
-export const BIG_TERMINAL_HEIGHT = 24
-
-export const TERMINAL_SIZES = [
-  { width: 80, height: 24, name: 'big' },
-  { width: 50, height: 24, name: 'small' },
-]
+export const TERMINAL_SIZES = {
+  big: { width: 80, height: 24 },
+  small: { width: 50, height: 24 },
+}
 
 export interface ControlConfig {
   name?: string
