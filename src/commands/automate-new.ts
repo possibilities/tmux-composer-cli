@@ -25,6 +25,7 @@ export class TmuxAutomatorNew {
   private claudeCheckInterval: NodeJS.Timeout | null = null
   private isCheckingClaude = false
   private claudeCheckResults = new Map<string, boolean>()
+  private paneToWindowMap = new Map<string, string>()
 
   constructor(eventBus: EventBus, options: AutomateNewOptions = {}) {
     this.eventBus = eventBus
@@ -59,6 +60,7 @@ export class TmuxAutomatorNew {
           // Clear window data on disconnect
           this.windows.clear()
           this.windowIdMap.clear()
+          this.paneToWindowMap.clear()
           this.hasDisplayedInitialList = false
           // Stop claude checking
           if (this.claudeCheckInterval) {
@@ -79,6 +81,7 @@ export class TmuxAutomatorNew {
         // Clear any stale data before reconnecting
         this.windows.clear()
         this.windowIdMap.clear()
+        this.paneToWindowMap.clear()
         this.hasDisplayedInitialList = false
         await this.connectControlMode()
       }
@@ -122,6 +125,7 @@ export class TmuxAutomatorNew {
       // Clear window data when control mode closes
       this.windows.clear()
       this.windowIdMap.clear()
+      this.paneToWindowMap.clear()
       this.hasDisplayedInitialList = false
       // Stop claude checking
       if (this.claudeCheckInterval) {
@@ -142,7 +146,7 @@ export class TmuxAutomatorNew {
 
     // Request list of all windows with window IDs and pane info
     this.controlModeProcess.stdin.write(
-      'list-panes -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}] #{pane_pid} #{pane_current_command}"\n',
+      'list-panes -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}] %#{pane_id} #{pane_pid} #{pane_current_command}"\n',
     )
 
     // Start periodic claude checking
@@ -227,7 +231,17 @@ export class TmuxAutomatorNew {
       // Sessions list changed, refresh windows
       this.refreshWindowList()
     } else if (parts[0] === '%output') {
-      // Skip terminal output from panes
+      // Format: %output %pane_id content
+      if (parts.length >= 2) {
+        const paneId = parts[1]
+        const windowKey = this.paneToWindowMap.get(paneId)
+        if (windowKey) {
+          const window = this.windows.get(windowKey)
+          if (window) {
+            console.log(`[${window.name}]`)
+          }
+        }
+      }
       return
     } else if (this.inCommandOutput && !parts[0].startsWith('%')) {
       // Check if this is a claude status check
@@ -244,8 +258,10 @@ export class TmuxAutomatorNew {
         }
       } else {
         // This is pane list output from list-panes command
-        // Format: session:index: name [@@window_id] pid command
-        const match = line.match(/^([^:]+):(\d+): (.+) \[@@(\d+)\] (\d+) (.+)$/)
+        // Format: session:index: name [@@window_id] %%pane_id pid command
+        const match = line.match(
+          /^([^:]+):(\d+): (.+) \[@@(\d+)\] (%%\d+) (\d+) (.+)$/,
+        )
         if (match) {
           const [
             _,
@@ -253,10 +269,14 @@ export class TmuxAutomatorNew {
             windowIndex,
             windowName,
             windowId,
+            paneId,
             pid,
             command,
           ] = match
           const key = `${sessionName}:${windowIndex}`
+
+          // Map pane ID to window key
+          this.paneToWindowMap.set(paneId, key)
 
           // Check if this pane or window already exists
           const existingWindow = this.windows.get(key)
@@ -296,8 +316,9 @@ export class TmuxAutomatorNew {
       // Clear existing data before refresh
       this.windows.clear()
       this.windowIdMap.clear()
+      this.paneToWindowMap.clear()
       this.controlModeProcess.stdin.write(
-        'list-panes -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}] #{pane_pid} #{pane_current_command}"\n',
+        'list-panes -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}] %#{pane_id} #{pane_pid} #{pane_current_command}"\n',
       )
       // The window list will be displayed when the %end marker is received
     }
