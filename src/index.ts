@@ -16,11 +16,16 @@ async function main() {
     .description('Control CLI')
     .version(packageJson.version)
 
-  const automateCommand = program
-    .command('automate-claude')
+  // Claude command with automate subcommand
+  const claudeCommand = program
+    .command('claude')
+    .description('Claude-related commands')
+
+  const automateCommand = claudeCommand
+    .command('automate')
     .description('Monitor and automate Claude interactions in tmux sessions')
-    .option('-L <socket-name>', 'Use a different tmux socket name')
-    .option('-S <socket-path>', 'Use a different tmux socket path')
+    .option('-L <socket-name>', 'Tmux socket name')
+    .option('-S <socket-path>', 'Tmux socket path')
 
   // Dynamically add skip options for each matcher
   for (const matcher of MATCHERS) {
@@ -87,13 +92,17 @@ async function main() {
       })
     })
 
-  program
-    .command('create-session <project-path>')
+  // Session command with create subcommand
+  const sessionCommand = program
+    .command('session')
+    .description('Session management commands')
+
+  sessionCommand
+    .command('create <project-path>')
     .description('Create a new tmux session with git worktree')
-    .option('--project-name <name>', 'Override project name')
     .option('--mode <mode>', 'Session mode (act or plan)', 'act')
-    .option('-L <socket-name>', 'Use a different tmux socket name')
-    .option('-S <socket-path>', 'Use a different tmux socket path')
+    .option('-L <socket-name>', 'Tmux socket name')
+    .option('-S <socket-path>', 'Tmux socket path')
     .addOption(
       new Option('--skip-migrations', 'Skip database migrations').hideHelp(),
     )
@@ -121,7 +130,6 @@ async function main() {
 
       try {
         await creator.create(projectPath, {
-          projectName: options.projectName,
           mode: options.mode,
           ...socketOptions,
         })
@@ -136,8 +144,8 @@ async function main() {
   program
     .command('run-migrations', { hidden: true })
     .description('Run database migrations')
-    .option('-L <socket-name>', 'Use a different tmux socket name')
-    .option('-S <socket-path>', 'Use a different tmux socket path')
+    .option('-L <socket-name>', 'Tmux socket name')
+    .option('-S <socket-path>', 'Tmux socket path')
     .action(async options => {
       const socketOptions: TmuxSocketOptions = {
         socketName: options.L,

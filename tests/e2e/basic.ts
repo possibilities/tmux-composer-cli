@@ -290,10 +290,9 @@ function createSession(projectPath: string, additionalArgs: string[] = []) {
       'node',
       [
         join(__dirname, '..', '..', 'dist', 'cli.js'),
-        'create-session',
+        'session',
+        'create',
         projectPath,
-        '--project-name',
-        'test-project',
         '-L',
         SOCKET_NAME,
         '--skip-migrations',
@@ -405,7 +404,8 @@ async function startAutomateClaude(additionalArgs: string[]) {
       'node',
       [
         join(__dirname, '..', '..', 'dist', 'cli.js'),
-        'automate-claude',
+        'claude',
+        'automate',
         '-L',
         SOCKET_NAME,
         '--skip-migrations',
@@ -441,7 +441,7 @@ async function startAutomateClaude(additionalArgs: string[]) {
         }
         console.error('Command was:')
         console.error(
-          `  node ${join(__dirname, '..', '..', 'dist', 'cli.js')} automate-claude -L ${SOCKET_NAME} --skip-migrations ${additionalArgs.join(' ')}`,
+          `  node ${join(__dirname, '..', '..', 'dist', 'cli.js')} claude automate -L ${SOCKET_NAME} --skip-migrations ${additionalArgs.join(' ')}`,
         )
         console.error('='.repeat(60) + '\n')
         cleanupProcesses()

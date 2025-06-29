@@ -22,7 +22,6 @@ import { saveSession, saveWindow } from '../db/index.js'
 import type { NewSession, NewWindow } from '../db/schema.js'
 
 interface CreateSessionOptions extends TmuxSocketOptions {
-  projectName?: string
   mode?: 'act' | 'plan'
 }
 
@@ -45,7 +44,7 @@ export class SessionCreator {
   }
 
   async create(projectPath: string, options: CreateSessionOptions = {}) {
-    const projectName = options.projectName || path.basename(projectPath)
+    const projectName = path.basename(projectPath)
     const worktreeNum = getNextWorktreeNumber(projectName)
     const sessionName = `${projectName}-worktree-${worktreeNum}`
 
