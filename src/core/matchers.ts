@@ -59,4 +59,11 @@ export const MATCHERS: Matcher[] = [
     runOnce: false,
     mode: 'all',
   },
+  {
+    name: 'dismiss-read-file-confirmation',
+    trigger: ['Read files', 'Do you want to proceed', '1. Yes'],
+    response: '1',
+    runOnce: false,
+    mode: 'all',
+  },
 ]

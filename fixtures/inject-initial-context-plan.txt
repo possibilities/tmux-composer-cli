@@ -1,6 +1,3 @@
-│                                                                              │
-╰──────────────────────────────────────────────────────────────────────────────╯
-   Enter to confirm · Esc to exit
 ╭─────────────────────────────────────────────────────────────╮
 │ ✻ Welcome to Claude Code!                                   │
 │                                                             │
@@ -15,8 +12,11 @@
  2. Use Claude to help with file analysis, editing, bash commands and git
  3. Be as specific as you would with another engineer for the best results
 
+ ※ Tip: Want Claude to remember something? Hit # to add preferences, tools, and
+ instructions to Claude's memory
+
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "fix typecheck errors"                                                 │
+│ > Try "fix lint errors"                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

@@ -16,7 +16,7 @@
  3. Be as specific as you would with another engineer for the best results
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "refactor <filepath>"                                                  │
+│ > Try "fix typecheck errors"                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
 

@@ -1,23 +1,23 @@
- ※ Tip: Did you know you can drag and drop image files into your terminal?
+ 3. Be as specific as you would with another engineer for the best results
 
-> Run 'ls -lsa /tmp' in the current directory
+ ※ Tip: Press Esc twice to edit your previous messages
 
-● I'll run the ls -lsa /tmp command for you.
+> Read the file '/tmp/control-e2e-basic-date1.txt' and show he content
 
-● Bash(ls -lsa /tmp)
-  ⎿  Running…
+● I'll read the file and show you its content.
+
+● Read(../../../../../tmp/control-e2e-basic-date1.txt)
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ Bash command                                                                 │
+│ Read files                                                                   │
 │                                                                              │
-│   ls -lsa /tmp                                                               │
-│   List all files in /tmp with details                                        │
+│   Read(../../../../../tmp/control-e2e-basic-date1.txt)                       │
 │                                                                              │
 │ Do you want to proceed?                                                      │
 │ ❯ 1. Yes                                                                     │
-│   2. Yes, and don't ask again for ls commands in                             │
-│   /home/mike/code/worktrees/test-project-worktree-006                        │
+│   2. Yes, and add /tmp as a working directory for this session               │
 │   3. No, and tell Claude what to do differently (esc)                        │
+│                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 

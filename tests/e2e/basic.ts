@@ -107,6 +107,21 @@ const TEST_RUNS = [
         plan: echo "Run 'ls -lsa /tmp' in the current directory"
     `,
   },
+  {
+    automateClaudeArguments: ['--skip-dismiss-read-file-confirmation'],
+    createSessionArguments: [],
+    mode: 'act' as const,
+    fixtureFileName: 'dismiss-read-file-confirmation.txt',
+    configFile: dedent`
+      name: read-file-test-project
+      agents:
+        act: claude
+        plan: claude
+      context:
+        act: echo "Read the file '/tmp/control-e2e-basic-date1.txt' and show he content"
+        plan: echo "Read the file '/tmp/control-e2e-basic-date1.txt' and show he content"
+    `,
+  },
 ]
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -258,6 +273,9 @@ function createTempProject(configContent: string): string {
   execSync('git commit -m "Initial commit"', { cwd: tempDir })
 
   console.error('Git repository initialized and committed')
+
+  execSync('date > /tmp/control-e2e-basic-date1.txt')
+  console.error('Created temp files with timestamps in /tmp')
 
   return tempDir
 }

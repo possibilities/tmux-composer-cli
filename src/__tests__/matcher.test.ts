@@ -42,4 +42,7 @@ describe('Matcher mechanism', () => {
   it('should match dismiss-run-command-confirmation pattern', () => {
     testMatcherPattern('dismiss-run-command-confirmation')
   })
+  it('should match dismiss-read-file-confirmation pattern', () => {
+    testMatcherPattern('dismiss-read-file-confirmation')
+  })
 })
