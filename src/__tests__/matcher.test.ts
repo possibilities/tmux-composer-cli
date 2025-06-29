@@ -7,102 +7,39 @@ import { MATCHERS } from '../core/matchers.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+function testMatcherPattern(matcherName: string) {
+  const fixturePath = join(__dirname, '../../fixtures', `${matcherName}.txt`)
+  const tmuxOutput = readFileSync(fixturePath, 'utf-8')
+
+  const matcher = MATCHERS.find(m => m.name === matcherName)
+  if (!matcher) {
+    throw new Error(`${matcherName} matcher not found`)
+  }
+
+  const cleanedContent = cleanContent(tmuxOutput)
+  const contentLines = cleanedContent.split('\n')
+  const result = matchesPattern(contentLines, matcher.trigger)
+
+  expect(result).toBe(true)
+}
+
 describe('Matcher mechanism', () => {
   it('should match dismiss-trust-folder-confirmation pattern', () => {
-    const fixturePath = join(
-      __dirname,
-      '../../fixtures/dismiss-trust-folder-confirmation.txt',
-    )
-    const tmuxOutput = readFileSync(fixturePath, 'utf-8')
-
-    const folderIsTrustedMatcher = MATCHERS.find(
-      m => m.name === 'dismiss-trust-folder-confirmation',
-    )
-    if (!folderIsTrustedMatcher) {
-      throw new Error('dismiss-trust-folder-confirmation matcher not found')
-    }
-
-    const cleanedContent = cleanContent(tmuxOutput)
-    const contentLines = cleanedContent.split('\n')
-    const result = matchesPattern(contentLines, folderIsTrustedMatcher.trigger)
-
-    expect(result).toBe(true)
+    testMatcherPattern('dismiss-trust-folder-confirmation')
   })
-
   it('should match ensure-plan-mode pattern', () => {
-    const fixturePath = join(__dirname, '../../fixtures/ensure-plan-mode.txt')
-    const tmuxOutput = readFileSync(fixturePath, 'utf-8')
-    const ensurePlanModeMatcher = MATCHERS.find(
-      m => m.name === 'ensure-plan-mode',
-    )
-    if (!ensurePlanModeMatcher) {
-      throw new Error('ensure-plan-mode matcher not found')
-    }
-
-    const cleanedContent = cleanContent(tmuxOutput)
-    const contentLines = cleanedContent.split('\n')
-    const result = matchesPattern(contentLines, ensurePlanModeMatcher.trigger)
-
-    expect(result).toBe(true)
+    testMatcherPattern('ensure-plan-mode')
   })
-
   it('should match inject-initial-context-plan pattern', () => {
-    const fixturePath = join(
-      __dirname,
-      '../../fixtures/inject-initial-context-plan.txt',
-    )
-    const tmuxOutput = readFileSync(fixturePath, 'utf-8')
-    const planModeOnMatcher = MATCHERS.find(
-      m => m.name === 'inject-initial-context-plan',
-    )
-    if (!planModeOnMatcher) {
-      throw new Error('inject-initial-context-plan matcher not found')
-    }
-
-    const cleanedContent = cleanContent(tmuxOutput)
-    const contentLines = cleanedContent.split('\n')
-    const result = matchesPattern(contentLines, planModeOnMatcher.trigger)
-
-    expect(result).toBe(true)
+    testMatcherPattern('inject-initial-context-plan')
   })
-
   it('should match dismiss-create-file-confirmation pattern', () => {
-    const fixturePath = join(
-      __dirname,
-      '../../fixtures/dismiss-create-file-confirmation.txt',
-    )
-    const tmuxOutput = readFileSync(fixturePath, 'utf-8')
-    const planModeOnMatcher = MATCHERS.find(
-      m => m.name === 'dismiss-create-file-confirmation',
-    )
-    if (!planModeOnMatcher) {
-      throw new Error('dismiss-create-file-confirmation matcher not found')
-    }
-
-    const cleanedContent = cleanContent(tmuxOutput)
-    const contentLines = cleanedContent.split('\n')
-    const result = matchesPattern(contentLines, planModeOnMatcher.trigger)
-
-    expect(result).toBe(true)
+    testMatcherPattern('dismiss-create-file-confirmation')
   })
-
   it('should match dismiss-edit-file-confirmation pattern', () => {
-    const fixturePath = join(
-      __dirname,
-      '../../fixtures/dismiss-edit-file-confirmation.txt',
-    )
-    const tmuxOutput = readFileSync(fixturePath, 'utf-8')
-    const planModeOnMatcher = MATCHERS.find(
-      m => m.name === 'dismiss-edit-file-confirmation',
-    )
-    if (!planModeOnMatcher) {
-      throw new Error('dismiss-edit-file-confirmation matcher not found')
-    }
-
-    const cleanedContent = cleanContent(tmuxOutput)
-    const contentLines = cleanedContent.split('\n')
-    const result = matchesPattern(contentLines, planModeOnMatcher.trigger)
-
-    expect(result).toBe(true)
+    testMatcherPattern('dismiss-edit-file-confirmation')
+  })
+  it('should match dismiss-run-command-confirmation pattern', () => {
+    testMatcherPattern('dismiss-run-command-confirmation')
   })
 })
