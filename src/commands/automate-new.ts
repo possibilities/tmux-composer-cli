@@ -23,6 +23,7 @@ export class TmuxAutomatorNew {
   private inCommandOutput = false
   private hasDisplayedInitialList = false
   private claudeCheckInterval: NodeJS.Timeout | null = null
+  private isCheckingClaude = false
 
   constructor(eventBus: EventBus, options: AutomateNewOptions = {}) {
     this.eventBus = eventBus
@@ -156,6 +157,11 @@ export class TmuxAutomatorNew {
       return
     } else if (parts[0] === '%end') {
       this.inCommandOutput = false
+      // Don't display window list if we're just checking for claude
+      if (this.isCheckingClaude) {
+        this.isCheckingClaude = false
+        return
+      }
       // Display window list after command output if we have windows
       if (this.windows.size > 0) {
         // On startup, only display once
@@ -341,6 +347,7 @@ export class TmuxAutomatorNew {
     }
 
     // Request updated pane info to check for claude
+    this.isCheckingClaude = true
     this.controlModeProcess.stdin.write(
       'list-panes -a -F "CHECK #{session_name}:#{window_index} #{pane_current_command}"\n',
     )
