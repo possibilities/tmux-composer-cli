@@ -20,7 +20,6 @@ async function main() {
     .description('Monitor and automate Claude interactions in tmux sessions')
     .option('-L <socket-name>', 'Use a different tmux socket name')
     .option('-S <socket-path>', 'Use a different tmux socket path')
-    .option('--poll-interval <ms>', 'Polling interval in milliseconds', '500')
     .option('--skip-trust-folder', 'Skip the "trust folder" matcher')
     .option('--skip-ensure-plan-mode', 'Skip the "ensure plan mode" matcher')
     .option(
@@ -54,7 +53,6 @@ async function main() {
         eventBus,
         {
           ...socketOptions,
-          pollInterval: parseInt(options.pollInterval, 10),
           skipTrustFolder: options.skipTrustFolder,
           skipEnsurePlanMode: options.skipEnsurePlanMode,
           skipInjectInitialContext: options.skipInjectInitialContext,

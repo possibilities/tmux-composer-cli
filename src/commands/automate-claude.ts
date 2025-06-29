@@ -32,7 +32,6 @@ import {
 } from '../core/constants.js'
 
 interface AutomateTmuxOptions extends TmuxSocketOptions {
-  pollInterval?: number
   skipTrustFolder?: boolean
   skipEnsurePlanMode?: boolean
   skipInjectInitialContext?: boolean
@@ -49,7 +48,6 @@ export class TmuxAutomator {
   private lastSocketState = false
   private eventBus: EventBus
   private socketOptions: TmuxSocketOptions
-  private pollInterval: number
   private claudeWindowsCache = new Set<string>()
   private claudeSeenWindows = new Set<string>()
   private checkedPanes = new Set<string>()
@@ -70,7 +68,6 @@ export class TmuxAutomator {
       socketName: options.socketName,
       socketPath: options.socketPath,
     }
-    this.pollInterval = options.pollInterval || POLL_INTERVAL
     this.skipTrustFolder = options.skipTrustFolder || false
     this.skipEnsurePlanMode = options.skipEnsurePlanMode || false
     this.skipInjectInitialContext = options.skipInjectInitialContext || false
@@ -87,7 +84,6 @@ export class TmuxAutomator {
       } else {
         console.log(`Using default socket`)
       }
-      console.log(`Poll interval: ${this.pollInterval}ms`)
     }
 
     setInterval(() => {
@@ -98,7 +94,7 @@ export class TmuxAutomator {
           error: error instanceof Error ? error : new Error(String(error)),
         })
       })
-    }, this.pollInterval)
+    }, POLL_INTERVAL)
 
     this.pollAllWindows().catch(error => {
       this.eventBus.emitEvent({
