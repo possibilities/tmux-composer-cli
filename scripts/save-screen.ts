@@ -2,17 +2,34 @@
 
 import { execSync, spawn } from 'child_process'
 import type { ChildProcess } from 'child_process'
-import { mkdtempSync } from 'fs'
-import { tmpdir } from 'os'
+import { mkdtempSync, readdirSync, rmSync, existsSync } from 'fs'
+import { tmpdir, homedir } from 'os'
 import { join, dirname } from 'path'
 import { createHash } from 'crypto'
 import { fileURLToPath } from 'url'
+import { createClient } from '@libsql/client'
+import { drizzle } from 'drizzle-orm/libsql'
+import { sql } from 'drizzle-orm'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const SOCKET_NAME = 'control-test-instance'
 const STABILITY_WAIT_MS = 1000
 const POLL_INTERVAL_MS = 100
+const WORKTREES_PATH = join(homedir(), 'code', 'worktrees')
+const DB_PATH = join(homedir(), '.control', 'cli.db')
+
+// Define the different automate-claude flag configurations for each iteration
+const AUTOMATE_CLAUDE_CONFIGS = [
+  [
+    '--skip-trust-folder',
+    '--skip-ensure-plan-mode',
+    '--skip-inject-initial-context',
+  ],
+  ['--skip-ensure-plan-mode', '--skip-inject-initial-context'],
+  ['--skip-inject-initial-context'],
+  [],
+]
 
 let actualSessionName = ''
 let workWindowIndex = ''
@@ -211,40 +228,10 @@ async function waitForStableScreen(): Promise<string> {
   }
 }
 
-async function main() {
-  console.error('Starting save-screen script...')
-
-  // Register cleanup handlers
-  process.on('exit', () => {
-    cleanupProcesses()
-  })
-
-  process.on('SIGINT', () => {
-    console.error('\nReceived SIGINT, cleaning up...')
-    cleanupProcesses()
-    process.exit(1)
-  })
-
-  process.on('SIGTERM', () => {
-    console.error('\nReceived SIGTERM, cleaning up...')
-    cleanupProcesses()
-    process.exit(1)
-  })
-
-  process.on('uncaughtException', error => {
-    console.error('Uncaught exception:', error)
-    cleanupProcesses()
-    process.exit(1)
-  })
-
-  // Kill any existing test instance
-  killExistingSession()
-
-  // Create temp project
-  const projectPath = createTempProject()
-
-  // Start automate-claude process
+async function startAutomateClaude(additionalArgs: string[]) {
   console.error('Starting automate-claude process...')
+  console.error('Additional args:', additionalArgs)
+
   automateClaudeProcess = spawn(
     'node',
     [
@@ -252,6 +239,7 @@ async function main() {
       'automate-claude',
       '-L',
       SOCKET_NAME,
+      ...additionalArgs,
     ],
     {
       stdio: 'inherit',
@@ -267,6 +255,26 @@ async function main() {
   automateClaudeProcess.on('exit', code => {
     console.error(`automate-claude exited with code ${code}`)
   })
+}
+
+async function runIteration(iterationNumber: number, additionalArgs: string[]) {
+  console.log(`\n${'='.repeat(60)}`)
+  console.log(
+    `=== Iteration ${iterationNumber} of ${AUTOMATE_CLAUDE_CONFIGS.length} ===`,
+  )
+  console.log(
+    `Flags: ${additionalArgs.length > 0 ? additionalArgs.join(' ') : '(none)'}`,
+  )
+  console.log(`${'='.repeat(60)}\n`)
+
+  // Kill any existing test instance
+  killExistingSession()
+
+  // Create temp project
+  const projectPath = createTempProject()
+
+  // Start automate-claude process with iteration-specific flags
+  await startAutomateClaude(additionalArgs)
 
   // Create the session
   await createSession(projectPath)
@@ -306,12 +314,119 @@ async function main() {
   const screenContent = await waitForStableScreen()
 
   // Output to stdout
+  console.log(`\n--- Screen output for iteration ${iterationNumber} ---`)
   console.log(screenContent)
+  console.log(`--- End of iteration ${iterationNumber} ---\n`)
 
   // Clean up
   cleanupProcesses()
   killExistingSession()
-  console.error('Done!')
+
+  // Reset variables for next iteration
+  actualSessionName = ''
+  workWindowIndex = ''
+}
+
+function cleanupTestProjectWorktrees() {
+  console.error('Cleaning up test-project worktrees...')
+  try {
+    const dirs = readdirSync(WORKTREES_PATH)
+    const testWorktrees = dirs.filter(dir =>
+      dir.startsWith('test-project-worktree-'),
+    )
+
+    for (const dir of testWorktrees) {
+      const worktreePath = join(WORKTREES_PATH, dir)
+      try {
+        rmSync(worktreePath, { recursive: true, force: true })
+        console.error(`Deleted worktree: ${dir}`)
+      } catch (error) {
+        console.error(`Failed to delete worktree ${dir}:`, error)
+      }
+    }
+
+    if (testWorktrees.length === 0) {
+      console.error('No test-project worktrees found')
+    } else {
+      console.error(
+        `Cleaned up ${testWorktrees.length} test-project worktree(s)`,
+      )
+    }
+  } catch (error) {
+    console.error('Error accessing worktrees directory:', error)
+  }
+}
+
+async function cleanupTestProjectDatabase() {
+  console.error('Cleaning up test-project database entries...')
+
+  if (!existsSync(DB_PATH)) {
+    console.error('No database found, skipping database cleanup')
+    return
+  }
+
+  try {
+    const client = createClient({
+      url: `file:${DB_PATH}`,
+    })
+    const db = drizzle(client)
+
+    // Delete all sessions where sessionName or projectName contains 'test-project'
+    const result = await db.run(
+      sql`DELETE FROM sessions WHERE session_name LIKE '%test-project%' OR project_name = 'test-project'`,
+    )
+
+    const deletedRows = result.rowsAffected
+    if (deletedRows > 0) {
+      console.error(
+        `Deleted ${deletedRows} test-project session(s) from database`,
+      )
+    } else {
+      console.error('No test-project sessions found in database')
+    }
+
+    client.close()
+  } catch (error) {
+    console.error('Error cleaning up database:', error)
+  }
+}
+
+async function main() {
+  console.error('Starting save-screen script...')
+
+  // Register cleanup handlers
+  process.on('exit', () => {
+    cleanupProcesses()
+  })
+
+  process.on('SIGINT', () => {
+    console.error('\nReceived SIGINT, cleaning up...')
+    cleanupProcesses()
+    process.exit(1)
+  })
+
+  process.on('SIGTERM', () => {
+    console.error('\nReceived SIGTERM, cleaning up...')
+    cleanupProcesses()
+    process.exit(1)
+  })
+
+  process.on('uncaughtException', error => {
+    console.error('Uncaught exception:', error)
+    cleanupProcesses()
+    process.exit(1)
+  })
+
+  // Clean up any existing test-project worktrees and database entries before starting
+  cleanupTestProjectWorktrees()
+  await cleanupTestProjectDatabase()
+
+  // Run iterations with different configurations
+  for (let i = 0; i < AUTOMATE_CLAUDE_CONFIGS.length; i++) {
+    await runIteration(i + 1, AUTOMATE_CLAUDE_CONFIGS[i])
+  }
+
+  console.error('All iterations complete!')
 }
 
 main().catch(error => {
