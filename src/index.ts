@@ -8,8 +8,6 @@ import { getDatabasePath } from './core/tmux-socket.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
 
 async function main() {
-  // Don't run migrations here - we'll run them per-command with the appropriate database
-
   const program = new Command()
 
   program
@@ -38,7 +36,6 @@ async function main() {
         socketPath: options.S,
       }
 
-      // Run migrations for the specific database
       const dbPath = getDatabasePath(socketOptions)
       if (!options.skipMigrations) {
         try {
@@ -95,7 +92,6 @@ async function main() {
         socketPath: options.S,
       }
 
-      // Run migrations for the specific database
       const dbPath = getDatabasePath(socketOptions)
       if (!options.skipMigrations) {
         try {
