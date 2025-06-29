@@ -17,7 +17,13 @@ export class TmuxAutomatorNew {
   private isShuttingDown = false
   private windows = new Map<
     string,
-    { name: string; hasClaude: boolean; firstSeen: number }
+    {
+      name: string
+      hasClaude: boolean
+      firstSeen: number
+      width?: number
+      height?: number
+    }
   >()
   private windowIdMap = new Map<string, { session: string; index: string }>()
   private inCommandOutput = false
@@ -146,7 +152,7 @@ export class TmuxAutomatorNew {
 
     // Request list of all windows with window IDs and pane info
     this.controlModeProcess.stdin.write(
-      'list-panes -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}] %#{pane_id} #{pane_pid} #{pane_current_command}"\n',
+      'list-panes -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}] %#{pane_id} #{pane_pid} #{pane_current_command} #{window_width}x#{window_height}"\n',
     )
 
     // Start periodic claude checking
@@ -221,6 +227,37 @@ export class TmuxAutomatorNew {
           this.displayWindowList()
         }
       }
+    } else if (parts[0] === '%layout-change') {
+      // Format: %layout-change window-id window-layout window-visible-layout window-flags
+      const windowId = parts[1]
+      const windowLayout = parts[2]
+      // Parse dimensions from layout string (e.g. "b25f,80x24,0,0,2")
+      const layoutMatch = windowLayout.match(/,(\d+)x(\d+),/)
+      if (layoutMatch) {
+        const [_, width, height] = layoutMatch
+        const info = this.windowIdMap.get(windowId)
+        if (info) {
+          const key = `${info.session}:${info.index}`
+          const existingWindow = this.windows.get(key)
+          if (existingWindow) {
+            const widthNum = parseInt(width, 10)
+            const heightNum = parseInt(height, 10)
+            // Only update and display if dimensions actually changed
+            if (
+              existingWindow.width !== widthNum ||
+              existingWindow.height !== heightNum
+            ) {
+              this.windows.set(key, {
+                ...existingWindow,
+                width: widthNum,
+                height: heightNum,
+              })
+              console.log(`Window resized: ${key} to ${widthNum}x${heightNum}`)
+              this.displayWindowList()
+            }
+          }
+        }
+      }
     } else if (parts[0] === '%session-window-changed') {
       const sessionId = parts[1]
       const windowId = parts[2]
@@ -258,9 +295,9 @@ export class TmuxAutomatorNew {
         }
       } else {
         // This is pane list output from list-panes command
-        // Format: session:index: name [@@window_id] %%pane_id pid command
+        // Format: session:index: name [@@window_id] %%pane_id pid command widthxheight
         const match = line.match(
-          /^([^:]+):(\d+): (.+) \[@@(\d+)\] (%%\d+) (\d+) (.+)$/,
+          /^([^:]+):(\d+): (.+) \[@@(\d+)\] (%%\d+) (\d+) (.+) (\d+)x(\d+)$/,
         )
         if (match) {
           const [
@@ -272,6 +309,8 @@ export class TmuxAutomatorNew {
             paneId,
             pid,
             command,
+            width,
+            height,
           ] = match
           const key = `${sessionName}:${windowIndex}`
 
@@ -287,6 +326,8 @@ export class TmuxAutomatorNew {
             name: windowName.trim(),
             hasClaude,
             firstSeen: existingWindow?.firstSeen ?? Date.now(),
+            width: parseInt(width, 10),
+            height: parseInt(height, 10),
           })
           this.windowIdMap.set(`@${windowId}`, {
             session: sessionName,
@@ -306,8 +347,12 @@ export class TmuxAutomatorNew {
     console.log('\nCurrent windows:')
     const sorted = Array.from(this.windows.entries()).sort()
     for (const [key, window] of sorted) {
+      const sizeIndicator =
+        window.width && window.height
+          ? ` [${window.width}x${window.height}]`
+          : ''
       const claudeIndicator = window.hasClaude ? ' [claude]' : ''
-      console.log(`  ${key} - ${window.name}${claudeIndicator}`)
+      console.log(`  ${key} - ${window.name}${sizeIndicator}${claudeIndicator}`)
     }
   }
 
@@ -318,7 +363,7 @@ export class TmuxAutomatorNew {
       this.windowIdMap.clear()
       this.paneToWindowMap.clear()
       this.controlModeProcess.stdin.write(
-        'list-panes -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}] %#{pane_id} #{pane_pid} #{pane_current_command}"\n',
+        'list-panes -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}] %#{pane_id} #{pane_pid} #{pane_current_command} #{window_width}x#{window_height}"\n',
       )
       // The window list will be displayed when the %end marker is received
     }

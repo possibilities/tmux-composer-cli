@@ -4,17 +4,12 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { cleanContent, matchesPattern } from '../matcher.js'
 import { MATCHERS } from '../core/matchers.js'
+import { TEST_TERMINAL_SIZES } from '../core/constants.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// Terminal size configurations matching e2e tests
-const TERMINAL_SIZES = [
-  { width: 80, height: 24 },
-  { width: 50, height: 24 },
-]
-
 describe('Matcher mechanism', () => {
-  TERMINAL_SIZES.forEach(terminalSize => {
+  TEST_TERMINAL_SIZES.forEach(terminalSize => {
     describe(`Terminal size ${terminalSize.width}x${terminalSize.height}`, () => {
       MATCHERS.forEach(matcher => {
         it(`should match ${matcher.name} pattern`, () => {

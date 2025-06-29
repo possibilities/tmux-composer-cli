@@ -5,11 +5,11 @@
 │ ╭────────────────────────────────────────────╮ │
 │ │ funny.txt                                  │ │
 │ │                                            │ │
+│ │ gobbledygook                               │ │
+│ │ flibbertigibbet                            │ │
 │ │ kerfuffle                                  │ │
 │ │ brouhaha                                   │ │
-│ │ bamboozle                                  │ │
-│ │ discombobulate                             │ │
-│ │ flibbertigibbet                            │ │
+│ │ nincompoop                                 │ │
 │ ╰────────────────────────────────────────────╯ │
 │ Do you want to create funny.txt?               │
 │ ❯ 1. Yes                                       │

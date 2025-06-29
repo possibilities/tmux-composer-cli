@@ -1,3 +1,6 @@
+
+ Tips for getting started:
+
  1. Run /init to create a CLAUDE.md file with inst
 ructions for Claude
  2. Use Claude to help with file analysis, editing
@@ -7,12 +10,9 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Create custom slash commands by adding .md
- files to
- .claude/commands/ in your project or ~/.claude/co
-mmands/ for commands
-  that work in any project
-
+ ※ Tip: Did you know you can drag and drop image f
+iles into your
+ terminal?
 
 
 ╭────────────────────────────────────────────────╮

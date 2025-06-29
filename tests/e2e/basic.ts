@@ -17,12 +17,7 @@ import { join, dirname } from 'path'
 import { createHash } from 'crypto'
 import { fileURLToPath } from 'url'
 import dedent from 'dedent'
-
-// Terminal size configurations
-const TERMINAL_SIZES = [
-  { width: 80, height: 24, name: 'big' },
-  { width: 50, height: 24, name: 'small' },
-]
+import { TEST_TERMINAL_SIZES } from '../../src/core/constants.js'
 
 const DEFAULT_CONFIG = dedent`
   name: default-test-project
@@ -485,7 +480,7 @@ async function startAutomateClaude(additionalArgs: string[]) {
 async function runIteration(
   iterationNumber: number,
   testRun: (typeof TEST_RUNS)[0],
-  terminalSize: (typeof TERMINAL_SIZES)[0],
+  terminalSize: (typeof TEST_TERMINAL_SIZES)[0],
 ) {
   const additionalArgs = testRun.automateClaudeArguments
   console.log(`\n${'='.repeat(60)}`)
@@ -713,9 +708,14 @@ function copyFixturesToFinalLocation() {
 
   const finalFixturesDir = join(process.cwd(), 'fixtures')
 
-  if (!existsSync(finalFixturesDir)) {
-    mkdirSync(finalFixturesDir, { recursive: true })
+  // Clear existing fixtures directory
+  if (existsSync(finalFixturesDir)) {
+    console.error('Clearing existing fixtures directory...')
+    rmSync(finalFixturesDir, { recursive: true, force: true })
   }
+
+  // Recreate the fixtures directory
+  mkdirSync(finalFixturesDir, { recursive: true })
 
   // Get all fixture files with terminal sizes in their names
   const baseFileNames = TEST_RUNS.map(run => run.fixtureFileName).filter(
@@ -723,7 +723,7 @@ function copyFixturesToFinalLocation() {
   )
 
   for (const baseFileName of baseFileNames) {
-    for (const terminalSize of TERMINAL_SIZES) {
+    for (const terminalSize of TEST_TERMINAL_SIZES) {
       const baseName = baseFileName.replace('.txt', '')
       const sizedFileName = `${baseName}-${terminalSize.width}x${terminalSize.height}.txt`
       const tempPath = join(TEMP_FIXTURES_DIR, sizedFileName)
@@ -843,7 +843,7 @@ async function main() {
 
   try {
     let iterationNumber = 1
-    for (const terminalSize of TERMINAL_SIZES) {
+    for (const terminalSize of TEST_TERMINAL_SIZES) {
       for (let i = 0; i < TEST_RUNS.length; i++) {
         await runIteration(iterationNumber++, TEST_RUNS[i], terminalSize)
       }

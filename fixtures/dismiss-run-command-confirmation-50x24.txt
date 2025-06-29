@@ -1,6 +1,6 @@
-● I'll run the ls -lsa command on the /tmp
-  directory to show all files including
-  hidden ones with detailed information.
+● I'll run the ls -lsa /tmp command to show
+  detailed information about all files in the
+   /tmp directory.
 
   Bash(ls -lsa /tmp)
   ⎿  Running…
@@ -14,8 +14,8 @@
 │ Do you want to proceed?                        │
 │ ❯ 1. Yes                                       │
 │  2. Yes, and don't ask again for ls commands   │
-│  in /home/mike/code/worktrees/control-test-mfl │
-│  uRg-worktree-001                              │
+│  in /home/mike/code/worktrees/control-test-3YF │
+│  inn-worktree-001                              │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 ╰────────────────────────────────────────────────╯

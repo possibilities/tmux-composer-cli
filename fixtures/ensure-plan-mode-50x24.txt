@@ -1,8 +1,3 @@
-   /help for help, /status for your current setup
-
-   cwd: /home/mike/code/worktrees/control-test-lRe
-6fO-worktree-001
-
  Tips for getting started:
 
  1. Run /init to create a CLAUDE.md file with inst
@@ -13,6 +8,11 @@ ructions for Claude
  3. Be as specific as you would with another engin
 eer for the best
     results
+
+ ※ Tip: Want Claude to remember something? Hit # t
+o add preferences,
+ tools, and instructions to Claude's memory
+
 
 
 ╭────────────────────────────────────────────────╮
