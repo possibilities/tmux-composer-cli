@@ -53,7 +53,7 @@ export function matchesPattern(
       return false
     }
 
-    if (contentLines[contentIndex] === patternLines[patternIndex]) {
+    if (contentLines[contentIndex].includes(patternLines[patternIndex])) {
       patternIndex--
       contentIndex--
     } else {
