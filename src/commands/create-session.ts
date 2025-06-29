@@ -15,8 +15,8 @@ import {
 } from '../core/git-utils.js'
 import {
   ControlConfig,
-  DEFAULT_TERMINAL_WIDTH,
-  DEFAULT_TERMINAL_HEIGHT,
+  BIG_TERMINAL_WIDTH,
+  BIG_TERMINAL_HEIGHT,
 } from '../core/constants.js'
 import { saveSession, saveWindow } from '../db/index.js'
 import type { NewSession, NewWindow } from '../db/schema.js'
@@ -204,9 +204,9 @@ export class SessionCreator {
           '-c',
           worktreePath,
           '-x',
-          String(terminalWidth || DEFAULT_TERMINAL_WIDTH),
+          String(terminalWidth || BIG_TERMINAL_WIDTH),
           '-y',
-          String(terminalHeight || DEFAULT_TERMINAL_HEIGHT),
+          String(terminalHeight || BIG_TERMINAL_HEIGHT),
         ],
         {
           detached: true,

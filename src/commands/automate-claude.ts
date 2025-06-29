@@ -25,8 +25,8 @@ import {
   POLL_INTERVAL,
   MAX_CHECKSUM_CACHE_SIZE,
   AUTOMATION_PAUSE_MS,
-  DEFAULT_TERMINAL_WIDTH,
-  DEFAULT_TERMINAL_HEIGHT,
+  BIG_TERMINAL_WIDTH,
+  BIG_TERMINAL_HEIGHT,
 } from '../core/constants.js'
 import { MATCHERS } from '../core/matchers.js'
 
