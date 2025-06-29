@@ -9,6 +9,7 @@ import {
   existsSync,
   writeFileSync,
   mkdirSync,
+  copyFileSync,
 } from 'fs'
 import { tmpdir, homedir } from 'os'
 import { join, dirname } from 'path'
@@ -22,6 +23,7 @@ const STABILITY_WAIT_MS = 1000
 const POLL_INTERVAL_MS = 100
 const WORKTREES_PATH = join(homedir(), 'code', 'worktrees')
 const DB_PATH = join(homedir(), '.control', `cli-${SOCKET_NAME}.db`)
+const TEMP_FIXTURES_DIR = join(tmpdir(), 'control-cli-fixtures-temp')
 
 // Define the different automate-claude flag configurations for each iteration
 const TEST_RUNS = [
@@ -327,24 +329,20 @@ async function runIteration(iterationNumber: number, additionalArgs: string[]) {
   console.log(screenContent)
   console.log(`--- End of iteration ${iterationNumber} ---\n`)
 
-  // Save fixtures for specific iterations
-  const fixturesDir = join(process.cwd(), 'fixtures')
-  if (!existsSync(fixturesDir)) {
-    mkdirSync(fixturesDir, { recursive: true })
-  }
-
-  let fixtureFile: string | null = null
+  // Save fixtures to temporary directory
+  let fixtureFileName: string | null = null
   if (iterationNumber === 1) {
-    fixtureFile = join(fixturesDir, 'trust-folder.txt')
+    fixtureFileName = 'trust-folder.txt'
   } else if (iterationNumber === 2) {
-    fixtureFile = join(fixturesDir, 'ensure-plan-mode.txt')
+    fixtureFileName = 'ensure-plan-mode.txt'
   } else if (iterationNumber === 3) {
-    fixtureFile = join(fixturesDir, 'inject-initial-context.txt')
+    fixtureFileName = 'inject-initial-context.txt'
   }
 
-  if (fixtureFile) {
-    writeFileSync(fixtureFile, screenContent)
-    console.error(`Saved fixture to ${fixtureFile}`)
+  if (fixtureFileName) {
+    const tempFixturePath = join(TEMP_FIXTURES_DIR, fixtureFileName)
+    writeFileSync(tempFixturePath, screenContent)
+    console.error(`Saved fixture to temporary location: ${tempFixturePath}`)
   }
 
   // Clean up
@@ -402,8 +400,49 @@ function cleanupTestDatabase() {
   }
 }
 
+function copyFixturesToFinalLocation() {
+  console.error('Copying fixtures to final location...')
+
+  const finalFixturesDir = join(process.cwd(), 'fixtures')
+
+  // Create final fixtures directory if it doesn't exist
+  if (!existsSync(finalFixturesDir)) {
+    mkdirSync(finalFixturesDir, { recursive: true })
+  }
+
+  // Copy each fixture file
+  const fixturesToCopy = [
+    'trust-folder.txt',
+    'ensure-plan-mode.txt',
+    'inject-initial-context.txt',
+  ]
+
+  for (const fileName of fixturesToCopy) {
+    const tempPath = join(TEMP_FIXTURES_DIR, fileName)
+    const finalPath = join(finalFixturesDir, fileName)
+
+    if (existsSync(tempPath)) {
+      copyFileSync(tempPath, finalPath)
+      console.error(`Copied ${fileName} to ${finalPath}`)
+    }
+  }
+
+  // Clean up temp directory
+  try {
+    rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
+    console.error('Cleaned up temporary fixtures directory')
+  } catch (error) {
+    console.error('Error cleaning up temp fixtures:', error)
+  }
+}
+
 async function main() {
   console.error('Starting save-screen script...')
+
+  // Create temp fixtures directory
+  if (!existsSync(TEMP_FIXTURES_DIR)) {
+    mkdirSync(TEMP_FIXTURES_DIR, { recursive: true })
+  }
 
   // Register cleanup handlers
   process.on('exit', () => {
@@ -413,18 +452,30 @@ async function main() {
   process.on('SIGINT', () => {
     console.error('\nReceived SIGINT, cleaning up...')
     cleanupProcesses()
+    // Clean up temp fixtures on interrupt
+    try {
+      rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
+    } catch {}
     process.exit(1)
   })
 
   process.on('SIGTERM', () => {
     console.error('\nReceived SIGTERM, cleaning up...')
     cleanupProcesses()
+    // Clean up temp fixtures on termination
+    try {
+      rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
+    } catch {}
     process.exit(1)
   })
 
   process.on('uncaughtException', error => {
     console.error('Uncaught exception:', error)
     cleanupProcesses()
+    // Clean up temp fixtures on exception
+    try {
+      rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
+    } catch {}
     process.exit(1)
   })
 
@@ -432,12 +483,24 @@ async function main() {
   cleanupTestProjectWorktrees()
   cleanupTestDatabase()
 
-  // Run iterations with different configurations
-  for (let i = 0; i < TEST_RUNS.length; i++) {
-    await runIteration(i + 1, TEST_RUNS[i].automateClaudeArguments)
-  }
+  try {
+    // Run iterations with different configurations
+    for (let i = 0; i < TEST_RUNS.length; i++) {
+      await runIteration(i + 1, TEST_RUNS[i].automateClaudeArguments)
+    }
 
-  console.error('All iterations complete!')
+    console.error('All iterations complete!')
+
+    // Copy fixtures to final location only if all iterations succeeded
+    copyFixturesToFinalLocation()
+  } catch (error) {
+    console.error('Error during iterations:', error)
+    // Clean up temp fixtures on error
+    try {
+      rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
+    } catch {}
+    throw error
+  }
 }
 
 main().catch(error => {

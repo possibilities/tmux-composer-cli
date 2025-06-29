@@ -1,8 +1,8 @@
 claude
 
-┌─╼[00:34:52]
+┌─╼[00:38:33]
 └─╼[~/code/worktrees/test-project-worktree-002]
- ╰╼[worktree-002]╾─╼[29b2a37]
+ ╰╼[worktree-002]╾─╼[c7a4329]
 ▶ claude
 ╭─────────────────────────────────────────────────────────────╮
 │ ✻ Welcome to Claude Code!                                   │
@@ -13,12 +13,12 @@ claude
 ╰─────────────────────────────────────────────────────────────╯
 
 
- ※ Tip: Run claude --continue or claude --resume to resume a conversation
-
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "how does <filepath> work?"                                            │
+│ > Try "refactor <filepath>"                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
+
+
 
 
 

@@ -1,7 +1,8 @@
+claude
 
-┌─╼[00:34:56]
+┌─╼[00:38:37]
 └─╼[~/code/worktrees/test-project-worktree-003]
- ╰╼[worktree-003]╾─╼[ea2338c]
+ ╰╼[worktree-003]╾─╼[75a7b3b]
 ▶ claude
 ╭─────────────────────────────────────────────────────────────╮
 │ ✻ Welcome to Claude Code!                                   │
@@ -12,13 +13,12 @@
 ╰─────────────────────────────────────────────────────────────╯
 
 
- ※ Tip: Hit shift+tab to cycle between default mode, auto-accept edit mode, and
- plan mode
-
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "fix typecheck errors"                                                 │
+│ > Try "how does <filepath> work?"                                            │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
+
+
 
 
 
