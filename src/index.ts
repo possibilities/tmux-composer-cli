@@ -2,6 +2,7 @@ import { Command, Option } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
 import { EventBus } from './core/event-bus.js'
 import { TmuxAutomator } from './commands/automate-claude.js'
+import { TmuxAutomatorNew } from './commands/automate-new.js'
 import { SessionCreator } from './commands/create-session.js'
 import { runMigrations } from './db/index.js'
 import { getDatabasePath } from './core/tmux-socket.js'
@@ -90,6 +91,24 @@ async function main() {
         console.log('\nShutting down...')
         process.exit(0)
       })
+    })
+
+  // Claude automate-new subcommand
+  claudeCommand
+    .command('automate-new')
+    .description('New automation approach (does nothing for now)')
+    .option('-L <socket-name>', 'Tmux socket name')
+    .option('-S <socket-path>', 'Tmux socket path')
+    .action(async options => {
+      const socketOptions: TmuxSocketOptions = {
+        socketName: options.L,
+        socketPath: options.S,
+      }
+
+      const eventBus = new EventBus()
+      const automator = new TmuxAutomatorNew(eventBus, socketOptions)
+
+      await automator.start()
     })
 
   // Session command with create subcommand
