@@ -5,7 +5,7 @@ export const MAX_SCROLLBACK_LINES = 2000
 
 export const TERMINAL_SIZES = {
   big: { width: 80, height: 24 },
-  small: { width: 50, height: 24 },
+  small: { width: 50, height: 10 },
 }
 
 export interface ControlConfig {

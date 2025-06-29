@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-N0E
-Ixb-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-cff
+beE-worktree-001
 
  Tips for getting started:
 
@@ -18,37 +18,25 @@ eer for the best
 
 
 > Create a file called funny.txt with 5 funny
-   words in it, one on each line. Then, after
-   saving, add 1 more funny word to it.
+   words in it, one on each line
 
-● I'll create a file with funny words and
-  then add one more.
+● I'll create a file called funny.txt with 5
+  funny words.
 
 ● Write(funny.txt)
-  ⎿  Wrote 5 lines to funny.txt
-     bamboozle
-     kerfuffle
-     brouhaha
-     discombobulate
-     flibbertigibbet
-
-● Update(funny.txt)
 
 ╭────────────────────────────────────────────────╮
-│ Edit file                                      │
+│ Create file                                    │
 │ ╭────────────────────────────────────────────╮ │
 │ │ funny.txt                                  │ │
 │ │                                            │ │
-│ │   2    kerfuffle                           │ │
-│ │   3    brouhaha                            │ │
-│ │   4    discombobulate                      │ │
-│ │   5 -  flibbertigibbet                     │ │
-│ │   5   \ No newline at end of file          │ │
-│ │   6 +  flibbertigibbet                     │ │
-│ │   7 +  gobbledygook                        │ │
-│ │   8   \ No newline at end of file          │ │
+│ │ kerfuffle                                  │ │
+│ │ brouhaha                                   │ │
+│ │ shenanigans                                │ │
+│ │ bamboozle                                  │ │
+│ │ flibbertigibbet                            │ │
 │ ╰────────────────────────────────────────────╯ │
-│ Do you want to make this edit to funny.txt?    │
+│ Do you want to create funny.txt?               │
 │ ❯ 1. Yes                                       │
 │   2. Yes, and don't ask again this session     │
 │   (shift+tab)                                  │

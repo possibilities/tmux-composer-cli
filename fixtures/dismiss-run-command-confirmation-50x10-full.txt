@@ -1,6 +1,32 @@
+ ✻ Welcome to Claude Code!
+
+   /help for help, /status for your current setup
+
+   cwd: /home/mike/code/worktrees/control-test-YbQ
+3XO-worktree-001
+
+ Tips for getting started:
+
+ 1. Run /init to create a CLAUDE.md file with inst
+ructions for Claude
+ 2. Use Claude to help with file analysis, editing
+, bash commands and
+    git
+ 3. Be as specific as you would with another engin
+eer for the best
+    results
+
+ ※ Tip: Want Claude to remember something? Hit # t
+o add preferences,
+ tools, and instructions to Claude's memory
+
+
+
+> Run 'ls -lsa /tmp' in the current directory
+
 ● I'll run the ls -lsa /tmp command to show
-  all files in the /tmp directory with
-  detailed information.
+  detailed information about all files in the
+   /tmp directory.
 
 ● Bash(ls -lsa /tmp)
   ⎿  Running…
@@ -14,8 +40,8 @@
 │ Do you want to proceed?                        │
 │ ❯ 1. Yes                                       │
 │  2. Yes, and don't ask again for ls commands   │
-│  in /home/mike/code/worktrees/control-test-xVU │
-│  UlE-worktree-001                              │
+│  in /home/mike/code/worktrees/control-test-YbQ │
+│  3XO-worktree-001                              │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 ╰────────────────────────────────────────────────╯

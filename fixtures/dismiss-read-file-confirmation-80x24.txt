@@ -1,6 +1,6 @@
- 3. Be as specific as you would with another engineer for the best results
 
- ※ Tip: Use /permissions to pre-approve and pre-deny bash, edit, and MCP tools
+ ※ Tip: Ask Claude to create a todo list when working on complex tasks to track
+ progress and remain on track
 
 > Read the file '/tmp/control-e2e-basic-date1.txt' and show he content
 

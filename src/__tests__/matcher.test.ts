@@ -27,7 +27,13 @@ describe('Matcher mechanism', () => {
 
           const cleanedContent = cleanContent(tmuxOutput)
           const contentLines = cleanedContent.split('\n')
-          const result = matchesPattern(contentLines, matcher.trigger)
+
+          let result: boolean
+          if (matcher.trigger.length === 1) {
+            result = matchesPattern(contentLines, matcher.trigger)
+          } else {
+            result = matchesLastPattern(contentLines, matcher.trigger)
+          }
 
           expect(result).toBe(true)
         })
