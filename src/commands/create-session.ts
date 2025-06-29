@@ -123,12 +123,7 @@ export class SessionCreator {
         controlConfig = yaml.load(controlYamlContent) as ControlConfig
       } catch {}
 
-      if (
-        controlConfig?.agents?.act &&
-        controlConfig?.agents?.plan &&
-        controlConfig?.context?.act &&
-        controlConfig?.context?.plan
-      ) {
+      if (controlConfig?.agents?.act && controlConfig?.agents?.plan) {
         windows.push('work')
       }
 
@@ -318,15 +313,10 @@ export class SessionCreator {
       })
     }
 
-    if (
-      !controlConfig?.agents?.act ||
-      !controlConfig?.agents?.plan ||
-      !controlConfig?.context?.act ||
-      !controlConfig?.context?.plan
-    ) {
+    if (!controlConfig?.agents?.act || !controlConfig?.agents?.plan) {
       if (expectedWindows.includes('work')) {
         throw new Error(
-          'control.yaml must contain all required fields: agents.act, agents.plan, context.act, context.plan',
+          'control.yaml must contain all required fields: agents.act, agents.plan',
         )
       }
     } else if (expectedWindows.includes('work')) {
@@ -347,29 +337,31 @@ export class SessionCreator {
       }
       await saveWindow(window)
 
-      console.log('  Preparing context...')
-      let contextOutput: string
-      try {
-        contextOutput = execSync(controlConfig.context.plan, {
-          encoding: 'utf-8',
-          cwd: worktreePath,
-          stdio: ['pipe', 'pipe', 'pipe'],
-        }).trim()
-      } catch (error) {
-        throw new Error(
-          `Failed to execute context.plan command: ${error instanceof Error ? error.message : String(error)}`,
-        )
-      }
-
-      const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
-      const tempFile = `/tmp/control-context-${Date.now()}.txt`
-      fs.writeFileSync(tempFile, contextOutput)
-      try {
-        execSync(`tmux ${socketArgs} load-buffer ${tempFile}`)
-      } finally {
+      if (controlConfig.context?.plan) {
+        console.log('  Preparing context...')
+        let contextOutput: string
         try {
-          fs.unlinkSync(tempFile)
-        } catch {}
+          contextOutput = execSync(controlConfig.context.plan, {
+            encoding: 'utf-8',
+            cwd: worktreePath,
+            stdio: ['pipe', 'pipe', 'pipe'],
+          }).trim()
+        } catch (error) {
+          throw new Error(
+            `Failed to execute context.plan command: ${error instanceof Error ? error.message : String(error)}`,
+          )
+        }
+
+        const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
+        const tempFile = `/tmp/control-context-${Date.now()}.txt`
+        fs.writeFileSync(tempFile, contextOutput)
+        try {
+          execSync(`tmux ${socketArgs} load-buffer ${tempFile}`)
+        } finally {
+          try {
+            fs.unlinkSync(tempFile)
+          } catch {}
+        }
       }
 
       this.eventBus.emitEvent({

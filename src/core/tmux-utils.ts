@@ -108,6 +108,21 @@ export function pasteBuffer(
   })
 }
 
+export function hasBufferContent(
+  socketOptions: TmuxSocketOptions = {},
+): boolean {
+  try {
+    const socketArgs = getTmuxSocketString(socketOptions)
+    const output = execSync(`tmux ${socketArgs} show-buffer`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    })
+    return output.trim().length > 0
+  } catch {
+    return false
+  }
+}
+
 export async function resizeWindow(
   sessionName: string,
   windowName: string,

@@ -19,6 +19,7 @@ import {
   getTmuxPanes,
   getProcessTree,
   findDescendant,
+  hasBufferContent,
 } from '../core/tmux-utils.js'
 import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 import {
@@ -111,7 +112,9 @@ export class TmuxAutomator {
       case 'ensure-plan-mode':
         return this.skipEnsurePlanMode
       case 'inject-initial-context':
-        return this.skipInjectInitialContext
+        return (
+          this.skipInjectInitialContext || !hasBufferContent(this.socketOptions)
+        )
       default:
         return false
     }
