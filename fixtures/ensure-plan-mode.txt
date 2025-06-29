@@ -1,24 +1,24 @@
+claude
 
-> Let us make a plan
+┌─╼[02:05:20]
+└─╼[~/code/worktrees/test-project-worktree-002]
+ ╰╼[worktree-002]╾─╼[3f719f3]
+▶ claude
+╭─────────────────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                                   │
+│                                                             │
+│   /help for help, /status for your current setup            │
+│                                                             │
+│   cwd: /home/mike/code/worktrees/test-project-worktree-002  │
+╰─────────────────────────────────────────────────────────────╯
 
-● I'll help you create a plan. To better assist you, could you please tell
-  me what you'd like to plan? For example:
 
-  - A software project or feature
-  - Code refactoring tasks
-  - Bug fixes
-  - Learning objectives
-  - Or something else?
-
-  Once you let me know what you need to plan, I'll help break it down into
-  actionable steps.
+ ※ Tip: Press Esc twice to edit your previous messages
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ >                                                                            │
+│ > Try "refactor <filepath>"                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
-
-
 
 
 
