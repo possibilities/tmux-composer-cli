@@ -79,7 +79,7 @@ export class TmuxAutomatorNew {
     }
 
     const socketArgs = getTmuxSocketString(this.socketOptions)
-    const args = socketArgs.split(' ').concat(['-C'])
+    const args = socketArgs.split(' ').concat(['-C', 'attach'])
 
     console.log(`Connecting with args: tmux ${args.join(' ')}`)
 
@@ -121,7 +121,6 @@ export class TmuxAutomatorNew {
     await sleep(100)
 
     // Request list of all windows with window IDs
-    console.log('Requesting window list...')
     this.controlModeProcess.stdin.write(
       'list-windows -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}]"\n',
     )
@@ -147,9 +146,8 @@ export class TmuxAutomatorNew {
     if (parts[0] === '%window-add') {
       // Format: %window-add @window_id
       const windowId = parts[1]
-      console.log(`Window added: ${windowId} (requesting details...)`)
-      // Request window details
-      this.requestWindowDetails(windowId)
+      // During startup, this is just the initial window being added
+      // The full window list will be displayed after the initial list-windows command completes
     } else if (parts[0] === '%window-close') {
       // Format: %window-close @window_id
       const windowId = parts[1]
@@ -201,21 +199,9 @@ export class TmuxAutomatorNew {
       }
     }
 
-    // Display current window list after changes
-    if (
-      parts[0] === '%window-add' ||
-      parts[0] === '%window-close' ||
-      parts[0] === '%window-renamed'
-    ) {
+    // Display current window list after changes (but not for window-add during startup)
+    if (parts[0] === '%window-close' || parts[0] === '%window-renamed') {
       setTimeout(() => this.displayWindowList(), 100)
-    }
-  }
-
-  private async requestWindowDetails(windowId: string) {
-    if (this.controlModeProcess && this.controlModeProcess.stdin) {
-      this.controlModeProcess.stdin.write(
-        `list-windows -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}]" -f "@#{==:#{window_id},${windowId}}"\n`,
-      )
     }
   }
 
