@@ -1,0 +1,24 @@
+ 1. Run /init to create a CLAUDE.md file with inst
+ructions for Claude
+ 2. Use Claude to help with file analysis, editing
+, bash commands and
+    git
+ 3. Be as specific as you would with another engin
+eer for the best
+    results
+
+ ※ Tip: Create custom slash commands by adding .md
+ files to
+ .claude/commands/ in your project or ~/.claude/co
+mmands/ for commands
+  that work in any project
+
+
+
+╭────────────────────────────────────────────────╮
+│ > Try "fix lint errors"                        │
+╰────────────────────────────────────────────────╯
+  ? for shortcuts
+
+
+

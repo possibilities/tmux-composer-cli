@@ -1,12 +1,9 @@
-│                                                                              │
-╰──────────────────────────────────────────────────────────────────────────────╯
-   Enter to confirm · Esc to exit
 ╭────────────────────────────────────────────────────────────────────╮
 │ ✻ Welcome to Claude Code!                                          │
 │                                                                    │
 │   /help for help, /status for your current setup                   │
 │                                                                    │
-│   cwd: /home/mike/code/worktrees/control-test-OTq6x3-worktree-001  │
+│   cwd: /home/mike/code/worktrees/control-test-Qr53JA-worktree-001  │
 ╰────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
@@ -15,10 +12,13 @@
  2. Use Claude to help with file analysis, editing, bash commands and git
  3. Be as specific as you would with another engineer for the best results
 
+ ※ Tip: Hit shift+tab to cycle between default mode, auto-accept edit mode, and
+ plan mode
+
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "refactor <filepath>"                                                  │
+│ > Try "how does <filepath> work?"                                            │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-  ? for shortcuts
+  ⏸ plan mode on (shift+tab to cycle)
 
 
 

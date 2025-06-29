@@ -23,6 +23,8 @@ import type { NewSession, NewWindow } from '../db/schema.js'
 
 interface CreateSessionOptions extends TmuxSocketOptions {
   mode?: 'act' | 'plan'
+  terminalWidth?: number
+  terminalHeight?: number
 }
 
 export class SessionCreator {
@@ -90,6 +92,8 @@ export class SessionCreator {
         worktreePath,
         expectedWindows,
         mode,
+        options.terminalWidth,
+        options.terminalHeight,
       )
 
       this.eventBus.emitEvent({
@@ -158,6 +162,8 @@ export class SessionCreator {
     worktreePath: string,
     expectedWindows: string[],
     mode: 'act' | 'plan',
+    terminalWidth?: number,
+    terminalHeight?: number,
   ) {
     const packageJsonPath = path.join(worktreePath, 'package.json')
     if (!fs.existsSync(packageJsonPath)) {
@@ -198,9 +204,9 @@ export class SessionCreator {
           '-c',
           worktreePath,
           '-x',
-          String(DEFAULT_TERMINAL_WIDTH),
+          String(terminalWidth || DEFAULT_TERMINAL_WIDTH),
           '-y',
-          String(DEFAULT_TERMINAL_HEIGHT),
+          String(terminalHeight || DEFAULT_TERMINAL_HEIGHT),
         ],
         {
           detached: true,

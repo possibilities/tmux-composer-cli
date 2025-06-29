@@ -18,6 +18,12 @@ import { createHash } from 'crypto'
 import { fileURLToPath } from 'url'
 import dedent from 'dedent'
 
+// Terminal size configurations
+const TERMINAL_SIZES = [
+  { width: 80, height: 24, name: 'big' },
+  { width: 50, height: 24, name: 'small' },
+]
+
 const DEFAULT_CONFIG = dedent`
   name: default-test-project
   agents:
@@ -290,28 +296,40 @@ function createTempProject(configContent: string): string {
   return tempDir
 }
 
-function createSession(projectPath: string, additionalArgs: string[] = []) {
+function createSession(
+  projectPath: string,
+  additionalArgs: string[] = [],
+  terminalWidth?: number,
+  terminalHeight?: number,
+) {
   console.error('Creating new session...')
+  if (terminalWidth && terminalHeight) {
+    console.error(`Terminal size: ${terminalWidth}x${terminalHeight}`)
+  }
 
   return new Promise<void>((resolve, reject) => {
     let output = ''
 
-    createSessionProcess = spawn(
-      'node',
-      [
-        join(__dirname, '..', '..', 'dist', 'cli.js'),
-        'session',
-        'create',
-        projectPath,
-        '-L',
-        SOCKET_NAME,
-        '--skip-migrations',
-        ...additionalArgs,
-      ],
-      {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      },
-    )
+    const args = [
+      join(__dirname, '..', '..', 'dist', 'cli.js'),
+      'session',
+      'create',
+      projectPath,
+      '-L',
+      SOCKET_NAME,
+      '--skip-migrations',
+    ]
+
+    if (terminalWidth !== undefined && terminalHeight !== undefined) {
+      args.push('--terminal-width', String(terminalWidth))
+      args.push('--terminal-height', String(terminalHeight))
+    }
+
+    args.push(...additionalArgs)
+
+    createSessionProcess = spawn('node', args, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    })
 
     createSessionProcess.stdout?.on('data', data => {
       const chunk = data.toString()
@@ -467,10 +485,14 @@ async function startAutomateClaude(additionalArgs: string[]) {
 async function runIteration(
   iterationNumber: number,
   testRun: (typeof TEST_RUNS)[0],
+  terminalSize: (typeof TERMINAL_SIZES)[0],
 ) {
   const additionalArgs = testRun.automateClaudeArguments
   console.log(`\n${'='.repeat(60)}`)
-  console.log(`=== Iteration ${iterationNumber} of ${TEST_RUNS.length} ===`)
+  console.log(`=== Iteration ${iterationNumber} ===`)
+  console.log(
+    `Terminal size: ${terminalSize.width}x${terminalSize.height} (${terminalSize.name})`,
+  )
   console.log(
     `Flags: ${additionalArgs.length > 0 ? additionalArgs.join(' ') : '(none)'}`,
   )
@@ -482,11 +504,12 @@ async function runIteration(
 
   await startAutomateClaude(additionalArgs)
 
-  await createSession(projectPath, [
-    '--mode',
-    testRun.mode,
-    ...testRun.createSessionArguments,
-  ])
+  await createSession(
+    projectPath,
+    ['--mode', testRun.mode, ...testRun.createSessionArguments],
+    terminalSize.width,
+    terminalSize.height,
+  )
 
   await new Promise(resolve => setTimeout(resolve, 2000))
 
@@ -523,7 +546,10 @@ async function runIteration(
   console.log(`--- End of iteration ${iterationNumber} ---\n`)
 
   if (SAVE_FIXTURES && testRun.fixtureFileName) {
-    const tempFixturePath = join(TEMP_FIXTURES_DIR, testRun.fixtureFileName)
+    // Add terminal size to fixture filename
+    const baseName = testRun.fixtureFileName.replace('.txt', '')
+    const sizedFileName = `${baseName}-${terminalSize.width}x${terminalSize.height}.txt`
+    const tempFixturePath = join(TEMP_FIXTURES_DIR, sizedFileName)
     writeFileSync(tempFixturePath, screenContent)
     console.error(`Saved fixture to temporary location: ${tempFixturePath}`)
   }
@@ -691,17 +717,22 @@ function copyFixturesToFinalLocation() {
     mkdirSync(finalFixturesDir, { recursive: true })
   }
 
-  const fixturesToCopy = TEST_RUNS.map(run => run.fixtureFileName).filter(
+  // Get all fixture files with terminal sizes in their names
+  const baseFileNames = TEST_RUNS.map(run => run.fixtureFileName).filter(
     (fileName): fileName is string => fileName !== null,
   )
 
-  for (const fileName of fixturesToCopy) {
-    const tempPath = join(TEMP_FIXTURES_DIR, fileName)
-    const finalPath = join(finalFixturesDir, fileName)
+  for (const baseFileName of baseFileNames) {
+    for (const terminalSize of TERMINAL_SIZES) {
+      const baseName = baseFileName.replace('.txt', '')
+      const sizedFileName = `${baseName}-${terminalSize.width}x${terminalSize.height}.txt`
+      const tempPath = join(TEMP_FIXTURES_DIR, sizedFileName)
+      const finalPath = join(finalFixturesDir, sizedFileName)
 
-    if (existsSync(tempPath)) {
-      copyFileSync(tempPath, finalPath)
-      console.error(`Copied ${fileName} to ${finalPath}`)
+      if (existsSync(tempPath)) {
+        copyFileSync(tempPath, finalPath)
+        console.error(`Copied ${sizedFileName} to ${finalPath}`)
+      }
     }
   }
 
@@ -811,8 +842,11 @@ async function main() {
   }
 
   try {
-    for (let i = 0; i < TEST_RUNS.length; i++) {
-      await runIteration(i + 1, TEST_RUNS[i])
+    let iterationNumber = 1
+    for (const terminalSize of TERMINAL_SIZES) {
+      for (let i = 0; i < TEST_RUNS.length; i++) {
+        await runIteration(iterationNumber++, TEST_RUNS[i], terminalSize)
+      }
     }
 
     console.error('All iterations complete!')

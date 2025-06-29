@@ -1,0 +1,24 @@
+│ Edit file                                      │
+│ ╭────────────────────────────────────────────╮ │
+│ │ funny.txt                                  │ │
+│ │                                            │ │
+│ │   2    giggle                              │ │
+│ │   3    noodle                              │ │
+│ │   4    boing                               │ │
+│ │   5 -  flibbertigibbet                     │ │
+│ │   5   \ No newline at end of file          │ │
+│ │   6 +  flibbertigibbet                     │ │
+│ │   7 +  kerfuffle                           │ │
+│ │   8   \ No newline at end of file          │ │
+│ ╰────────────────────────────────────────────╯ │
+│ Do you want to make this edit to funny.txt?    │
+│ ❯ 1. Yes                                       │
+│   2. Yes, and don't ask again this session     │
+│   (shift+tab)                                  │
+│  3. No, and tell Claude what to do differently │
+│   (esc)                                        │
+│                                                │
+╰────────────────────────────────────────────────╯
+
+
+

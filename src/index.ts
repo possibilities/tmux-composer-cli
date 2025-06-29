@@ -122,6 +122,8 @@ async function main() {
     .option('--mode <mode>', 'Session mode (act or plan)', 'act')
     .option('-L <socket-name>', 'Tmux socket name')
     .option('-S <socket-path>', 'Tmux socket path')
+    .option('--terminal-width <width>', 'Terminal width', parseInt)
+    .option('--terminal-height <height>', 'Terminal height', parseInt)
     .addOption(
       new Option('--skip-migrations', 'Skip database migrations').hideHelp(),
     )
@@ -150,6 +152,8 @@ async function main() {
       try {
         await creator.create(projectPath, {
           mode: options.mode,
+          terminalWidth: options.terminalWidth,
+          terminalHeight: options.terminalHeight,
           ...socketOptions,
         })
       } catch (error) {

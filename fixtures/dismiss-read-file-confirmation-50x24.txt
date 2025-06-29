@@ -1,0 +1,24 @@
+
+● I'll read the file and show you its
+  content.
+
+● Read(../../../../../tmp/control-e2e-basic-d
+      ate1.txt)
+
+╭────────────────────────────────────────────────╮
+│ Read files                                     │
+│                                                │
+│   Read(../../../../../tmp/control-e2e-basic-   │
+│   date1.txt)                                   │
+│                                                │
+│ Do you want to proceed?                        │
+│ ❯ 1. Yes                                       │
+│   2. Yes, and add /tmp as a working directory  │
+│   for this session                             │
+│  3. No, and tell Claude what to do differently │
+│   (esc)                                        │
+│                                                │
+╰────────────────────────────────────────────────╯
+
+
+

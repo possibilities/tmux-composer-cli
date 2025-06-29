@@ -1,0 +1,24 @@
+● Write(funny.txt)
+
+╭────────────────────────────────────────────────╮
+│ Create file                                    │
+│ ╭────────────────────────────────────────────╮ │
+│ │ funny.txt                                  │ │
+│ │                                            │ │
+│ │ kerfuffle                                  │ │
+│ │ brouhaha                                   │ │
+│ │ bamboozle                                  │ │
+│ │ discombobulate                             │ │
+│ │ flibbertigibbet                            │ │
+│ ╰────────────────────────────────────────────╯ │
+│ Do you want to create funny.txt?               │
+│ ❯ 1. Yes                                       │
+│   2. Yes, and don't ask again this session     │
+│   (shift+tab)                                  │
+│  3. No, and tell Claude what to do differently │
+│   (esc)                                        │
+│                                                │
+╰────────────────────────────────────────────────╯
+
+
+

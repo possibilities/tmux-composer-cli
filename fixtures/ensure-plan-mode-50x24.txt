@@ -1,0 +1,24 @@
+   /help for help, /status for your current setup
+
+   cwd: /home/mike/code/worktrees/control-test-lRe
+6fO-worktree-001
+
+ Tips for getting started:
+
+ 1. Run /init to create a CLAUDE.md file with inst
+ructions for Claude
+ 2. Use Claude to help with file analysis, editing
+, bash commands and
+    git
+ 3. Be as specific as you would with another engin
+eer for the best
+    results
+
+
+╭────────────────────────────────────────────────╮
+│ > Try "fix lint errors"                        │
+╰────────────────────────────────────────────────╯
+  ? for shortcuts
+
+
+
