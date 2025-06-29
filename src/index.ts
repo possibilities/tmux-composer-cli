@@ -30,6 +30,14 @@ async function main() {
       '--skip-inject-initial-context-plan',
       'Skip the "inject initial context plan" matcher',
     )
+    .option(
+      '--skip-dismiss-create-file-confirmation',
+      'Skip the "dismiss create file confirmation" matcher',
+    )
+    .option(
+      '--skip-dismiss-edit-file-confirmation',
+      'Skip the "dismiss edit file confirmation" matcher',
+    )
     .addOption(
       new Option('--skip-migrations', 'Skip database migrations').hideHelp(),
     )
@@ -60,6 +68,10 @@ async function main() {
           skipTrustFolder: options.skipTrustFolder,
           skipEnsurePlanMode: options.skipEnsurePlanMode,
           skipInjectInitialContext: options.skipInjectInitialContext,
+          skipDismissCreateFileConfirmation:
+            options.skipDismissCreateFileConfirmation,
+          skipDismissEditFileConfirmation:
+            options.skipDismissEditFileConfirmation,
         },
         dbPath,
       )

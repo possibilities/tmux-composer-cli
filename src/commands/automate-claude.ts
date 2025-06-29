@@ -36,6 +36,8 @@ interface AutomateTmuxOptions extends TmuxSocketOptions {
   skipTrustFolder?: boolean
   skipEnsurePlanMode?: boolean
   skipInjectInitialContext?: boolean
+  skipDismissCreateFileConfirmation?: boolean
+  skipDismissEditFileConfirmation?: boolean
 }
 
 export class TmuxAutomator {
@@ -57,6 +59,8 @@ export class TmuxAutomator {
   private skipTrustFolder: boolean
   private skipEnsurePlanMode: boolean
   private skipInjectInitialContext: boolean
+  private skipDismissCreateFileConfirmation: boolean
+  private skipDismissEditFileConfirmation: boolean
   private dbPath?: string
 
   constructor(
@@ -72,6 +76,10 @@ export class TmuxAutomator {
     this.skipTrustFolder = options.skipTrustFolder || false
     this.skipEnsurePlanMode = options.skipEnsurePlanMode || false
     this.skipInjectInitialContext = options.skipInjectInitialContext || false
+    this.skipDismissCreateFileConfirmation =
+      options.skipDismissCreateFileConfirmation || false
+    this.skipDismissEditFileConfirmation =
+      options.skipDismissEditFileConfirmation || false
     this.dbPath = dbPath
   }
 
@@ -121,6 +129,10 @@ export class TmuxAutomator {
         return (
           this.skipInjectInitialContext || !hasBufferContent(this.socketOptions)
         )
+      case 'dismiss-create-file-confirmation':
+        return this.skipDismissCreateFileConfirmation
+      case 'dismiss-edit-file-confirmation':
+        return this.skipDismissEditFileConfirmation
       default:
         return false
     }

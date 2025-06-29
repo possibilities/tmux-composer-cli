@@ -53,6 +53,16 @@ const CREATE_FILE_CONFIG = dedent`
     plan: echo "Create a file called funny.txt with 5 funny words in it, one on each line"
 `
 
+const EDIT_FILE_CONFIG = dedent`
+  name: test-project
+  agents:
+    act: claude
+    plan: claude
+  context:
+    act: echo "Create a file called funny.txt with 5 funny words in it, one on each line. Then, after saving, add 1 more funny word to it."
+    plan: echo "Create a file called funny.txt with 5 funny words in it, one on each line. Then, after saving, add 1 more funny word to it."
+`
+
 const TEST_RUNS = [
   {
     automateClaudeArguments: [
@@ -87,14 +97,20 @@ const TEST_RUNS = [
     mode: 'plan' as const,
     fixtureFileName: 'inject-initial-context-plan.txt',
   },
-  // {
-  //   automateClaudeArguments: [],
-  //   createSessionArguments: [],
-  //   fixtureFileName: null,
-  //   configFile: CREATE_FILE_CONFIG,
-  //   mode: 'act' as const,
-  //   fixtureFileName: 'dismiss-create-file-confirmation.txt',
-  // },
+  {
+    automateClaudeArguments: ['--skip-dismiss-create-file-confirmation'],
+    createSessionArguments: [],
+    configFile: CREATE_FILE_CONFIG,
+    mode: 'act' as const,
+    fixtureFileName: 'dismiss-create-file-confirmation.txt',
+  },
+  {
+    automateClaudeArguments: ['--skip-dismiss-edit-file-confirmation'],
+    createSessionArguments: [],
+    configFile: EDIT_FILE_CONFIG,
+    mode: 'act' as const,
+    fixtureFileName: 'dismiss-edit-file-confirmation.txt',
+  },
 ]
 
 let actualSessionName = ''
