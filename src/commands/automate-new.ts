@@ -169,15 +169,16 @@ export class TmuxAutomatorNew {
         }
       }
     } else if (parts[0] === '%window-renamed') {
-      // Format: %window-renamed $session_id @window_id new-name
-      const sessionId = parts[1]
-      const windowId = parts[2]
-      const newName = parts.slice(3).join(' ')
+      // Format: %window-renamed @window_id new-name
+      const windowId = parts[1]
+      const newName = parts.slice(2).join(' ')
       const info = this.windowIdMap.get(windowId)
       if (info) {
         const key = `${info.session}:${info.index}`
         this.windows.set(key, newName)
         console.log(`Window renamed: ${key} to ${newName}`)
+        // Display the updated window list
+        this.displayWindowList()
       }
     } else if (parts[0] === '%session-window-changed') {
       const sessionId = parts[1]
@@ -206,8 +207,8 @@ export class TmuxAutomatorNew {
       }
     }
 
-    // Display current window list after changes (but not for window-add during startup)
-    if (parts[0] === '%window-close' || parts[0] === '%window-renamed') {
+    // Display current window list after window close
+    if (parts[0] === '%window-close') {
       setTimeout(() => this.displayWindowList(), 100)
     }
   }
