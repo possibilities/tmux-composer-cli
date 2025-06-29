@@ -1,25 +1,24 @@
-  ready to help. I should keep this response very brief and direct,
-  following the guidelines to be concise.
+claude
 
-  Looking at the context:
-  - This is a Next.js/React project with Shadcn/UI and TailwindCSS
-  - It appears to be some kind of icon creator UI based on the directory
-  name
-  - There are tmux panes running with nvim, tests, and build watching
-  - The project uses pnpm as package manager
-  - Server components and server actions are preferred over API routes
+┌─╼[23:54:18]
+└─╼[~/code/worktrees/test-project-worktree-002]
+ ╰╼[worktree-002]╾─╼[1db46b2]
+▶ claude
+╭─────────────────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                                   │
+│                                                             │
+│   /help for help, /status for your current setup            │
+│                                                             │
+│   cwd: /home/mike/code/worktrees/test-project-worktree-002  │
+╰─────────────────────────────────────────────────────────────╯
 
-  The user simply wants me to say "I'm ready, let's go!" as they specified.
 
-● I'm ready, let's go!
+ ※ Tip: Hit Enter to queue up additional messages while Claude is working.
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "edit <filepath> to..."                                                │
+│ > Try "how does <filepath> work?"                                            │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
-
-
-
 
 
 

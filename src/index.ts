@@ -4,14 +4,11 @@ import { EventBus } from './core/event-bus.js'
 import { TmuxAutomator } from './commands/automate-claude.js'
 import { SessionCreator } from './commands/create-session.js'
 import { runMigrations } from './db/index.js'
+import { getDatabasePath } from './core/tmux-socket.js'
+import type { TmuxSocketOptions } from './core/tmux-socket.js'
 
 async function main() {
-  try {
-    runMigrations()
-  } catch (error) {
-    console.error(`Failed to run database migrations:`, error)
-    process.exit(1)
-  }
+  // Don't run migrations here - we'll run them per-command with the appropriate database
 
   const program = new Command()
 
@@ -33,15 +30,32 @@ async function main() {
       'Skip the "inject initial context" matcher',
     )
     .action(async options => {
-      const eventBus = new EventBus()
-      const automator = new TmuxAutomator(eventBus, {
+      const socketOptions: TmuxSocketOptions = {
         socketName: options.L,
         socketPath: options.S,
-        pollInterval: parseInt(options.pollInterval, 10),
-        skipTrustFolder: options.skipTrustFolder,
-        skipEnsurePlanMode: options.skipEnsurePlanMode,
-        skipInjectInitialContext: options.skipInjectInitialContext,
-      })
+      }
+
+      // Run migrations for the specific database
+      const dbPath = getDatabasePath(socketOptions)
+      try {
+        runMigrations(dbPath)
+      } catch (error) {
+        console.error(`Failed to run database migrations for ${dbPath}:`, error)
+        process.exit(1)
+      }
+
+      const eventBus = new EventBus()
+      const automator = new TmuxAutomator(
+        eventBus,
+        {
+          ...socketOptions,
+          pollInterval: parseInt(options.pollInterval, 10),
+          skipTrustFolder: options.skipTrustFolder,
+          skipEnsurePlanMode: options.skipEnsurePlanMode,
+          skipInjectInitialContext: options.skipInjectInitialContext,
+        },
+        dbPath,
+      )
 
       console.log('Monitoring tmux sessions... Press Ctrl+C to stop')
 
@@ -65,15 +79,27 @@ async function main() {
     .option('-L <socket-name>', 'Use a different tmux socket name')
     .option('-S <socket-path>', 'Use a different tmux socket path')
     .action(async (projectPath, options) => {
-      const eventBus = new EventBus()
-      const creator = new SessionCreator(eventBus, {
+      const socketOptions: TmuxSocketOptions = {
         socketName: options.L,
         socketPath: options.S,
-      })
+      }
+
+      // Run migrations for the specific database
+      const dbPath = getDatabasePath(socketOptions)
+      try {
+        runMigrations(dbPath)
+      } catch (error) {
+        console.error(`Failed to run database migrations for ${dbPath}:`, error)
+        process.exit(1)
+      }
+
+      const eventBus = new EventBus()
+      const creator = new SessionCreator(eventBus, socketOptions, dbPath)
 
       try {
         await creator.create(projectPath, {
           projectName: options.projectName,
+          ...socketOptions,
         })
       } catch (error) {
         console.error(

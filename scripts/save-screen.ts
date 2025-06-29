@@ -2,14 +2,18 @@
 
 import { execSync, spawn } from 'child_process'
 import type { ChildProcess } from 'child_process'
-import { mkdtempSync, readdirSync, rmSync, existsSync } from 'fs'
+import {
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  existsSync,
+  writeFileSync,
+  mkdirSync,
+} from 'fs'
 import { tmpdir, homedir } from 'os'
 import { join, dirname } from 'path'
 import { createHash } from 'crypto'
 import { fileURLToPath } from 'url'
-import { createClient } from '@libsql/client'
-import { drizzle } from 'drizzle-orm/libsql'
-import { sql } from 'drizzle-orm'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -17,7 +21,7 @@ const SOCKET_NAME = 'control-test-instance'
 const STABILITY_WAIT_MS = 1000
 const POLL_INTERVAL_MS = 100
 const WORKTREES_PATH = join(homedir(), 'code', 'worktrees')
-const DB_PATH = join(homedir(), '.control', 'cli.db')
+const DB_PATH = join(homedir(), '.control', `cli-${SOCKET_NAME}.db`)
 
 // Define the different automate-claude flag configurations for each iteration
 const AUTOMATE_CLAUDE_CONFIGS = [
@@ -318,6 +322,26 @@ async function runIteration(iterationNumber: number, additionalArgs: string[]) {
   console.log(screenContent)
   console.log(`--- End of iteration ${iterationNumber} ---\n`)
 
+  // Save fixtures for specific iterations
+  const fixturesDir = join(process.cwd(), 'fixtures')
+  if (!existsSync(fixturesDir)) {
+    mkdirSync(fixturesDir, { recursive: true })
+  }
+
+  let fixtureFile: string | null = null
+  if (iterationNumber === 1) {
+    fixtureFile = join(fixturesDir, 'trust-folder.txt')
+  } else if (iterationNumber === 2) {
+    fixtureFile = join(fixturesDir, 'ensure-plan-mode.txt')
+  } else if (iterationNumber === 3) {
+    fixtureFile = join(fixturesDir, 'inject-initial-context.txt')
+  }
+
+  if (fixtureFile) {
+    writeFileSync(fixtureFile, screenContent)
+    console.error(`Saved fixture to ${fixtureFile}`)
+  }
+
   // Clean up
   cleanupProcesses()
   killExistingSession()
@@ -357,37 +381,19 @@ function cleanupTestProjectWorktrees() {
   }
 }
 
-async function cleanupTestProjectDatabase() {
-  console.error('Cleaning up test-project database entries...')
+function cleanupTestDatabase() {
+  console.error(`Cleaning up test database: ${DB_PATH}`)
 
   if (!existsSync(DB_PATH)) {
-    console.error('No database found, skipping database cleanup')
+    console.error('No test database found, skipping database cleanup')
     return
   }
 
   try {
-    const client = createClient({
-      url: `file:${DB_PATH}`,
-    })
-    const db = drizzle(client)
-
-    // Delete all sessions where sessionName or projectName contains 'test-project'
-    const result = await db.run(
-      sql`DELETE FROM sessions WHERE session_name LIKE '%test-project%' OR project_name = 'test-project'`,
-    )
-
-    const deletedRows = result.rowsAffected
-    if (deletedRows > 0) {
-      console.error(
-        `Deleted ${deletedRows} test-project session(s) from database`,
-      )
-    } else {
-      console.error('No test-project sessions found in database')
-    }
-
-    client.close()
+    rmSync(DB_PATH, { force: true })
+    console.error('Deleted test database')
   } catch (error) {
-    console.error('Error cleaning up database:', error)
+    console.error('Error deleting test database:', error)
   }
 }
 
@@ -417,9 +423,9 @@ async function main() {
     process.exit(1)
   })
 
-  // Clean up any existing test-project worktrees and database entries before starting
+  // Clean up any existing test-project worktrees and database before starting
   cleanupTestProjectWorktrees()
-  await cleanupTestProjectDatabase()
+  cleanupTestDatabase()
 
   // Run iterations with different configurations
   for (let i = 0; i < AUTOMATE_CLAUDE_CONFIGS.length; i++) {

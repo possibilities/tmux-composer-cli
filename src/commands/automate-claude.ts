@@ -56,8 +56,13 @@ export class TmuxAutomator {
   private skipTrustFolder: boolean
   private skipEnsurePlanMode: boolean
   private skipInjectInitialContext: boolean
+  private dbPath?: string
 
-  constructor(eventBus: EventBus, options: AutomateTmuxOptions = {}) {
+  constructor(
+    eventBus: EventBus,
+    options: AutomateTmuxOptions = {},
+    dbPath?: string,
+  ) {
     this.eventBus = eventBus
     this.socketOptions = {
       socketName: options.socketName,
@@ -67,6 +72,7 @@ export class TmuxAutomator {
     this.skipTrustFolder = options.skipTrustFolder || false
     this.skipEnsurePlanMode = options.skipEnsurePlanMode || false
     this.skipInjectInitialContext = options.skipInjectInitialContext || false
+    this.dbPath = dbPath
   }
 
   async start() {

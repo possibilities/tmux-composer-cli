@@ -24,13 +24,19 @@ interface CreateSessionOptions extends TmuxSocketOptions {
 export class SessionCreator {
   private eventBus: EventBus
   private socketOptions: TmuxSocketOptions
+  private dbPath?: string
 
-  constructor(eventBus: EventBus, options: CreateSessionOptions = {}) {
+  constructor(
+    eventBus: EventBus,
+    options: CreateSessionOptions = {},
+    dbPath?: string,
+  ) {
     this.eventBus = eventBus
     this.socketOptions = {
       socketName: options.socketName,
       socketPath: options.socketPath,
     }
+    this.dbPath = dbPath
   }
 
   async create(projectPath: string, options: CreateSessionOptions = {}) {
@@ -68,7 +74,7 @@ export class SessionCreator {
         projectName,
         worktreePath,
       }
-      await saveSession(newSession)
+      await saveSession(newSession, this.dbPath)
 
       await this.createTmuxSession(sessionName, worktreePath, expectedWindows)
 
@@ -232,7 +238,7 @@ export class SessionCreator {
         description: 'Development server',
         port,
       }
-      await saveWindow(window)
+      await saveWindow(window, this.dbPath)
 
       this.eventBus.emitEvent({
         type: 'window-ready',
@@ -257,7 +263,7 @@ export class SessionCreator {
         command: 'pnpm run lint:watch',
         description: 'Linting watch mode',
       }
-      await saveWindow(window)
+      await saveWindow(window, this.dbPath)
 
       this.eventBus.emitEvent({
         type: 'window-ready',
@@ -281,7 +287,7 @@ export class SessionCreator {
         command: 'pnpm run types:watch',
         description: 'TypeScript type checking',
       }
-      await saveWindow(window)
+      await saveWindow(window, this.dbPath)
 
       this.eventBus.emitEvent({
         type: 'window-ready',
@@ -305,7 +311,7 @@ export class SessionCreator {
         command: 'pnpm run test:watch',
         description: 'Test watch mode',
       }
-      await saveWindow(window)
+      await saveWindow(window, this.dbPath)
 
       this.eventBus.emitEvent({
         type: 'window-ready',
@@ -335,7 +341,7 @@ export class SessionCreator {
         command: controlConfig.agents.plan,
         description: 'Work session',
       }
-      await saveWindow(window)
+      await saveWindow(window, this.dbPath)
 
       if (controlConfig.context?.plan) {
         console.log('  Preparing context...')
