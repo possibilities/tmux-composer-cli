@@ -7,11 +7,9 @@ import {
   listSessions,
   listWindows,
   capturePane,
-  checkHumanControl,
   sendKeys,
   sendKey,
   pasteBuffer,
-  resizeWindow,
   convertToTmuxKey,
   socketExists,
   findPanesWithCommand,
@@ -40,7 +38,6 @@ export class TmuxAutomator {
   private checksumCache = new LRUCache<string, string>({
     max: MAX_CHECKSUM_CACHE_SIZE,
   })
-  private controlStateCache = new Map<string, boolean>()
   private executedMatchers = new Set<string>()
   private knownWindows = new Set<string>()
   private socketExistenceLogged = false
@@ -232,31 +229,6 @@ export class TmuxAutomator {
       const sessions = await listSessions(this.socketOptions)
 
       for (const sessionName of sessions) {
-        const isHumanControlled = await checkHumanControl(
-          sessionName,
-          this.socketOptions,
-        )
-        const wasHumanControlled =
-          this.controlStateCache.get(sessionName) || false
-
-        if (isHumanControlled !== wasHumanControlled) {
-          this.controlStateCache.set(sessionName, isHumanControlled)
-
-          this.eventBus.emitEvent({
-            type: 'session-control',
-            sessionName,
-            isHumanControlled,
-          })
-
-          if (!isHumanControlled && wasHumanControlled) {
-            this.resizeSessionWindows(sessionName)
-          }
-        }
-
-        if (isHumanControlled) {
-          continue
-        }
-
         const windows = await listWindows(sessionName, this.socketOptions)
 
         await Promise.all(
@@ -521,38 +493,6 @@ export class TmuxAutomator {
           error: error instanceof Error ? error : new Error(String(error)),
         })
       }
-    }
-  }
-
-  private async resizeSessionWindows(sessionName: string) {
-    try {
-      const windows = await listWindows(sessionName, this.socketOptions)
-
-      await Promise.all(
-        windows.map(async windowName => {
-          try {
-            await resizeWindow(
-              sessionName,
-              windowName,
-              DEFAULT_TERMINAL_WIDTH,
-              DEFAULT_TERMINAL_HEIGHT,
-              this.socketOptions,
-            )
-          } catch (error) {
-            this.eventBus.emitEvent({
-              type: 'error',
-              message: `Failed to resize ${sessionName}:${windowName}`,
-              error: error instanceof Error ? error : new Error(String(error)),
-            })
-          }
-        }),
-      )
-    } catch (error) {
-      this.eventBus.emitEvent({
-        type: 'error',
-        message: `Error resizing windows for ${sessionName}`,
-        error: error instanceof Error ? error : new Error(String(error)),
-      })
     }
   }
 }

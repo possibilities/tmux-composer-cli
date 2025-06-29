@@ -5,12 +5,6 @@ export interface EventData {
   [key: string]: any
 }
 
-export interface SessionControlEvent extends EventData {
-  type: 'session-control'
-  sessionName: string
-  isHumanControlled: boolean
-}
-
 export interface WindowContentEvent extends EventData {
   type: 'window-content'
   sessionName: string
@@ -61,7 +55,6 @@ export interface ErrorEvent extends EventData {
 }
 
 export type Event =
-  | SessionControlEvent
   | WindowContentEvent
   | WindowAutomationEvent
   | SessionCreatingEvent
@@ -78,14 +71,6 @@ export class EventBus extends EventEmitter {
   }
 
   private setupLogging() {
-    this.on('session-control', (event: SessionControlEvent) => {
-      if (process.env.VERBOSE) {
-        console.log(
-          `[${event.timestamp}] SESSION-CONTROL: ${event.sessionName} (${event.isHumanControlled ? 'Human' : 'Agent'})`,
-        )
-      }
-    })
-
     this.on('window-content', (event: WindowContentEvent) => {
       if (process.env.VERBOSE) {
         console.log(

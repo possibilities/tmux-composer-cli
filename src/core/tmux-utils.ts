@@ -53,23 +53,6 @@ export async function capturePane(
   return stdout
 }
 
-export async function checkHumanControl(
-  sessionName: string,
-  socketOptions: TmuxSocketOptions = {},
-): Promise<boolean> {
-  try {
-    const socketArgs = getTmuxSocketString(socketOptions)
-    const { stdout } = await execAsync(
-      `tmux ${socketArgs} list-clients -t ${sessionName} -F "#{client_name}"`,
-      { encoding: 'utf-8' },
-    )
-    const clientCount = stdout.trim() ? stdout.trim().split('\n').length : 0
-    return clientCount > 0
-  } catch {
-    return false
-  }
-}
-
 export function sendKeys(
   sessionName: string,
   windowName: string,
