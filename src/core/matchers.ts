@@ -37,4 +37,10 @@ export const MATCHERS: Matcher[] = [
     runOnce: true,
     mode: 'act',
   },
+  {
+    name: 'dismiss-create-file-confirmation',
+    trigger: ['Create file', 'Do you want to create', '1. Yes'],
+    response: '{paste-buffer}<Enter>',
+    runOnce: true,
+  },
 ]
