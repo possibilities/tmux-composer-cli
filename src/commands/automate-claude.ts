@@ -27,6 +27,8 @@ import {
   MAX_CHECKSUM_CACHE_SIZE,
   MATCHERS,
   AUTOMATION_PAUSE_MS,
+  DEFAULT_TERMINAL_WIDTH,
+  DEFAULT_TERMINAL_HEIGHT,
 } from '../core/constants.js'
 
 interface AutomateTmuxOptions extends TmuxSocketOptions {
@@ -486,8 +488,8 @@ export class TmuxAutomator {
             await resizeWindow(
               sessionName,
               windowName,
-              80,
-              24,
+              DEFAULT_TERMINAL_WIDTH,
+              DEFAULT_TERMINAL_HEIGHT,
               this.socketOptions,
             )
           } catch (error) {
