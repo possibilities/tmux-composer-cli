@@ -1,9 +1,6 @@
-claude
-
-┌─╼[02:05:20]
-└─╼[~/code/worktrees/test-project-worktree-002]
- ╰╼[worktree-002]╾─╼[3f719f3]
-▶ claude
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+   Enter to confirm · Esc to exit
 ╭─────────────────────────────────────────────────────────────╮
 │ ✻ Welcome to Claude Code!                                   │
 │                                                             │
@@ -12,11 +9,14 @@ claude
 │   cwd: /home/mike/code/worktrees/test-project-worktree-002  │
 ╰─────────────────────────────────────────────────────────────╯
 
+ Tips for getting started:
 
- ※ Tip: Press Esc twice to edit your previous messages
+ 1. Run /init to create a CLAUDE.md file with instructions for Claude
+ 2. Use Claude to help with file analysis, editing, bash commands and git
+ 3. Be as specific as you would with another engineer for the best results
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "refactor <filepath>"                                                  │
+│ > Try "fix typecheck errors"                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
 

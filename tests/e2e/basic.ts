@@ -10,6 +10,7 @@ import {
   writeFileSync,
   mkdirSync,
   copyFileSync,
+  readFileSync,
 } from 'fs'
 import { tmpdir, homedir } from 'os'
 import { join, dirname } from 'path'
@@ -20,6 +21,7 @@ import dedent from 'dedent'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const SAVE_FIXTURES = process.argv.includes('--save-fixtures')
+const NO_CLEANUP = process.argv.includes('--no-cleanup')
 
 const SOCKET_NAME = `control-test-${process.pid}-${Date.now()}`
 const STABILITY_WAIT_MS = 1000
@@ -37,8 +39,18 @@ const DEFAULT_CONFIG = dedent`
     act: claude
     plan: claude
   context:
-    act: echo "Let us make a plan"
-    plan: echo "Let us make a plan"
+    act: echo "Do nothing but wait for my feature description to make a plan"
+    plan: echo "Do nothing but wait for my feature description to make a plan"
+`
+
+const CREATE_FILE_CONFIG = dedent`
+  name: test-project
+  agents:
+    act: claude
+    plan: claude
+  context:
+    act: echo "Create a file called funny.txt with 5 funny words in it, one on each line"
+    plan: echo "Create a file called funny.txt with 5 funny words in it, one on each line"
 `
 
 const TEST_RUNS = [
@@ -50,8 +62,9 @@ const TEST_RUNS = [
       '--skip-inject-initial-context-plan',
     ],
     createSessionArguments: [],
-    fixtureFileName: 'trust-folder.txt',
     configFile: DEFAULT_CONFIG,
+    mode: 'plan' as const,
+    fixtureFileName: 'trust-folder.txt',
   },
   {
     automateClaudeArguments: [
@@ -60,8 +73,9 @@ const TEST_RUNS = [
       '--skip-inject-initial-context-plan',
     ],
     createSessionArguments: [],
-    fixtureFileName: 'ensure-plan-mode.txt',
     configFile: DEFAULT_CONFIG,
+    mode: 'plan' as const,
+    fixtureFileName: 'ensure-plan-mode.txt',
   },
   {
     automateClaudeArguments: [
@@ -69,21 +83,91 @@ const TEST_RUNS = [
       '--skip-inject-initial-context-plan',
     ],
     createSessionArguments: [],
+    configFile: DEFAULT_CONFIG,
+    mode: 'plan' as const,
     fixtureFileName: 'inject-initial-context-plan.txt',
-    configFile: DEFAULT_CONFIG,
   },
-  {
-    automateClaudeArguments: [],
-    createSessionArguments: [],
-    fixtureFileName: null,
-    configFile: DEFAULT_CONFIG,
-  },
+  // {
+  //   automateClaudeArguments: [],
+  //   createSessionArguments: [],
+  //   fixtureFileName: null,
+  //   configFile: CREATE_FILE_CONFIG,
+  //   mode: 'act' as const,
+  //   fixtureFileName: 'dismiss-create-file-confirmation.txt',
+  // },
 ]
 
 let actualSessionName = ''
 let workWindowIndex = ''
 let automateClaudeProcess: ChildProcess | null = null
 let createSessionProcess: ChildProcess | null = null
+
+function cleanupPreviousTestRuns() {
+  console.error('Cleaning up previous test runs...')
+
+  // Clean up test sockets
+  try {
+    const tmuxDir = '/tmp/tmux-1000'
+    if (existsSync(tmuxDir)) {
+      const files = readdirSync(tmuxDir)
+      const testSockets = files.filter(f => f.startsWith('control-test-'))
+
+      for (const socket of testSockets) {
+        const socketPath = join(tmuxDir, socket)
+        try {
+          // Try to kill any sessions on this socket first
+          execSync(`tmux -S ${socketPath} kill-server`, { stdio: 'ignore' })
+        } catch {
+          // Ignore errors, socket might already be dead
+        }
+
+        try {
+          rmSync(socketPath, { force: true })
+          console.error(`Deleted old test socket: ${socket}`)
+        } catch (error) {
+          console.error(`Failed to delete socket ${socket}:`, error)
+        }
+      }
+
+      if (testSockets.length === 0) {
+        console.error('No old test sockets found')
+      } else {
+        console.error(`Cleaned up ${testSockets.length} old test socket(s)`)
+      }
+    }
+  } catch (error) {
+    console.error('Error cleaning up test sockets:', error)
+  }
+
+  // Clean up test databases
+  try {
+    const controlDir = join(homedir(), '.control')
+    if (existsSync(controlDir)) {
+      const files = readdirSync(controlDir)
+      const testDbs = files.filter(
+        f => f.startsWith('cli-control-test-') && f.endsWith('.db'),
+      )
+
+      for (const db of testDbs) {
+        const dbPath = join(controlDir, db)
+        try {
+          rmSync(dbPath, { force: true })
+          console.error(`Deleted old test database: ${db}`)
+        } catch (error) {
+          console.error(`Failed to delete database ${db}:`, error)
+        }
+      }
+
+      if (testDbs.length === 0) {
+        console.error('No old test databases found')
+      } else {
+        console.error(`Cleaned up ${testDbs.length} old test database(s)`)
+      }
+    }
+  } catch (error) {
+    console.error('Error cleaning up test databases:', error)
+  }
+}
 
 function killExistingSession() {
   try {
@@ -315,7 +399,7 @@ async function runIteration(
 
   await createSession(projectPath, [
     '--mode',
-    'plan',
+    testRun.mode,
     ...testRun.createSessionArguments,
   ])
 
@@ -359,15 +443,116 @@ async function runIteration(
     console.error(`Saved fixture to temporary location: ${tempFixturePath}`)
   }
 
-  cleanupProcesses()
-  killExistingSession()
-
-  actualSessionName = ''
-  workWindowIndex = ''
+  if (!NO_CLEANUP) {
+    cleanupProcesses()
+    killExistingSession()
+    actualSessionName = ''
+    workWindowIndex = ''
+  }
 }
 
 function cleanupTestProjectWorktrees() {
   console.error('Cleaning up test-project worktrees...')
+
+  // Clean up ~/.claude.json entries
+  const claudeJsonPath = join(homedir(), '.claude.json')
+  if (existsSync(claudeJsonPath)) {
+    try {
+      // First, clean up old backups (keep only 4 newest)
+      const claudeDir = dirname(claudeJsonPath)
+      const files = readdirSync(claudeDir)
+      const backupFiles = files
+        .filter(f => f.startsWith('.claude.json.backup.'))
+        .map(f => ({
+          name: f,
+          path: join(claudeDir, f),
+          mtime: execSync(`stat -c %Y "${join(claudeDir, f)}"`, {
+            encoding: 'utf-8',
+          }).trim(),
+        }))
+        .sort((a, b) => parseInt(b.mtime) - parseInt(a.mtime))
+
+      // Delete old backups, keeping only the 4 newest
+      if (backupFiles.length > 4) {
+        const backupsToDelete = backupFiles.slice(4)
+        for (const backup of backupsToDelete) {
+          try {
+            rmSync(backup.path)
+            console.error(`Deleted old backup: ${backup.name}`)
+          } catch (error) {
+            console.error(`Failed to delete old backup ${backup.name}:`, error)
+          }
+        }
+      }
+
+      // Create timestamped backup
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[-:]/g, '')
+        .replace('T', '-')
+        .split('.')[0]
+      const backupPath = `${claudeJsonPath}.backup.${timestamp}`
+      copyFileSync(claudeJsonPath, backupPath)
+      console.error(`Created backup: ${backupPath}`)
+
+      // Read and parse the file
+      const claudeJsonContent = readFileSync(claudeJsonPath, 'utf-8')
+      const claudeJson = JSON.parse(claudeJsonContent)
+
+      // Count entries before cleanup
+      let removedCount = 0
+
+      // Remove test worktree entries from projects
+      if (claudeJson.projects) {
+        const originalCount = Object.keys(claudeJson.projects).length
+        console.error(`Found ${originalCount} total projects in ~/.claude.json`)
+
+        const filteredProjects: Record<string, any> = {}
+
+        for (const [key, value] of Object.entries(claudeJson.projects)) {
+          if (
+            !key.match(
+              /\/home\/mike\/code\/worktrees\/test-project-worktree-\d+$/,
+            )
+          ) {
+            filteredProjects[key] = value
+          } else {
+            console.error(`Removing test worktree entry: ${key}`)
+            removedCount++
+          }
+        }
+
+        claudeJson.projects = filteredProjects
+        const newCount = Object.keys(filteredProjects).length
+        console.error(`After filtering: ${newCount} projects remaining`)
+
+        // Write back to file
+        writeFileSync(claudeJsonPath, JSON.stringify(claudeJson, null, 2))
+
+        // Verify the write succeeded
+        const verifyContent = readFileSync(claudeJsonPath, 'utf-8')
+        const verifyJson = JSON.parse(verifyContent)
+        const verifyCount = Object.keys(verifyJson.projects).length
+        console.error(
+          `Verified file written: ${verifyCount} projects in file after write`,
+        )
+
+        if (removedCount > 0) {
+          console.error(
+            `Removed ${removedCount} test worktree entries from ~/.claude.json`,
+          )
+        } else {
+          console.error('No test worktree entries found in ~/.claude.json')
+        }
+      } else {
+        console.error('No projects section found in ~/.claude.json')
+      }
+    } catch (error) {
+      console.error('Error cleaning up ~/.claude.json:', error)
+    }
+  }
+
+  // Clean up worktree directories
   try {
     const dirs = readdirSync(WORKTREES_PATH)
     const testWorktrees = dirs.filter(dir =>
@@ -482,12 +667,22 @@ async function main() {
   if (SAVE_FIXTURES) {
     console.error('Fixtures will be saved')
   }
+  if (NO_CLEANUP) {
+    console.error('No-cleanup mode: artifacts will be preserved for inspection')
+  }
+
+  // Clean up any previous test runs first
+  cleanupPreviousTestRuns()
 
   if (SAVE_FIXTURES && !existsSync(TEMP_FIXTURES_DIR)) {
     mkdirSync(TEMP_FIXTURES_DIR, { recursive: true })
   }
 
   const performFullCleanup = () => {
+    if (NO_CLEANUP) {
+      console.error('\nNo-cleanup mode: Skipping cleanup')
+      return
+    }
     cleanupProcesses()
     killExistingSession()
     cleanupTestDatabase()
@@ -541,11 +736,38 @@ async function main() {
       copyFixturesToFinalLocation()
     }
 
-    console.error('Performing final cleanup...')
-    cleanupProcesses()
-    killExistingSession()
-    cleanupTestDatabase()
-    cleanupTestProjectWorktrees()
+    if (NO_CLEANUP) {
+      console.error('\n' + '='.repeat(60))
+      console.error('NO-CLEANUP MODE: Preserving test artifacts')
+      console.error('='.repeat(60))
+      console.error('\nArtifacts left behind:')
+      console.error(`- Database: ${DB_PATH}`)
+      console.error(`- Socket: /tmp/tmux-1000/${SOCKET_NAME}`)
+      if (actualSessionName) {
+        console.error(`- Session: ${actualSessionName}`)
+        console.error(`\nTo attach to the tmux session:`)
+        console.error(`  tmux -L ${SOCKET_NAME} attach -t ${actualSessionName}`)
+      }
+      const worktrees = readdirSync(WORKTREES_PATH).filter(d =>
+        d.startsWith('test-project-worktree-'),
+      )
+      if (worktrees.length > 0) {
+        console.error(`\nWorktrees created:`)
+        worktrees.forEach(w => {
+          console.error(`  - ${join(WORKTREES_PATH, w)}`)
+        })
+      }
+      console.error('\n' + '='.repeat(60))
+
+      // In no-cleanup mode, we need to exit explicitly since processes are still running
+      process.exit(0)
+    } else {
+      console.error('Performing final cleanup...')
+      cleanupProcesses()
+      killExistingSession()
+      cleanupTestDatabase()
+      cleanupTestProjectWorktrees()
+    }
   } catch (error) {
     console.error('Error during iterations:', error)
     if (SAVE_FIXTURES) {
