@@ -6,11 +6,11 @@
 │ │                                                                          │ │
 │ │   2    kerfuffle                                                         │ │
 │ │   3    shenanigans                                                       │ │
-│ │   4    flibbertigibbet                                                   │ │
-│ │   5 -  gobbledygook                                                      │ │
+│ │   4    discombobulated                                                   │ │
+│ │   5 -  flibbertigibbet                                                   │ │
 │ │   5   \ No newline at end of file                                        │ │
-│ │   6 +  gobbledygook                                                      │ │
-│ │   7 +  brouhaha                                                          │ │
+│ │   6 +  flibbertigibbet                                                   │ │
+│ │   7 +  gobbledygook                                                      │ │
 │ │   8   \ No newline at end of file                                        │ │
 │ ╰──────────────────────────────────────────────────────────────────────────╯ │
 │ Do you want to make this edit to funny.txt?                                  │

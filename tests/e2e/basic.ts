@@ -63,6 +63,16 @@ const TEST_RUNS = [
     fixtureFileName: 'inject-initial-context-plan.txt',
   },
   {
+    automateClaudeArguments: [
+      '--skip-inject-initial-context-act',
+      '--skip-inject-initial-context-plan',
+    ],
+    createSessionArguments: [],
+    configFile: DEFAULT_CONFIG,
+    mode: 'act' as const,
+    fixtureFileName: 'inject-initial-context-act.txt',
+  },
+  {
     automateClaudeArguments: ['--skip-dismiss-create-file-confirmation'],
     createSessionArguments: [],
     mode: 'act' as const,

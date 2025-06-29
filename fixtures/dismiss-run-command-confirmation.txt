@@ -1,10 +1,10 @@
- ※ Tip: Did you know you can drag and drop image files into your terminal?
 
 > Run 'ls -lsa /tmp' in the current directory
 
-● I'll run the ls -lsa /tmp command for you.
+● I'll run the ls -lsa /tmp command to show all files (including hidden
+  ones) in the /tmp directory with detailed information.
 
-● Bash(ls -lsa /tmp)
+  Bash(ls -lsa /tmp)
   ⎿  Running…
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
@@ -16,7 +16,7 @@
 │ Do you want to proceed?                                                      │
 │ ❯ 1. Yes                                                                     │
 │   2. Yes, and don't ask again for ls commands in                             │
-│   /home/mike/code/worktrees/test-project-worktree-006                        │
+│   /home/mike/code/worktrees/control-test-WqHmHY-worktree-001                 │
 │   3. No, and tell Claude what to do differently (esc)                        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
