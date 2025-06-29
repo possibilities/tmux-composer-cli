@@ -24,15 +24,22 @@ const WORKTREES_PATH = join(homedir(), 'code', 'worktrees')
 const DB_PATH = join(homedir(), '.control', `cli-${SOCKET_NAME}.db`)
 
 // Define the different automate-claude flag configurations for each iteration
-const AUTOMATE_CLAUDE_CONFIGS = [
-  [
-    '--skip-trust-folder',
-    '--skip-ensure-plan-mode',
-    '--skip-inject-initial-context',
-  ],
-  ['--skip-ensure-plan-mode', '--skip-inject-initial-context'],
-  ['--skip-inject-initial-context'],
-  [],
+const TEST_RUNS = [
+  {
+    automateClaudeArguments: [
+      '--skip-trust-folder',
+      '--skip-ensure-plan-mode',
+      '--skip-inject-initial-context',
+    ],
+  },
+  {
+    automateClaudeArguments: [
+      '--skip-ensure-plan-mode',
+      '--skip-inject-initial-context',
+    ],
+  },
+  { automateClaudeArguments: ['--skip-inject-initial-context'] },
+  { automateClaudeArguments: [] },
 ]
 
 let actualSessionName = ''
@@ -263,9 +270,7 @@ async function startAutomateClaude(additionalArgs: string[]) {
 
 async function runIteration(iterationNumber: number, additionalArgs: string[]) {
   console.log(`\n${'='.repeat(60)}`)
-  console.log(
-    `=== Iteration ${iterationNumber} of ${AUTOMATE_CLAUDE_CONFIGS.length} ===`,
-  )
+  console.log(`=== Iteration ${iterationNumber} of ${TEST_RUNS.length} ===`)
   console.log(
     `Flags: ${additionalArgs.length > 0 ? additionalArgs.join(' ') : '(none)'}`,
   )
@@ -428,8 +433,8 @@ async function main() {
   cleanupTestDatabase()
 
   // Run iterations with different configurations
-  for (let i = 0; i < AUTOMATE_CLAUDE_CONFIGS.length; i++) {
-    await runIteration(i + 1, AUTOMATE_CLAUDE_CONFIGS[i])
+  for (let i = 0; i < TEST_RUNS.length; i++) {
+    await runIteration(i + 1, TEST_RUNS[i].automateClaudeArguments)
   }
 
   console.error('All iterations complete!')

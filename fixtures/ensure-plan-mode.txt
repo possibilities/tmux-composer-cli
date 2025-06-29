@@ -1,8 +1,8 @@
 claude
 
-┌─╼[23:54:18]
+┌─╼[00:34:52]
 └─╼[~/code/worktrees/test-project-worktree-002]
- ╰╼[worktree-002]╾─╼[1db46b2]
+ ╰╼[worktree-002]╾─╼[29b2a37]
 ▶ claude
 ╭─────────────────────────────────────────────────────────────╮
 │ ✻ Welcome to Claude Code!                                   │
@@ -13,7 +13,7 @@ claude
 ╰─────────────────────────────────────────────────────────────╯
 
 
- ※ Tip: Hit Enter to queue up additional messages while Claude is working.
+ ※ Tip: Run claude --continue or claude --resume to resume a conversation
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
 │ > Try "how does <filepath> work?"                                            │
