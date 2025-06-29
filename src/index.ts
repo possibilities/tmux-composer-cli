@@ -23,8 +23,12 @@ async function main() {
     .option('--skip-trust-folder', 'Skip the "trust folder" matcher')
     .option('--skip-ensure-plan-mode', 'Skip the "ensure plan mode" matcher')
     .option(
-      '--skip-inject-initial-context',
-      'Skip the "inject initial context" matcher',
+      '--skip-inject-initial-context-act',
+      'Skip the "inject initial context act" matcher',
+    )
+    .option(
+      '--skip-inject-initial-context-plan',
+      'Skip the "inject initial context plan" matcher',
     )
     .addOption(
       new Option('--skip-migrations', 'Skip database migrations').hideHelp(),

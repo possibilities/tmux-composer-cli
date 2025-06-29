@@ -115,7 +115,7 @@ export class TmuxAutomator {
         return this.skipTrustFolder
       case 'ensure-plan-mode':
         return this.skipEnsurePlanMode
-      case 'inject-initial-context':
+      case 'inject-initial-context-plan':
         return (
           this.skipInjectInitialContext || !hasBufferContent(this.socketOptions)
         )

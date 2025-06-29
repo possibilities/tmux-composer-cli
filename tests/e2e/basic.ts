@@ -46,7 +46,8 @@ const TEST_RUNS = [
     automateClaudeArguments: [
       '--skip-trust-folder',
       '--skip-ensure-plan-mode',
-      '--skip-inject-initial-context',
+      '--skip-inject-initial-context-act',
+      '--skip-inject-initial-context-plan',
     ],
     createSessionArguments: [],
     fixtureFileName: 'trust-folder.txt',
@@ -55,16 +56,20 @@ const TEST_RUNS = [
   {
     automateClaudeArguments: [
       '--skip-ensure-plan-mode',
-      '--skip-inject-initial-context',
+      '--skip-inject-initial-context-act',
+      '--skip-inject-initial-context-plan',
     ],
     createSessionArguments: [],
     fixtureFileName: 'ensure-plan-mode.txt',
     configFile: DEFAULT_CONFIG,
   },
   {
-    automateClaudeArguments: ['--skip-inject-initial-context'],
+    automateClaudeArguments: [
+      '--skip-inject-initial-context-act',
+      '--skip-inject-initial-context-plan',
+    ],
     createSessionArguments: [],
-    fixtureFileName: 'inject-initial-context.txt',
+    fixtureFileName: 'inject-initial-context-plan.txt',
     configFile: DEFAULT_CONFIG,
   },
   {

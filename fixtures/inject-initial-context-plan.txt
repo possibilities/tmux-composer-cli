@@ -1,22 +1,22 @@
+  - What project or task you want to work on
+  - What goals you want to achieve
+  - Any specific requirements or constraints
 
-> Let us make a plan
+  For example, you might want to:
+  - Build a web application
+  - Create a CLI tool
+  - Set up a testing framework
+  - Implement a specific feature
+  - Fix a bug
+  - Refactor code
 
-● I'll help you create a plan. To better assist you, could you please tell
-  me what you'd like to plan? For example:
-
-  - A software project or feature
-  - Code refactoring tasks
-  - Bug fixes
-  - Learning objectives
-  - Or something else?
-
-  Once you let me know what you need to plan, I'll help break it down into
-  actionable steps.
+  Once you provide the details, I'll explore the codebase and create a
+  comprehensive plan for you.
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
 │ >                                                                            │
 ╰──────────────────────────────────────────────────────────────────────────────╯
-  ? for shortcuts
+  ⏸ plan mode on (shift+tab to cycle)
 
 
 
