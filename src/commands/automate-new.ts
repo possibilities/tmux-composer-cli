@@ -15,23 +15,27 @@ export class TmuxAutomatorNew {
   private controlModeProcess: any = null
   private isConnected = false
   private isShuttingDown = false
-  private windows = new Map<
-    string,
+  private panes = new Map<
+    string, // pane_id
     {
-      name: string
+      sessionName: string
+      windowIndex: string
+      paneIndex: string
+      windowName: string
+      command: string
       hasClaude: boolean
       firstSeen: number
-      width?: number
-      height?: number
+      width: number
+      height: number
     }
   >()
   private windowIdMap = new Map<string, { session: string; index: string }>()
+  private paneToKeyMap = new Map<string, string>() // Maps pane_id to display key
   private inCommandOutput = false
   private hasDisplayedInitialList = false
   private claudeCheckInterval: NodeJS.Timeout | null = null
   private isCheckingClaude = false
   private claudeCheckResults = new Map<string, boolean>()
-  private paneToWindowMap = new Map<string, string>()
 
   constructor(eventBus: EventBus, options: AutomateNewOptions = {}) {
     this.eventBus = eventBus
@@ -63,10 +67,10 @@ export class TmuxAutomatorNew {
           console.log('Tmux server disconnected. Waiting for reconnection...')
           this.isConnected = false
           waitingMessageShown = true
-          // Clear window data on disconnect
-          this.windows.clear()
+          // Clear pane data on disconnect
+          this.panes.clear()
           this.windowIdMap.clear()
-          this.paneToWindowMap.clear()
+          this.paneToKeyMap.clear()
           this.hasDisplayedInitialList = false
           // Stop claude checking
           if (this.claudeCheckInterval) {
@@ -85,9 +89,9 @@ export class TmuxAutomatorNew {
         console.log('Tmux server detected. Connecting in control mode...')
         waitingMessageShown = false // Reset for next disconnect
         // Clear any stale data before reconnecting
-        this.windows.clear()
+        this.panes.clear()
         this.windowIdMap.clear()
-        this.paneToWindowMap.clear()
+        this.paneToKeyMap.clear()
         this.hasDisplayedInitialList = false
         await this.connectControlMode()
       }
@@ -128,10 +132,10 @@ export class TmuxAutomatorNew {
       console.log(`Control mode process exited with code ${code}`)
       this.isConnected = false
       this.controlModeProcess = null
-      // Clear window data when control mode closes
-      this.windows.clear()
+      // Clear pane data when control mode closes
+      this.panes.clear()
       this.windowIdMap.clear()
-      this.paneToWindowMap.clear()
+      this.paneToKeyMap.clear()
       this.hasDisplayedInitialList = false
       // Stop claude checking
       if (this.claudeCheckInterval) {
@@ -150,9 +154,9 @@ export class TmuxAutomatorNew {
     // Wait a bit for connection to establish
     await sleep(100)
 
-    // Request list of all windows with window IDs and pane info
+    // Request list of all panes with detailed info
     this.controlModeProcess.stdin.write(
-      'list-panes -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}] %#{pane_id} #{pane_pid} #{pane_current_command} #{window_width}x#{window_height}"\n',
+      'list-panes -a -F "PANE %#{pane_id} #{session_name}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n',
     )
 
     // Start periodic claude checking
@@ -175,13 +179,13 @@ export class TmuxAutomatorNew {
         this.processClaudeCheckResults()
         return
       }
-      // Display window list after command output if we have windows
-      if (this.windows.size > 0) {
+      // Display pane list after command output if we have panes
+      if (this.panes.size > 0) {
         // On startup, only display once
         if (!this.hasDisplayedInitialList) {
           this.hasDisplayedInitialList = true
         }
-        this.displayWindowList()
+        this.displayPaneList()
       }
       return
     }
@@ -196,21 +200,34 @@ export class TmuxAutomatorNew {
         // Wait a bit for claude to start, then refresh
         setTimeout(() => {
           console.log('Checking for claude in new window...')
-          this.refreshWindowList()
+          this.refreshPaneList()
         }, 500)
       }
     } else if (parts[0] === '%window-close') {
       // Format: %window-close @window_id
       const windowId = parts[1]
-      // Find and remove window by ID
-      for (const [key, _] of this.windows) {
-        const info = this.windowIdMap.get(windowId)
-        if (info && key === `${info.session}:${info.index}`) {
-          this.windows.delete(key)
-          this.windowIdMap.delete(windowId)
-          console.log(`Window closed: ${key}`)
-          break
+      const info = this.windowIdMap.get(windowId)
+      if (info) {
+        // Remove all panes belonging to this window
+        const panesToRemove: string[] = []
+        for (const [paneId, pane] of this.panes) {
+          if (
+            pane.sessionName === info.session &&
+            pane.windowIndex === info.index
+          ) {
+            panesToRemove.push(paneId)
+          }
         }
+
+        for (const paneId of panesToRemove) {
+          this.panes.delete(paneId)
+          this.paneToKeyMap.delete(paneId)
+        }
+
+        this.windowIdMap.delete(windowId)
+        console.log(
+          `Window closed: ${info.session}:${info.index} (removed ${panesToRemove.length} panes)`,
+        )
       }
     } else if (parts[0] === '%window-renamed') {
       // Format: %window-renamed @window_id new-name
@@ -218,14 +235,22 @@ export class TmuxAutomatorNew {
       const newName = parts.slice(2).join(' ')
       const info = this.windowIdMap.get(windowId)
       if (info) {
-        const key = `${info.session}:${info.index}`
-        const existingWindow = this.windows.get(key)
-        if (existingWindow) {
-          this.windows.set(key, { ...existingWindow, name: newName })
-          console.log(`Window renamed: ${key} to ${newName}`)
-          // Display the updated window list
-          this.displayWindowList()
+        // Update window name for all panes in this window
+        let updatedCount = 0
+        for (const [paneId, pane] of this.panes) {
+          if (
+            pane.sessionName === info.session &&
+            pane.windowIndex === info.index
+          ) {
+            this.panes.set(paneId, { ...pane, windowName: newName })
+            updatedCount++
+          }
         }
+        console.log(
+          `Window renamed: ${info.session}:${info.index} to ${newName} (updated ${updatedCount} panes)`,
+        )
+        // Display the updated pane list
+        this.displayPaneList()
       }
     } else if (parts[0] === '%layout-change') {
       // Format: %layout-change window-id window-layout window-visible-layout window-flags
@@ -253,11 +278,17 @@ export class TmuxAutomatorNew {
                 height: heightNum,
               })
               console.log(`Window resized: ${key} to ${widthNum}x${heightNum}`)
-              this.displayWindowList()
+              this.displayPaneList()
             }
           }
         }
       }
+      // Refresh pane list on any layout change (splits, closes, resizes)
+      console.log(`Layout changed for window ${windowId}`)
+      // Small delay to ensure tmux has updated its state
+      setTimeout(() => {
+        this.refreshPaneList()
+      }, 100)
     } else if (parts[0] === '%session-window-changed') {
       const sessionId = parts[1]
       const windowId = parts[2]
@@ -266,70 +297,72 @@ export class TmuxAutomatorNew {
       )
     } else if (parts[0] === '%sessions-changed') {
       // Sessions list changed, refresh windows
-      this.refreshWindowList()
+      this.refreshPaneList()
     } else if (parts[0] === '%output') {
       // Format: %output %pane_id content
       if (parts.length >= 2) {
         const paneId = parts[1]
-        const windowKey = this.paneToWindowMap.get(paneId)
-        if (windowKey) {
-          const window = this.windows.get(windowKey)
-          if (window) {
-            console.log(`[${window.name}]`)
-          }
+        const displayKey = this.paneToKeyMap.get(paneId)
+        const pane = this.panes.get(paneId)
+        if (displayKey && pane) {
+          console.log(`[${displayKey} - ${pane.windowName} - ${pane.command}]`)
         }
       }
       return
     } else if (this.inCommandOutput && !parts[0].startsWith('%')) {
       // Check if this is a claude status check
       if (line.startsWith('CHECK ')) {
-        const checkMatch = line.match(/^CHECK ([^:]+):(\d+) (.+)$/)
+        const checkMatch = line.match(/^CHECK (%%\d+) (.+)$/)
         if (checkMatch) {
-          const [_, sessionName, windowIndex, command] = checkMatch
-          const key = `${sessionName}:${windowIndex}`
+          const [_, paneId, command] = checkMatch
 
-          // Mark that this window has claude if the command is claude
+          // Mark that this pane has claude if the command is claude
           if (command === 'claude') {
-            this.claudeCheckResults.set(key, true)
+            this.claudeCheckResults.set(paneId, true)
           }
         }
-      } else {
+      } else if (line.startsWith('PANE ')) {
         // This is pane list output from list-panes command
-        // Format: session:index: name [@@window_id] %%pane_id pid command widthxheight
+        // Format: PANE %pane_id session:window.pane windowName command widthxheight @window_id
         const match = line.match(
-          /^([^:]+):(\d+): (.+) \[@@(\d+)\] (%%\d+) (\d+) (.+) (\d+)x(\d+)$/,
+          /^PANE (%%\d+) ([^:]+):(\d+)\.(\d+) (.+?) ([^ ]+) (\d+)x(\d+) (@@\d+)$/,
         )
         if (match) {
           const [
             _,
+            paneId,
             sessionName,
             windowIndex,
+            paneIndex,
             windowName,
-            windowId,
-            paneId,
-            pid,
             command,
             width,
             height,
+            windowId,
           ] = match
-          const key = `${sessionName}:${windowIndex}`
+          const displayKey = `${sessionName}:${windowIndex}.${paneIndex}`
 
-          // Map pane ID to window key
-          this.paneToWindowMap.set(paneId, key)
+          // Store pane info
+          const existingPane = this.panes.get(paneId)
+          const hasClaude = command === 'claude'
 
-          // Check if this pane or window already exists
-          const existingWindow = this.windows.get(key)
-          const hasClaude =
-            command === 'claude' || (existingWindow?.hasClaude ?? false)
-
-          this.windows.set(key, {
-            name: windowName.trim(),
+          this.panes.set(paneId, {
+            sessionName,
+            windowIndex,
+            paneIndex,
+            windowName: windowName.trim(),
+            command,
             hasClaude,
-            firstSeen: existingWindow?.firstSeen ?? Date.now(),
+            firstSeen: existingPane?.firstSeen ?? Date.now(),
             width: parseInt(width, 10),
             height: parseInt(height, 10),
           })
-          this.windowIdMap.set(`@${windowId}`, {
+
+          // Map pane ID to display key for easy lookup
+          this.paneToKeyMap.set(paneId, displayKey)
+
+          // Keep window ID mapping for window events
+          this.windowIdMap.set(windowId, {
             session: sessionName,
             index: windowIndex,
           })
@@ -339,53 +372,71 @@ export class TmuxAutomatorNew {
 
     // Display current window list after window close
     if (parts[0] === '%window-close') {
-      setTimeout(() => this.displayWindowList(), 100)
+      setTimeout(() => this.displayPaneList(), 100)
     }
   }
 
-  private displayWindowList() {
-    console.log('\nCurrent windows:')
-    const sorted = Array.from(this.windows.entries()).sort()
-    for (const [key, window] of sorted) {
-      const sizeIndicator =
-        window.width && window.height
-          ? ` [${window.width}x${window.height}]`
-          : ''
-      const claudeIndicator = window.hasClaude ? ' [claude]' : ''
-      console.log(`  ${key} - ${window.name}${sizeIndicator}${claudeIndicator}`)
+  private displayPaneList() {
+    console.log('\nCurrent panes:')
+    // Group panes by session:window for better display
+    const panesByWindow = new Map<string, Array<[string, any]>>()
+
+    for (const [paneId, pane] of this.panes.entries()) {
+      const windowKey = `${pane.sessionName}:${pane.windowIndex}`
+      if (!panesByWindow.has(windowKey)) {
+        panesByWindow.set(windowKey, [])
+      }
+      panesByWindow.get(windowKey)!.push([paneId, pane])
+    }
+
+    // Sort windows and display panes
+    const sortedWindows = Array.from(panesByWindow.keys()).sort()
+    for (const windowKey of sortedWindows) {
+      const panes = panesByWindow.get(windowKey)!
+      // Sort panes by pane index
+      panes.sort((a, b) => parseInt(a[1].paneIndex) - parseInt(b[1].paneIndex))
+
+      for (const [paneId, pane] of panes) {
+        const displayKey = `${pane.sessionName}:${pane.windowIndex}.${pane.paneIndex}`
+        const sizeIndicator = ` [${pane.width}x${pane.height}]`
+        const claudeIndicator = pane.hasClaude ? ' [claude]' : ''
+        console.log(
+          `  ${displayKey} - ${pane.windowName} - ${pane.command}${sizeIndicator}${claudeIndicator}`,
+        )
+      }
     }
   }
 
-  private async refreshWindowList() {
+  private async refreshPaneList() {
     if (this.controlModeProcess && this.controlModeProcess.stdin) {
       // Clear existing data before refresh
-      this.windows.clear()
+      this.panes.clear()
       this.windowIdMap.clear()
-      this.paneToWindowMap.clear()
+      this.paneToKeyMap.clear()
       this.controlModeProcess.stdin.write(
-        'list-panes -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}] %#{pane_id} #{pane_pid} #{pane_current_command} #{window_width}x#{window_height}"\n',
+        'list-panes -a -F "PANE %#{pane_id} #{session_name}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n',
       )
-      // The window list will be displayed when the %end marker is received
+      // The pane list will be displayed when the %end marker is received
     }
   }
 
   private processClaudeCheckResults() {
     let hasChanges = false
 
-    // Update all windows based on check results
-    for (const [key, window] of this.windows) {
-      const hadClaude = window.hasClaude
-      const hasClaude = this.claudeCheckResults.has(key)
+    // Update all panes based on check results
+    for (const [paneId, pane] of this.panes) {
+      const hadClaude = pane.hasClaude
+      const hasClaude = this.claudeCheckResults.has(paneId)
 
       if (hasClaude !== hadClaude) {
-        this.windows.set(key, { ...window, hasClaude })
+        this.panes.set(paneId, { ...pane, hasClaude })
         hasChanges = true
       }
     }
 
     // Only redisplay if something changed
     if (hasChanges) {
-      this.displayWindowList()
+      this.displayPaneList()
     }
   }
 
@@ -410,18 +461,18 @@ export class TmuxAutomatorNew {
     }
 
     const now = Date.now()
-    let hasNewWindows = false
+    let hasNewPanes = false
 
-    // Check if we have any windows less than 20 seconds old
-    for (const [_, window] of this.windows) {
-      if (now - window.firstSeen < 20000) {
-        hasNewWindows = true
+    // Check if we have any panes less than 20 seconds old
+    for (const [_, pane] of this.panes) {
+      if (now - pane.firstSeen < 20000) {
+        hasNewPanes = true
         break
       }
     }
 
-    // If no new windows and we're checking every second, switch to 3-second interval
-    if (!hasNewWindows && this.claudeCheckInterval) {
+    // If no new panes and we're checking every second, switch to 3-second interval
+    if (!hasNewPanes && this.claudeCheckInterval) {
       clearInterval(this.claudeCheckInterval)
       this.claudeCheckInterval = setInterval(() => {
         this.checkForClaudeUpdates()
@@ -432,7 +483,7 @@ export class TmuxAutomatorNew {
     this.claudeCheckResults.clear()
     this.isCheckingClaude = true
     this.controlModeProcess.stdin.write(
-      'list-panes -a -F "CHECK #{session_name}:#{window_index} #{pane_current_command}"\n',
+      'list-panes -a -F "CHECK %#{pane_id} #{pane_current_command}"\n',
     )
   }
 
