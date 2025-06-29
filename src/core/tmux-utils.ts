@@ -213,9 +213,7 @@ export function getProcessTree(): Map<string, string[]> {
         tree.get(ppid)!.push(pid + ':' + command)
       }
     })
-  } catch {
-    // Return empty tree on error
-  }
+  } catch {}
 
   return tree
 }

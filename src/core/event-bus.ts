@@ -118,9 +118,7 @@ export class EventBus extends EventEmitter {
       )
     })
 
-    this.on('session-ready', (event: SessionReadyEvent) => {
-      // This is handled in the create-session command
-    })
+    this.on('session-ready', (event: SessionReadyEvent) => {})
 
     this.on('error', (event: ErrorEvent) => {
       console.error(`✗ ${event.message}`)

@@ -2,8 +2,8 @@ import path from 'path'
 import os from 'os'
 
 export interface TmuxSocketOptions {
-  socketName?: string // -L option
-  socketPath?: string // -S option
+  socketName?: string
+  socketPath?: string
 }
 
 export function getTmuxSocketArgs(options: TmuxSocketOptions): string[] {
@@ -14,7 +14,6 @@ export function getTmuxSocketArgs(options: TmuxSocketOptions): string[] {
   } else if (options.socketPath) {
     args.push('-S', options.socketPath)
   } else {
-    // Default socket path
     args.push('-S', path.join(os.tmpdir(), 'control-app-tmux'))
   }
 

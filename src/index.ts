@@ -6,7 +6,6 @@ import { SessionCreator } from './commands/create-session.js'
 import { runMigrations } from './db/index.js'
 
 async function main() {
-  // Run database migrations on startup
   try {
     runMigrations()
   } catch (error) {

@@ -16,6 +16,9 @@ import {
   socketExists,
   findPanesWithCommand,
   getWindowInfo,
+  getTmuxPanes,
+  getProcessTree,
+  findDescendant,
 } from '../core/tmux-utils.js'
 import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 import {
@@ -43,8 +46,9 @@ export class TmuxAutomator {
   private pollInterval: number
   private claudeWindowsCache = new Set<string>()
   private claudeSeenWindows = new Set<string>()
+  private checkedPanes = new Set<string>()
   private lastClaudeCheck = 0
-  private readonly CLAUDE_CHECK_INTERVAL = 1000 // Check every 1 second
+  private readonly CLAUDE_CHECK_INTERVAL = 1000
 
   constructor(eventBus: EventBus, options: AutomateTmuxOptions = {}) {
     this.eventBus = eventBus
@@ -98,21 +102,48 @@ export class TmuxAutomator {
     }
 
     this.lastClaudeCheck = now
-    this.claudeWindowsCache.clear()
 
     try {
-      const panesWithClaude = await findPanesWithCommand(
-        'claude',
-        this.socketOptions,
+      const startTime = Date.now()
+
+      const allPanes = getTmuxPanes(this.socketOptions)
+      const currentPaneIds = new Set(
+        allPanes.map(p => `${p.sessionId}:${p.windowIndex}.${p.paneIndex}`),
       )
-      for (const pane of panesWithClaude) {
-        const windowKey = `${pane.sessionId}:${pane.windowIndex}`
-        this.claudeWindowsCache.add(windowKey)
+
+      const removedPanes = Array.from(this.checkedPanes).filter(
+        id => !currentPaneIds.has(id),
+      )
+      removedPanes.forEach(paneId => {
+        this.checkedPanes.delete(paneId)
+        const [sessionWindow] = paneId.split('.')
+        this.claudeWindowsCache.delete(sessionWindow)
+      })
+
+      const newPanes = allPanes.filter(p => {
+        const paneId = `${p.sessionId}:${p.windowIndex}.${p.paneIndex}`
+        return !this.checkedPanes.has(paneId)
+      })
+
+      if (newPanes.length > 0) {
+        const tree = getProcessTree()
+
+        for (const pane of newPanes) {
+          const paneId = `${pane.sessionId}:${pane.windowIndex}.${pane.paneIndex}`
+          this.checkedPanes.add(paneId)
+
+          if (findDescendant(pane.pid, 'claude', tree)) {
+            const windowKey = `${pane.sessionId}:${pane.windowIndex}`
+            this.claudeWindowsCache.add(windowKey)
+          }
+        }
       }
+
+      const searchTime = Date.now() - startTime
 
       if (process.env.VERBOSE) {
         console.log(
-          `Found claude running in ${this.claudeWindowsCache.size} windows:`,
+          `Checked ${newPanes.length} new panes in ${searchTime}ms. Claude running in ${this.claudeWindowsCache.size} windows:`,
           Array.from(this.claudeWindowsCache),
         )
       }
@@ -137,13 +168,13 @@ export class TmuxAutomator {
       this.lastSocketState = socketExists
       if (!socketExists) {
         if (this.socketExistenceLogged) {
-          // Server was available but now it's gone
           console.log(`Tmux server disconnected. Waiting for reconnection...`)
-          this.executedMatchers.clear() // Clear executed matchers so they run again on reconnect
-          this.knownWindows.clear() // Clear known windows
-          this.checksumCache.clear() // Clear checksums
-          this.claudeWindowsCache.clear() // Clear claude windows cache
-          this.claudeSeenWindows.clear() // Clear claude seen windows
+          this.executedMatchers.clear()
+          this.knownWindows.clear()
+          this.checksumCache.clear()
+          this.claudeWindowsCache.clear()
+          this.claudeSeenWindows.clear()
+          this.checkedPanes.clear()
         } else {
           console.log(`Waiting for tmux socket...`)
         }
@@ -160,7 +191,6 @@ export class TmuxAutomator {
       return
     }
 
-    // Update claude windows cache periodically
     await this.updateClaudeWindowsCache()
 
     try {
@@ -251,7 +281,6 @@ export class TmuxAutomator {
         })
       }
 
-      // Get window info to check for claude
       const windowInfo = await getWindowInfo(
         sessionName,
         windowName,
@@ -261,7 +290,6 @@ export class TmuxAutomator {
         ? this.hasClaudeRunning(windowInfo.sessionId, windowInfo.windowIndex)
         : false
 
-      // Check if claude is newly detected in this window
       const isClaudeNewlyDetected =
         hasClaude && !this.claudeSeenWindows.has(windowKey)
       if (isClaudeNewlyDetected) {

@@ -84,7 +84,6 @@ export class SessionCreator {
       const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
       console.log(`\nTo attach: tmux ${socketArgs} attach -t ${sessionName}`)
     } catch (error) {
-      // Don't emit error event here since we'll handle it in the CLI
       throw error
     }
   }
@@ -124,7 +123,6 @@ export class SessionCreator {
         controlConfig = yaml.load(controlYamlContent) as ControlConfig
       } catch {}
 
-      // Check if all required config values are present
       if (
         controlConfig?.agents?.act &&
         controlConfig?.agents?.plan &&
@@ -320,7 +318,6 @@ export class SessionCreator {
       })
     }
 
-    // Validate all required config values are present
     if (
       !controlConfig?.agents?.act ||
       !controlConfig?.agents?.plan ||
@@ -333,7 +330,6 @@ export class SessionCreator {
         )
       }
     } else if (expectedWindows.includes('work')) {
-      // Use agents.plan as the command to start
       const command = controlConfig.agents.plan
 
       if (!firstWindowCreated) {
@@ -351,14 +347,13 @@ export class SessionCreator {
       }
       await saveWindow(window)
 
-      // Execute context.plan command and use its output to populate the tmux buffer
       console.log('  Preparing context...')
       let contextOutput: string
       try {
         contextOutput = execSync(controlConfig.context.plan, {
           encoding: 'utf-8',
           cwd: worktreePath,
-          stdio: ['pipe', 'pipe', 'pipe'], // Suppress stderr output
+          stdio: ['pipe', 'pipe', 'pipe'],
         }).trim()
       } catch (error) {
         throw new Error(
@@ -366,15 +361,12 @@ export class SessionCreator {
         )
       }
 
-      // Populate tmux buffer with the command output
       const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
-      // Write to a temp file to avoid shell escaping issues
       const tempFile = `/tmp/control-context-${Date.now()}.txt`
       fs.writeFileSync(tempFile, contextOutput)
       try {
         execSync(`tmux ${socketArgs} load-buffer ${tempFile}`)
       } finally {
-        // Clean up temp file
         try {
           fs.unlinkSync(tempFile)
         } catch {}
