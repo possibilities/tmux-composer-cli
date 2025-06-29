@@ -8,13 +8,18 @@ import { MATCHERS } from '../core/matchers.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 describe('Matcher mechanism', () => {
-  it('should match trust-folder pattern', () => {
-    const fixturePath = join(__dirname, '../../fixtures/trust-folder.txt')
+  it('should match dismiss-trust-folder-confirmation pattern', () => {
+    const fixturePath = join(
+      __dirname,
+      '../../fixtures/dismiss-trust-folder-confirmation.txt',
+    )
     const tmuxOutput = readFileSync(fixturePath, 'utf-8')
 
-    const folderIsTrustedMatcher = MATCHERS.find(m => m.name === 'trust-folder')
+    const folderIsTrustedMatcher = MATCHERS.find(
+      m => m.name === 'dismiss-trust-folder-confirmation',
+    )
     if (!folderIsTrustedMatcher) {
-      throw new Error('trust-folder matcher not found')
+      throw new Error('dismiss-trust-folder-confirmation matcher not found')
     }
 
     const cleanedContent = cleanContent(tmuxOutput)

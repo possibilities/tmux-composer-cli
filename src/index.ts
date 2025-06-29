@@ -6,6 +6,7 @@ import { SessionCreator } from './commands/create-session.js'
 import { runMigrations } from './db/index.js'
 import { getDatabasePath } from './core/tmux-socket.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
+import { MATCHERS } from './core/matchers.js'
 
 async function main() {
   const program = new Command()
@@ -15,29 +16,20 @@ async function main() {
     .description('Control CLI')
     .version(packageJson.version)
 
-  program
+  const automateCommand = program
     .command('automate-claude')
     .description('Monitor and automate Claude interactions in tmux sessions')
     .option('-L <socket-name>', 'Use a different tmux socket name')
     .option('-S <socket-path>', 'Use a different tmux socket path')
-    .option('--skip-trust-folder', 'Skip the "trust folder" matcher')
-    .option('--skip-ensure-plan-mode', 'Skip the "ensure plan mode" matcher')
-    .option(
-      '--skip-inject-initial-context-act',
-      'Skip the "inject initial context act" matcher',
-    )
-    .option(
-      '--skip-inject-initial-context-plan',
-      'Skip the "inject initial context plan" matcher',
-    )
-    .option(
-      '--skip-dismiss-create-file-confirmation',
-      'Skip the "dismiss create file confirmation" matcher',
-    )
-    .option(
-      '--skip-dismiss-edit-file-confirmation',
-      'Skip the "dismiss edit file confirmation" matcher',
-    )
+
+  // Dynamically add skip options for each matcher
+  for (const matcher of MATCHERS) {
+    const optionName = `--skip-${matcher.name}`
+    const description = `Skip the "${matcher.name.replace(/-/g, ' ')}" matcher`
+    automateCommand.option(optionName, description)
+  }
+
+  automateCommand
     .addOption(
       new Option('--skip-migrations', 'Skip database migrations').hideHelp(),
     )
@@ -60,18 +52,22 @@ async function main() {
         }
       }
 
+      // Build skipMatchers object from options
+      const skipMatchers: Record<string, boolean> = {}
+      for (const matcher of MATCHERS) {
+        const optionKey = `skip${matcher.name
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join('')}`
+        skipMatchers[matcher.name] = options[optionKey] || false
+      }
+
       const eventBus = new EventBus()
       const automator = new TmuxAutomator(
         eventBus,
         {
           ...socketOptions,
-          skipTrustFolder: options.skipTrustFolder,
-          skipEnsurePlanMode: options.skipEnsurePlanMode,
-          skipInjectInitialContext: options.skipInjectInitialContext,
-          skipDismissCreateFileConfirmation:
-            options.skipDismissCreateFileConfirmation,
-          skipDismissEditFileConfirmation:
-            options.skipDismissEditFileConfirmation,
+          skipMatchers,
         },
         dbPath,
       )

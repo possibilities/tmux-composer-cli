@@ -3,17 +3,19 @@ export interface Matcher {
   trigger: string[]
   response: string
   runOnce: boolean
-  mode?: 'act' | 'plan'
+  mode: 'act' | 'plan' | 'all'
 }
 
 export const MATCHERS: Matcher[] = [
   {
-    name: 'trust-folder',
+    name: 'dismiss-trust-folder-confirmation',
     trigger: [
       'Do you trust the files in this folder?',
       'Enter to confirm · Esc to exit',
     ],
     response: '<Enter>',
+    runOnce: false,
+    mode: 'all',
   },
   {
     name: 'ensure-plan-mode',
@@ -40,10 +42,14 @@ export const MATCHERS: Matcher[] = [
     name: 'dismiss-create-file-confirmation',
     trigger: ['Create file', 'Do you want to create', '1. Yes'],
     response: '1',
+    runOnce: false,
+    mode: 'all',
   },
   {
     name: 'dismiss-edit-file-confirmation',
     trigger: ['Edit file', 'Do you want to make this edit to', '1. Yes'],
     response: '1',
+    runOnce: false,
+    mode: 'all',
   },
 ]

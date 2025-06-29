@@ -33,11 +33,7 @@ import {
 import { MATCHERS } from '../core/matchers.js'
 
 interface AutomateTmuxOptions extends TmuxSocketOptions {
-  skipTrustFolder?: boolean
-  skipEnsurePlanMode?: boolean
-  skipInjectInitialContext?: boolean
-  skipDismissCreateFileConfirmation?: boolean
-  skipDismissEditFileConfirmation?: boolean
+  skipMatchers?: Record<string, boolean>
 }
 
 export class TmuxAutomator {
@@ -56,11 +52,7 @@ export class TmuxAutomator {
   private checkedPanes = new Set<string>()
   private lastClaudeCheck = 0
   private readonly CLAUDE_CHECK_INTERVAL = 500
-  private skipTrustFolder: boolean
-  private skipEnsurePlanMode: boolean
-  private skipInjectInitialContext: boolean
-  private skipDismissCreateFileConfirmation: boolean
-  private skipDismissEditFileConfirmation: boolean
+  private skipMatchers: Record<string, boolean>
   private dbPath?: string
 
   constructor(
@@ -73,13 +65,7 @@ export class TmuxAutomator {
       socketName: options.socketName,
       socketPath: options.socketPath,
     }
-    this.skipTrustFolder = options.skipTrustFolder || false
-    this.skipEnsurePlanMode = options.skipEnsurePlanMode || false
-    this.skipInjectInitialContext = options.skipInjectInitialContext || false
-    this.skipDismissCreateFileConfirmation =
-      options.skipDismissCreateFileConfirmation || false
-    this.skipDismissEditFileConfirmation =
-      options.skipDismissEditFileConfirmation || false
+    this.skipMatchers = options.skipMatchers || {}
     this.dbPath = dbPath
   }
 
@@ -122,40 +108,21 @@ export class TmuxAutomator {
     let skip = false
     let reason = ''
 
-    switch (matcherName) {
-      case 'trust-folder':
-        skip = this.skipTrustFolder
-        reason = skip ? 'skipTrustFolder is true' : 'skipTrustFolder is false'
-        break
-      case 'ensure-plan-mode':
-        skip = this.skipEnsurePlanMode
-        reason = skip
-          ? 'skipEnsurePlanMode is true'
-          : 'skipEnsurePlanMode is false'
-        break
-      case 'inject-initial-context-plan':
-      case 'inject-initial-context-act':
-        const hasBuffer = hasBufferContent(this.socketOptions)
-        skip = this.skipInjectInitialContext || !hasBuffer
-        reason = skip
-          ? `skipInjectInitialContext=${this.skipInjectInitialContext}, hasBuffer=${hasBuffer}`
-          : 'not skipping, has buffer content'
-        break
-      case 'dismiss-create-file-confirmation':
-        skip = this.skipDismissCreateFileConfirmation
-        reason = skip
-          ? 'skipDismissCreateFileConfirmation is true'
-          : 'skipDismissCreateFileConfirmation is false'
-        break
-      case 'dismiss-edit-file-confirmation':
-        skip = this.skipDismissEditFileConfirmation
-        reason = skip
-          ? 'skipDismissEditFileConfirmation is true'
-          : 'skipDismissEditFileConfirmation is false'
-        break
-      default:
-        skip = false
-        reason = 'unknown matcher'
+    // Special handling for inject-initial-context matchers
+    if (
+      matcherName === 'inject-initial-context-plan' ||
+      matcherName === 'inject-initial-context-act'
+    ) {
+      const hasBuffer = hasBufferContent(this.socketOptions)
+      skip = this.skipMatchers[matcherName] || !hasBuffer
+      reason = skip
+        ? `skipMatchers[${matcherName}]=${this.skipMatchers[matcherName]}, hasBuffer=${hasBuffer}`
+        : 'not skipping, has buffer content'
+    } else {
+      skip = this.skipMatchers[matcherName] || false
+      reason = skip
+        ? `skipMatchers[${matcherName}] is true`
+        : `skipMatchers[${matcherName}] is false`
     }
 
     console.log(
@@ -374,6 +341,16 @@ export class TmuxAutomator {
         const cleanedContent = cleanContent(rawContent)
         const cleanedLines = cleanedContent.split('\n')
 
+        // Check for logout detection
+        if (cleanedContent.includes("Let's get started")) {
+          console.error('\n❌ ERROR: Claude has been logged out unexpectedly!')
+          console.error(
+            'The screen contains "Let\'s get started" which indicates you have been logged out.',
+          )
+          console.error('Please log in again and restart the automation.')
+          process.exit(1)
+        }
+
         console.log(
           `Checking ${sessionName}:${windowName} for automation patterns (claude detected)...`,
         )
@@ -397,7 +374,11 @@ export class TmuxAutomator {
             continue
           }
 
-          if (matcher.mode && sessionMode && matcher.mode !== sessionMode) {
+          if (
+            matcher.mode !== 'all' &&
+            sessionMode &&
+            matcher.mode !== sessionMode
+          ) {
             if (process.env.VERBOSE) {
               console.log(
                 `Skipping matcher ${matcher.name} - mode mismatch (matcher: ${matcher.mode}, session: ${sessionMode})`,

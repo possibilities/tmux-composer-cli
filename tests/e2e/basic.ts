@@ -24,7 +24,7 @@ const SAVE_FIXTURES = process.argv.includes('--save-fixtures')
 const NO_CLEANUP = process.argv.includes('--no-cleanup')
 
 const SOCKET_NAME = `control-test-${process.pid}-${Date.now()}`
-const STABILITY_WAIT_MS = 1000
+const STABILITY_WAIT_MS = 2000
 const POLL_INTERVAL_MS = 100
 const WORKTREES_PATH = join(homedir(), 'code', 'worktrees')
 const DB_PATH = join(homedir(), '.control', `cli-${SOCKET_NAME}.db`)
@@ -66,7 +66,7 @@ const EDIT_FILE_CONFIG = dedent`
 const TEST_RUNS = [
   {
     automateClaudeArguments: [
-      '--skip-trust-folder',
+      '--skip-dismiss-trust-folder-confirmation',
       '--skip-ensure-plan-mode',
       '--skip-inject-initial-context-act',
       '--skip-inject-initial-context-plan',
@@ -74,7 +74,7 @@ const TEST_RUNS = [
     createSessionArguments: [],
     configFile: DEFAULT_CONFIG,
     mode: 'plan' as const,
-    fixtureFileName: 'trust-folder.txt',
+    fixtureFileName: 'dismiss-trust-folder-confirmation.txt',
   },
   {
     automateClaudeArguments: [
@@ -369,29 +369,42 @@ async function startAutomateClaude(additionalArgs: string[]) {
   console.error('Starting automate-claude process...')
   console.error('Additional args:', additionalArgs)
 
-  automateClaudeProcess = spawn(
-    'node',
-    [
-      join(__dirname, '..', '..', 'dist', 'cli.js'),
-      'automate-claude',
-      '-L',
-      SOCKET_NAME,
-      '--skip-migrations',
-      ...additionalArgs,
-    ],
-    {
-      stdio: 'inherit',
-    },
-  )
+  return new Promise<void>((resolve, reject) => {
+    automateClaudeProcess = spawn(
+      'node',
+      [
+        join(__dirname, '..', '..', 'dist', 'cli.js'),
+        'automate-claude',
+        '-L',
+        SOCKET_NAME,
+        '--skip-migrations',
+        ...additionalArgs,
+      ],
+      {
+        stdio: 'inherit',
+      },
+    )
 
-  automateClaudeProcess.on('error', error => {
-    console.error('Error starting automate-claude:', error)
-    cleanupProcesses()
-    process.exit(1)
-  })
+    automateClaudeProcess.on('error', error => {
+      console.error('Error starting automate-claude:', error)
+      cleanupProcesses()
+      reject(error)
+    })
 
-  automateClaudeProcess.on('exit', code => {
-    console.error(`automate-claude exited with code ${code}`)
+    automateClaudeProcess.on('exit', code => {
+      console.error(`automate-claude exited with code ${code}`)
+      if (code === 1) {
+        // Exit code 1 indicates a critical error (like logout detection)
+        console.error(
+          'automate-claude exited with error code 1 - stopping test',
+        )
+        cleanupProcesses()
+        process.exit(1)
+      }
+    })
+
+    // Resolve immediately since automate-claude runs in the background
+    resolve()
   })
 }
 
