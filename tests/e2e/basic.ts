@@ -18,49 +18,14 @@ import { createHash } from 'crypto'
 import { fileURLToPath } from 'url'
 import dedent from 'dedent'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-
-const SAVE_FIXTURES = process.argv.includes('--save-fixtures')
-const NO_CLEANUP = process.argv.includes('--no-cleanup')
-
-const SOCKET_NAME = `control-test-${process.pid}-${Date.now()}`
-const STABILITY_WAIT_MS = 2000
-const POLL_INTERVAL_MS = 100
-const WORKTREES_PATH = join(homedir(), 'code', 'worktrees')
-const DB_PATH = join(homedir(), '.control', `cli-${SOCKET_NAME}.db`)
-const TEMP_FIXTURES_DIR = join(
-  tmpdir(),
-  `control-cli-fixtures-temp-${process.pid}-${Date.now()}`,
-)
-
 const DEFAULT_CONFIG = dedent`
-  name: test-project
+  name: default-test-project
   agents:
     act: claude
     plan: claude
   context:
     act: echo "Do nothing but wait for my feature description to make a plan"
     plan: echo "Do nothing but wait for my feature description to make a plan"
-`
-
-const CREATE_FILE_CONFIG = dedent`
-  name: test-project
-  agents:
-    act: claude
-    plan: claude
-  context:
-    act: echo "Create a file called funny.txt with 5 funny words in it, one on each line"
-    plan: echo "Create a file called funny.txt with 5 funny words in it, one on each line"
-`
-
-const EDIT_FILE_CONFIG = dedent`
-  name: test-project
-  agents:
-    act: claude
-    plan: claude
-  context:
-    act: echo "Create a file called funny.txt with 5 funny words in it, one on each line. Then, after saving, add 1 more funny word to it."
-    plan: echo "Create a file called funny.txt with 5 funny words in it, one on each line. Then, after saving, add 1 more funny word to it."
 `
 
 const TEST_RUNS = [
@@ -100,18 +65,64 @@ const TEST_RUNS = [
   {
     automateClaudeArguments: ['--skip-dismiss-create-file-confirmation'],
     createSessionArguments: [],
-    configFile: CREATE_FILE_CONFIG,
     mode: 'act' as const,
     fixtureFileName: 'dismiss-create-file-confirmation.txt',
+    configFile: dedent`
+      name: create-file-test-project
+      agents:
+        act: claude
+        plan: claude
+      context:
+        act: echo "Create a file called funny.txt with 5 funny words in it, one on each line"
+        plan: echo "Create a file called funny.txt with 5 funny words in it, one on each line"
+    `,
   },
   {
     automateClaudeArguments: ['--skip-dismiss-edit-file-confirmation'],
     createSessionArguments: [],
-    configFile: EDIT_FILE_CONFIG,
     mode: 'act' as const,
     fixtureFileName: 'dismiss-edit-file-confirmation.txt',
+    configFile: dedent`
+      name: edit-file-test-project
+      agents:
+        act: claude
+        plan: claude
+      context:
+        act: echo "Create a file called funny.txt with 5 funny words in it, one on each line. Then, after saving, add 1 more funny word to it."
+        plan: echo "Create a file called funny.txt with 5 funny words in it, one on each line. Then, after saving, add 1 more funny word to it."
+    `,
+  },
+  {
+    automateClaudeArguments: ['--skip-dismiss-run-command-confirmation'],
+    createSessionArguments: [],
+    mode: 'act' as const,
+    fixtureFileName: 'dismiss-run-command-confirmation.txt',
+    configFile: dedent`
+      name: run-command-test-project
+      agents:
+        act: claude
+        plan: claude
+      context:
+        act: echo "Run 'ls -lsa /tmp' in the current directory"
+        plan: echo "Run 'ls -lsa /tmp' in the current directory"
+    `,
   },
 ]
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
+const SAVE_FIXTURES = process.argv.includes('--save-fixtures')
+const NO_CLEANUP = process.argv.includes('--no-cleanup')
+
+const SOCKET_NAME = `control-test-${process.pid}-${Date.now()}`
+const STABILITY_WAIT_MS = 2000
+const POLL_INTERVAL_MS = 100
+const WORKTREES_PATH = join(homedir(), 'code', 'worktrees')
+const DB_PATH = join(homedir(), '.control', `cli-${SOCKET_NAME}.db`)
+const TEMP_FIXTURES_DIR = join(
+  tmpdir(),
+  `control-cli-fixtures-temp-${process.pid}-${Date.now()}`,
+)
 
 let actualSessionName = ''
 let workWindowIndex = ''
@@ -370,6 +381,8 @@ async function startAutomateClaude(additionalArgs: string[]) {
   console.error('Additional args:', additionalArgs)
 
   return new Promise<void>((resolve, reject) => {
+    let stderrOutput = ''
+
     automateClaudeProcess = spawn(
       'node',
       [
@@ -381,9 +394,15 @@ async function startAutomateClaude(additionalArgs: string[]) {
         ...additionalArgs,
       ],
       {
-        stdio: 'inherit',
+        stdio: ['pipe', 'inherit', 'pipe'],
       },
     )
+
+    automateClaudeProcess.stderr?.on('data', data => {
+      const chunk = data.toString()
+      stderrOutput += chunk
+      process.stderr.write(chunk)
+    })
 
     automateClaudeProcess.on('error', error => {
       console.error('Error starting automate-claude:', error)
@@ -394,10 +413,19 @@ async function startAutomateClaude(additionalArgs: string[]) {
     automateClaudeProcess.on('exit', code => {
       console.error(`automate-claude exited with code ${code}`)
       if (code === 1) {
-        // Exit code 1 indicates a critical error (like logout detection)
+        // Exit code 1 indicates a critical error (like logout detection or invalid options)
+        console.error('\n' + '='.repeat(60))
+        console.error('❌ AUTOMATE-CLAUDE FAILED WITH ERROR CODE 1')
+        console.error('='.repeat(60))
+        if (stderrOutput.trim()) {
+          console.error('Error details:')
+          console.error(stderrOutput.trim())
+        }
+        console.error('Command was:')
         console.error(
-          'automate-claude exited with error code 1 - stopping test',
+          `  node ${join(__dirname, '..', '..', 'dist', 'cli.js')} automate-claude -L ${SOCKET_NAME} --skip-migrations ${additionalArgs.join(' ')}`,
         )
+        console.error('='.repeat(60) + '\n')
         cleanupProcesses()
         process.exit(1)
       }

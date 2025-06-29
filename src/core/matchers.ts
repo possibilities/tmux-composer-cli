@@ -52,4 +52,11 @@ export const MATCHERS: Matcher[] = [
     runOnce: false,
     mode: 'all',
   },
+  {
+    name: 'dismiss-run-command-confirmation',
+    trigger: ['Bash command', 'Do you want to proceed', '1. Yes'],
+    response: '1',
+    runOnce: false,
+    mode: 'all',
+  },
 ]

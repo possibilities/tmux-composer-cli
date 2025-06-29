@@ -5,12 +5,12 @@
 │ │ funny.txt                                                                │ │
 │ │                                                                          │ │
 │ │   2    brouhaha                                                          │ │
-│ │   3    flibbertigibbet                                                   │ │
-│ │   4    gobbledygook                                                      │ │
-│ │   5 -  bamboozle                                                         │ │
+│ │   3    shenanigans                                                       │ │
+│ │   4    hullabaloo                                                        │ │
+│ │   5 -  discombobulated                                                   │ │
 │ │   5   \ No newline at end of file                                        │ │
-│ │   6 +  bamboozle                                                         │ │
-│ │   7 +  nincompoop                                                        │ │
+│ │   6 +  discombobulated                                                   │ │
+│ │   7 +  bamboozled                                                        │ │
 │ │   8   \ No newline at end of file                                        │ │
 │ ╰──────────────────────────────────────────────────────────────────────────╯ │
 │ Do you want to make this edit to funny.txt?                                  │
