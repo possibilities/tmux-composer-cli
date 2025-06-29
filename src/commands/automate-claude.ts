@@ -125,23 +125,21 @@ export class TmuxAutomator {
         return !this.checkedPanes.has(paneId)
       })
 
-      if (newPanes.length > 0 || removedPanes.length > 0) {
-        // Rebuild the entire claude windows cache
-        this.claudeWindowsCache.clear()
-        const tree = getProcessTree()
+      // Mark new panes as checked
+      for (const pane of newPanes) {
+        const paneId = `${pane.sessionId}:${pane.windowIndex}.${pane.paneIndex}`
+        this.checkedPanes.add(paneId)
+      }
 
-        // Check new panes
-        for (const pane of newPanes) {
-          const paneId = `${pane.sessionId}:${pane.windowIndex}.${pane.paneIndex}`
-          this.checkedPanes.add(paneId)
-        }
+      // Always rebuild the claude windows cache to catch claude starting in existing panes
+      this.claudeWindowsCache.clear()
+      const tree = getProcessTree()
 
-        // Check all panes for claude
-        for (const pane of allPanes) {
-          if (findDescendant(pane.pid, 'claude', tree)) {
-            const windowKey = `${pane.sessionId}:${pane.windowIndex}`
-            this.claudeWindowsCache.add(windowKey)
-          }
+      // Check all panes for claude
+      for (const pane of allPanes) {
+        if (findDescendant(pane.pid, 'claude', tree)) {
+          const windowKey = `${pane.sessionId}:${pane.windowIndex}`
+          this.claudeWindowsCache.add(windowKey)
         }
       }
 
