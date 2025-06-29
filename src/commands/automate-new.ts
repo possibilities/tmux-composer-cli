@@ -15,10 +15,14 @@ export class TmuxAutomatorNew {
   private controlModeProcess: any = null
   private isConnected = false
   private isShuttingDown = false
-  private windows = new Map<string, string>()
+  private windows = new Map<
+    string,
+    { name: string; hasClaude: boolean; firstSeen: number }
+  >()
   private windowIdMap = new Map<string, { session: string; index: string }>()
   private inCommandOutput = false
   private hasDisplayedInitialList = false
+  private claudeCheckInterval: NodeJS.Timeout | null = null
 
   constructor(eventBus: EventBus, options: AutomateNewOptions = {}) {
     this.eventBus = eventBus
@@ -43,17 +47,25 @@ export class TmuxAutomatorNew {
   }
 
   private async monitorAndConnect() {
+    let waitingMessageShown = false
     while (!this.isShuttingDown) {
       if (!socketExists(this.socketOptions)) {
         if (this.isConnected) {
           console.log('Tmux server disconnected. Waiting for reconnection...')
           this.isConnected = false
+          waitingMessageShown = true
           // Clear window data on disconnect
           this.windows.clear()
           this.windowIdMap.clear()
           this.hasDisplayedInitialList = false
-        } else {
+          // Stop claude checking
+          if (this.claudeCheckInterval) {
+            clearInterval(this.claudeCheckInterval)
+            this.claudeCheckInterval = null
+          }
+        } else if (!waitingMessageShown) {
           console.log('Waiting for tmux server...')
+          waitingMessageShown = true
         }
         await sleep(1000)
         continue
@@ -61,6 +73,7 @@ export class TmuxAutomatorNew {
 
       if (!this.isConnected) {
         console.log('Tmux server detected. Connecting in control mode...')
+        waitingMessageShown = false // Reset for next disconnect
         // Clear any stale data before reconnecting
         this.windows.clear()
         this.windowIdMap.clear()
@@ -108,6 +121,11 @@ export class TmuxAutomatorNew {
       this.windows.clear()
       this.windowIdMap.clear()
       this.hasDisplayedInitialList = false
+      // Stop claude checking
+      if (this.claudeCheckInterval) {
+        clearInterval(this.claudeCheckInterval)
+        this.claudeCheckInterval = null
+      }
     })
 
     this.controlModeProcess.on('error', (error: Error) => {
@@ -120,10 +138,13 @@ export class TmuxAutomatorNew {
     // Wait a bit for connection to establish
     await sleep(100)
 
-    // Request list of all windows with window IDs
+    // Request list of all windows with window IDs and pane info
     this.controlModeProcess.stdin.write(
-      'list-windows -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}]"\n',
+      'list-panes -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}] #{pane_pid} #{pane_current_command}"\n',
     )
+
+    // Start periodic claude checking
+    this.startClaudeChecking()
   }
 
   private processControlModeOutput(line: string) {
@@ -153,7 +174,11 @@ export class TmuxAutomatorNew {
       // After startup, refresh the window list to include the new window
       if (this.hasDisplayedInitialList) {
         console.log(`Window added: ${windowId}`)
-        this.refreshWindowList()
+        // Wait a bit for claude to start, then refresh
+        setTimeout(() => {
+          console.log('Checking for claude in new window...')
+          this.refreshWindowList()
+        }, 500)
       }
     } else if (parts[0] === '%window-close') {
       // Format: %window-close @window_id
@@ -175,10 +200,13 @@ export class TmuxAutomatorNew {
       const info = this.windowIdMap.get(windowId)
       if (info) {
         const key = `${info.session}:${info.index}`
-        this.windows.set(key, newName)
-        console.log(`Window renamed: ${key} to ${newName}`)
-        // Display the updated window list
-        this.displayWindowList()
+        const existingWindow = this.windows.get(key)
+        if (existingWindow) {
+          this.windows.set(key, { ...existingWindow, name: newName })
+          console.log(`Window renamed: ${key} to ${newName}`)
+          // Display the updated window list
+          this.displayWindowList()
+        }
       }
     } else if (parts[0] === '%session-window-changed') {
       const sessionId = parts[1]
@@ -193,17 +221,56 @@ export class TmuxAutomatorNew {
       // Skip terminal output from panes
       return
     } else if (this.inCommandOutput && !parts[0].startsWith('%')) {
-      // This is window list output from list-windows command
-      // Format: session:index: name [@@window_id]
-      const match = line.match(/^([^:]+):(\d+): (.+) \[@@(\d+)\]$/)
-      if (match) {
-        const [_, sessionName, windowIndex, windowName, windowId] = match
-        const key = `${sessionName}:${windowIndex}`
-        this.windows.set(key, windowName.trim())
-        this.windowIdMap.set(`@${windowId}`, {
-          session: sessionName,
-          index: windowIndex,
-        })
+      // Check if this is a claude status check
+      if (line.startsWith('CHECK ')) {
+        const checkMatch = line.match(/^CHECK ([^:]+):(\d+) (.+)$/)
+        if (checkMatch) {
+          const [_, sessionName, windowIndex, command] = checkMatch
+          const key = `${sessionName}:${windowIndex}`
+          const existingWindow = this.windows.get(key)
+
+          if (existingWindow) {
+            const hadClaude = existingWindow.hasClaude
+            const hasClaude = command === 'claude' || hadClaude
+
+            if (hasClaude !== hadClaude) {
+              // Claude status changed, update and redisplay
+              this.windows.set(key, { ...existingWindow, hasClaude })
+              this.displayWindowList()
+            }
+          }
+        }
+      } else {
+        // This is pane list output from list-panes command
+        // Format: session:index: name [@@window_id] pid command
+        const match = line.match(/^([^:]+):(\d+): (.+) \[@@(\d+)\] (\d+) (.+)$/)
+        if (match) {
+          const [
+            _,
+            sessionName,
+            windowIndex,
+            windowName,
+            windowId,
+            pid,
+            command,
+          ] = match
+          const key = `${sessionName}:${windowIndex}`
+
+          // Check if this pane or window already exists
+          const existingWindow = this.windows.get(key)
+          const hasClaude =
+            command === 'claude' || (existingWindow?.hasClaude ?? false)
+
+          this.windows.set(key, {
+            name: windowName.trim(),
+            hasClaude,
+            firstSeen: existingWindow?.firstSeen ?? Date.now(),
+          })
+          this.windowIdMap.set(`@${windowId}`, {
+            session: sessionName,
+            index: windowIndex,
+          })
+        }
       }
     }
 
@@ -216,8 +283,9 @@ export class TmuxAutomatorNew {
   private displayWindowList() {
     console.log('\nCurrent windows:')
     const sorted = Array.from(this.windows.entries()).sort()
-    for (const [key, name] of sorted) {
-      console.log(`  ${key} - ${name}`)
+    for (const [key, window] of sorted) {
+      const claudeIndicator = window.hasClaude ? ' [claude]' : ''
+      console.log(`  ${key} - ${window.name}${claudeIndicator}`)
     }
   }
 
@@ -227,15 +295,65 @@ export class TmuxAutomatorNew {
       this.windows.clear()
       this.windowIdMap.clear()
       this.controlModeProcess.stdin.write(
-        'list-windows -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}]"\n',
+        'list-panes -a -F "#{session_name}:#{window_index}: #{window_name} [@#{window_id}] #{pane_pid} #{pane_current_command}"\n',
       )
       // The window list will be displayed when the %end marker is received
     }
   }
 
+  private startClaudeChecking() {
+    if (this.claudeCheckInterval) {
+      clearInterval(this.claudeCheckInterval)
+    }
+
+    // Check every second
+    this.claudeCheckInterval = setInterval(() => {
+      this.checkForClaudeUpdates()
+    }, 1000)
+  }
+
+  private async checkForClaudeUpdates() {
+    if (
+      !this.controlModeProcess ||
+      !this.controlModeProcess.stdin ||
+      !this.hasDisplayedInitialList
+    ) {
+      return
+    }
+
+    const now = Date.now()
+    let hasNewWindows = false
+
+    // Check if we have any windows less than 20 seconds old
+    for (const [_, window] of this.windows) {
+      if (now - window.firstSeen < 20000) {
+        hasNewWindows = true
+        break
+      }
+    }
+
+    // If no new windows and we're checking every second, switch to 3-second interval
+    if (!hasNewWindows && this.claudeCheckInterval) {
+      clearInterval(this.claudeCheckInterval)
+      this.claudeCheckInterval = setInterval(() => {
+        this.checkForClaudeUpdates()
+      }, 3000)
+    }
+
+    // Request updated pane info to check for claude
+    this.controlModeProcess.stdin.write(
+      'list-panes -a -F "CHECK #{session_name}:#{window_index} #{pane_current_command}"\n',
+    )
+  }
+
   private shutdown() {
     console.log('\nShutting down...')
     this.isShuttingDown = true
+
+    if (this.claudeCheckInterval) {
+      clearInterval(this.claudeCheckInterval)
+      this.claudeCheckInterval = null
+    }
 
     if (this.controlModeProcess) {
       this.controlModeProcess.kill()
