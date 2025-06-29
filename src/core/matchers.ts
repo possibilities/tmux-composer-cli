@@ -14,7 +14,6 @@ export const MATCHERS: Matcher[] = [
       'Enter to confirm · Esc to exit',
     ],
     response: '<Enter>',
-    runOnce: true,
   },
   {
     name: 'ensure-plan-mode',
@@ -41,12 +40,10 @@ export const MATCHERS: Matcher[] = [
     name: 'dismiss-create-file-confirmation',
     trigger: ['Create file', 'Do you want to create', '1. Yes'],
     response: '1',
-    runOnce: true,
   },
   {
     name: 'dismiss-edit-file-confirmation',
     trigger: ['Edit file', 'Do you want to edit', '1. Yes'],
     response: '1',
-    runOnce: true,
   },
 ]

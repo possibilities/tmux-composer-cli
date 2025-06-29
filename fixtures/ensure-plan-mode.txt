@@ -1,4 +1,3 @@
-   Enter to confirm · Esc to exit
 ╭─────────────────────────────────────────────────────────────╮
 │ ✻ Welcome to Claude Code!                                   │
 │                                                             │
@@ -13,10 +12,11 @@
  2. Use Claude to help with file analysis, editing, bash commands and git
  3. Be as specific as you would with another engineer for the best results
 
- ※ Tip: Run claude --continue or claude --resume to resume a conversation
+ ※ Tip: Ask Claude to create a todo list when working on complex tasks to track
+ progress and remain on track
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "fix typecheck errors"                                                 │
+│ > Try "how do I log an error?"                                               │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
 

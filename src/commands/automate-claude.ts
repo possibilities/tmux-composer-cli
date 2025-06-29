@@ -119,23 +119,49 @@ export class TmuxAutomator {
   }
 
   private shouldSkipMatcher(matcherName: string): boolean {
+    let skip = false
+    let reason = ''
+
     switch (matcherName) {
       case 'trust-folder':
-        return this.skipTrustFolder
+        skip = this.skipTrustFolder
+        reason = skip ? 'skipTrustFolder is true' : 'skipTrustFolder is false'
+        break
       case 'ensure-plan-mode':
-        return this.skipEnsurePlanMode
+        skip = this.skipEnsurePlanMode
+        reason = skip
+          ? 'skipEnsurePlanMode is true'
+          : 'skipEnsurePlanMode is false'
+        break
       case 'inject-initial-context-plan':
       case 'inject-initial-context-act':
-        return (
-          this.skipInjectInitialContext || !hasBufferContent(this.socketOptions)
-        )
+        const hasBuffer = hasBufferContent(this.socketOptions)
+        skip = this.skipInjectInitialContext || !hasBuffer
+        reason = skip
+          ? `skipInjectInitialContext=${this.skipInjectInitialContext}, hasBuffer=${hasBuffer}`
+          : 'not skipping, has buffer content'
+        break
       case 'dismiss-create-file-confirmation':
-        return this.skipDismissCreateFileConfirmation
+        skip = this.skipDismissCreateFileConfirmation
+        reason = skip
+          ? 'skipDismissCreateFileConfirmation is true'
+          : 'skipDismissCreateFileConfirmation is false'
+        break
       case 'dismiss-edit-file-confirmation':
-        return this.skipDismissEditFileConfirmation
+        skip = this.skipDismissEditFileConfirmation
+        reason = skip
+          ? 'skipDismissEditFileConfirmation is true'
+          : 'skipDismissEditFileConfirmation is false'
+        break
       default:
-        return false
+        skip = false
+        reason = 'unknown matcher'
     }
+
+    console.log(
+      `[DEBUG] shouldSkipMatcher('${matcherName}'): ${skip} - ${reason}`,
+    )
+    return skip
   }
 
   private async updateClaudeWindowsCache() {
@@ -351,6 +377,11 @@ export class TmuxAutomator {
         console.log(
           `Checking ${sessionName}:${windowName} for automation patterns (claude detected)...`,
         )
+        console.log('[DEBUG] Cleaned content:')
+        console.log('--- START CLEANED CONTENT ---')
+        console.log(cleanedContent)
+        console.log('--- END CLEANED CONTENT ---')
+        console.log(`[DEBUG] Number of cleaned lines: ${cleanedLines.length}`)
 
         const sessionMode = getSessionEnvironment(
           sessionName,
@@ -375,19 +406,33 @@ export class TmuxAutomator {
             continue
           }
 
+          console.log(`[DEBUG] Checking matcher: ${matcher.name}`)
+          console.log(
+            `[DEBUG] Trigger patterns: ${JSON.stringify(matcher.trigger)}`,
+          )
+
           const patternMatches = matchesPattern(cleanedLines, matcher.trigger)
+          console.log(`[DEBUG] Pattern matches: ${patternMatches}`)
 
           if (patternMatches) {
             const matcherKey = `${sessionName}:${windowName}:${matcher.name}`
+            console.log(`[DEBUG] Matcher ${matcher.name} matched!`)
 
             if (matcher.runOnce && this.executedMatchers.has(matcherKey)) {
+              console.log(
+                `[DEBUG] Matcher ${matcher.name} already executed, skipping`,
+              )
               continue
             }
 
+            console.log(
+              `[DEBUG] Sending keys for matcher ${matcher.name}: ${matcher.response}`,
+            )
             this.parseAndSendKeys(sessionName, windowName, matcher.response)
 
             if (matcher.runOnce) {
               this.executedMatchers.add(matcherKey)
+              console.log(`[DEBUG] Marked matcher ${matcher.name} as executed`)
             }
 
             this.eventBus.emitEvent({

@@ -41,6 +41,10 @@ export function matchesPattern(
   contentLines: string[],
   patternLines: string[],
 ): boolean {
+  console.log('[DEBUG matchesPattern] Starting pattern matching')
+  console.log(`[DEBUG matchesPattern] Content has ${contentLines.length} lines`)
+  console.log(`[DEBUG matchesPattern] Pattern has ${patternLines.length} lines`)
+
   let contentIndex = contentLines.length - 1
   let patternIndex = patternLines.length - 1
 
@@ -50,10 +54,19 @@ export function matchesPattern(
     }
 
     if (contentIndex < 0) {
+      console.log('[DEBUG matchesPattern] Ran out of content lines, no match')
       return false
     }
 
-    if (contentLines[contentIndex].includes(patternLines[patternIndex])) {
+    const contentLine = contentLines[contentIndex]
+    const patternLine = patternLines[patternIndex]
+    const matches = contentLine.includes(patternLine)
+
+    console.log(
+      `[DEBUG matchesPattern] Checking pattern[${patternIndex}]="${patternLine}" against content[${contentIndex}]="${contentLine}" - matches: ${matches}`,
+    )
+
+    if (matches) {
       patternIndex--
       contentIndex--
     } else {
@@ -61,5 +74,7 @@ export function matchesPattern(
     }
   }
 
-  return patternIndex < 0
+  const result = patternIndex < 0
+  console.log(`[DEBUG matchesPattern] Final result: ${result}`)
+  return result
 }

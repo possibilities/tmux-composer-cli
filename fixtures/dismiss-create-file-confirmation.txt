@@ -7,11 +7,11 @@
 │ ╭──────────────────────────────────────────────────────────────────────────╮ │
 │ │ funny.txt                                                                │ │
 │ │                                                                          │ │
-│ │ wobble                                                                   │ │
-│ │ kerfuffle                                                                │ │
-│ │ bamboozle                                                                │ │
-│ │ discombobulate                                                           │ │
+│ │ discombobulated                                                          │ │
 │ │ flibbertigibbet                                                          │ │
+│ │ kerfuffle                                                                │ │
+│ │ brouhaha                                                                 │ │
+│ │ nincompoop                                                               │ │
 │ ╰──────────────────────────────────────────────────────────────────────────╯ │
 │ Do you want to create funny.txt?                                             │
 │ ❯ 1. Yes                                                                     │
