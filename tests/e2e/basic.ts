@@ -15,6 +15,7 @@ import { tmpdir, homedir } from 'os'
 import { join, dirname } from 'path'
 import { createHash } from 'crypto'
 import { fileURLToPath } from 'url'
+import dedent from 'dedent'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -32,6 +33,17 @@ const TEMP_FIXTURES_DIR = join(
   `control-cli-fixtures-temp-${process.pid}-${Date.now()}`,
 )
 
+// Default control.yaml configuration
+const DEFAULT_CONFIG = dedent`
+  name: test-project
+  agents:
+    act: claude
+    plan: claude
+  context:
+    act: echo "Let us make a plan"
+    plan: echo "Let us make a plan"
+`
+
 // Define the different automate-claude flag configurations for each iteration
 const TEST_RUNS = [
   {
@@ -40,15 +52,31 @@ const TEST_RUNS = [
       '--skip-ensure-plan-mode',
       '--skip-inject-initial-context',
     ],
+    createSessionArguments: [],
+    fixtureFileName: 'trust-folder.txt',
+    configFile: DEFAULT_CONFIG,
   },
   {
     automateClaudeArguments: [
       '--skip-ensure-plan-mode',
       '--skip-inject-initial-context',
     ],
+    createSessionArguments: [],
+    fixtureFileName: 'ensure-plan-mode.txt',
+    configFile: DEFAULT_CONFIG,
   },
-  { automateClaudeArguments: ['--skip-inject-initial-context'] },
-  { automateClaudeArguments: [] },
+  {
+    automateClaudeArguments: ['--skip-inject-initial-context'],
+    createSessionArguments: [],
+    fixtureFileName: 'inject-initial-context.txt',
+    configFile: DEFAULT_CONFIG,
+  },
+  {
+    automateClaudeArguments: [],
+    createSessionArguments: [],
+    fixtureFileName: null,
+    configFile: DEFAULT_CONFIG,
+  },
 ]
 
 let actualSessionName = ''
@@ -92,7 +120,7 @@ function cleanupProcesses() {
   }
 }
 
-function createTempProject(): string {
+function createTempProject(configContent: string): string {
   const tempDir = mkdtempSync(join(tmpdir(), 'control-test-'))
   console.error(`Created temp directory: ${tempDir}`)
 
@@ -108,23 +136,16 @@ function createTempProject(): string {
     },
   }
 
-  execSync(
-    `echo '${JSON.stringify(packageJson, null, 2)}' > ${tempDir}/package.json`,
+  writeFileSync(
+    join(tempDir, 'package.json'),
+    JSON.stringify(packageJson, null, 2),
   )
 
-  // Create a control.yaml
-  const controlYaml = `name: test-project
-agents:
-  act: claude
-  plan: claude
-context:
-  act: echo "Let us make a plan"
-  plan: echo "Let us make a plan"`
-
-  execSync(`echo '${controlYaml}' > ${tempDir}/control.yaml`)
+  // Create control.yaml with the provided config content
+  writeFileSync(join(tempDir, 'control.yaml'), configContent)
 
   // Create readme
-  execSync(`touch ${tempDir}/readme.md`)
+  writeFileSync(join(tempDir, 'readme.md'), '')
 
   // Add all files and commit
   execSync('git add .', { cwd: tempDir })
@@ -135,7 +156,7 @@ context:
   return tempDir
 }
 
-function createSession(projectPath: string) {
+function createSession(projectPath: string, additionalArgs: string[] = []) {
   console.error('Creating new session...')
 
   return new Promise<void>((resolve, reject) => {
@@ -144,7 +165,7 @@ function createSession(projectPath: string) {
     createSessionProcess = spawn(
       'node',
       [
-        join(__dirname, '..', 'dist', 'cli.js'),
+        join(__dirname, '..', '..', 'dist', 'cli.js'),
         'create-session',
         projectPath,
         '--project-name',
@@ -152,6 +173,7 @@ function createSession(projectPath: string) {
         '-L',
         SOCKET_NAME,
         '--skip-migrations',
+        ...additionalArgs,
       ],
       {
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -257,7 +279,7 @@ async function startAutomateClaude(additionalArgs: string[]) {
   automateClaudeProcess = spawn(
     'node',
     [
-      join(__dirname, '..', 'dist', 'cli.js'),
+      join(__dirname, '..', '..', 'dist', 'cli.js'),
       'automate-claude',
       '-L',
       SOCKET_NAME,
@@ -280,7 +302,11 @@ async function startAutomateClaude(additionalArgs: string[]) {
   })
 }
 
-async function runIteration(iterationNumber: number, additionalArgs: string[]) {
+async function runIteration(
+  iterationNumber: number,
+  testRun: (typeof TEST_RUNS)[0],
+) {
+  const additionalArgs = testRun.automateClaudeArguments
   console.log(`\n${'='.repeat(60)}`)
   console.log(`=== Iteration ${iterationNumber} of ${TEST_RUNS.length} ===`)
   console.log(
@@ -291,14 +317,14 @@ async function runIteration(iterationNumber: number, additionalArgs: string[]) {
   // Kill any existing test instance
   killExistingSession()
 
-  // Create temp project
-  const projectPath = createTempProject()
+  // Create temp project with the test run's config
+  const projectPath = createTempProject(testRun.configFile)
 
   // Start automate-claude process with iteration-specific flags
   await startAutomateClaude(additionalArgs)
 
-  // Create the session
-  await createSession(projectPath)
+  // Create the session with additional arguments if any
+  await createSession(projectPath, testRun.createSessionArguments)
 
   // Wait a bit for session to initialize
   await new Promise(resolve => setTimeout(resolve, 2000))
@@ -340,21 +366,10 @@ async function runIteration(iterationNumber: number, additionalArgs: string[]) {
   console.log(`--- End of iteration ${iterationNumber} ---\n`)
 
   // Save fixtures to temporary directory if --save-fixtures flag is set
-  if (SAVE_FIXTURES) {
-    let fixtureFileName: string | null = null
-    if (iterationNumber === 1) {
-      fixtureFileName = 'trust-folder.txt'
-    } else if (iterationNumber === 2) {
-      fixtureFileName = 'ensure-plan-mode.txt'
-    } else if (iterationNumber === 3) {
-      fixtureFileName = 'inject-initial-context.txt'
-    }
-
-    if (fixtureFileName) {
-      const tempFixturePath = join(TEMP_FIXTURES_DIR, fixtureFileName)
-      writeFileSync(tempFixturePath, screenContent)
-      console.error(`Saved fixture to temporary location: ${tempFixturePath}`)
-    }
+  if (SAVE_FIXTURES && testRun.fixtureFileName) {
+    const tempFixturePath = join(TEMP_FIXTURES_DIR, testRun.fixtureFileName)
+    writeFileSync(tempFixturePath, screenContent)
+    console.error(`Saved fixture to temporary location: ${tempFixturePath}`)
   }
 
   // Clean up
@@ -422,12 +437,10 @@ function copyFixturesToFinalLocation() {
     mkdirSync(finalFixturesDir, { recursive: true })
   }
 
-  // Copy each fixture file
-  const fixturesToCopy = [
-    'trust-folder.txt',
-    'ensure-plan-mode.txt',
-    'inject-initial-context.txt',
-  ]
+  // Copy each fixture file that was defined in TEST_RUNS
+  const fixturesToCopy = TEST_RUNS.map(run => run.fixtureFileName).filter(
+    (fileName): fileName is string => fileName !== null,
+  )
 
   for (const fileName of fixturesToCopy) {
     const tempPath = join(TEMP_FIXTURES_DIR, fileName)
@@ -454,7 +467,7 @@ async function runMigrations() {
     const migrateProcess = spawn(
       'node',
       [
-        join(__dirname, '..', 'dist', 'cli.js'),
+        join(__dirname, '..', '..', 'dist', 'cli.js'),
         'run-migrations',
         '-L',
         SOCKET_NAME,
@@ -481,7 +494,7 @@ async function runMigrations() {
 }
 
 async function main() {
-  console.error('Starting e2e-basic script...')
+  console.error('Starting e2e basic test...')
   console.error(`Using unique socket name: ${SOCKET_NAME}`)
   console.error(`Database path: ${DB_PATH}`)
   if (SAVE_FIXTURES) {
@@ -543,7 +556,7 @@ async function main() {
   try {
     // Run iterations with different configurations
     for (let i = 0; i < TEST_RUNS.length; i++) {
-      await runIteration(i + 1, TEST_RUNS[i].automateClaudeArguments)
+      await runIteration(i + 1, TEST_RUNS[i])
     }
 
     console.error('All iterations complete!')
