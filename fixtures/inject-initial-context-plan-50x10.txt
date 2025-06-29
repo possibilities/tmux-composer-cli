@@ -1,8 +1,8 @@
-    results
+
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "edit <filepath> to..."                  │
+│ > Try "fix lint errors"                        │
 ╰────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

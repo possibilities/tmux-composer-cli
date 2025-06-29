@@ -1,22 +1,22 @@
 
 > Run 'ls -lsa /tmp' in the current directory
 
-● I'll run the ls -lsa /tmp command to list all files in the /tmp directory
-   with detailed information.
+● I'll run the ls -lsa /tmp command to show you the contents of the /tmp
+  directory with detailed information.
 
-● Bash(ls -lsa /tmp)
+  Bash(ls -lsa /tmp)
   ⎿  Running…
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
 │ Bash command                                                                 │
 │                                                                              │
 │   ls -lsa /tmp                                                               │
-│   List all files in /tmp with details                                        │
+│   List /tmp directory contents with details                                  │
 │                                                                              │
 │ Do you want to proceed?                                                      │
 │ ❯ 1. Yes                                                                     │
 │   2. Yes, and don't ask again for ls commands in                             │
-│   /home/mike/code/worktrees/control-test-gCoeLy-worktree-001                 │
+│   /home/mike/code/worktrees/control-test-fFiNmL-worktree-001                 │
 │   3. No, and tell Claude what to do differently (esc)                        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 

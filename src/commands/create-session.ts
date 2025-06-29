@@ -13,6 +13,7 @@ import {
   CODE_PATH,
   WORKTREES_PATH,
 } from '../core/git-utils.js'
+import { socketExists } from '../core/tmux-utils.js'
 import { ControlConfig, TERMINAL_SIZES } from '../core/constants.js'
 
 interface CreateSessionOptions extends TmuxSocketOptions {
@@ -194,6 +195,17 @@ export class SessionCreator {
         },
       )
       tmuxProcess.unref()
+
+      // Wait for tmux server to be ready
+      let attempts = 0
+      while (!socketExists(this.socketOptions) && attempts < 50) {
+        execSync('sleep 0.1')
+        attempts++
+      }
+
+      if (!socketExists(this.socketOptions)) {
+        throw new Error('Tmux server failed to start')
+      }
 
       setTimeout(() => {
         const socketArgsStr = getTmuxSocketArgs(this.socketOptions).join(' ')

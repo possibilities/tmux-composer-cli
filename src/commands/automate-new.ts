@@ -263,23 +263,30 @@ export class TmuxAutomatorNew {
         const info = this.windowIdMap.get(windowId)
         if (info) {
           const key = `${info.session}:${info.index}`
-          const existingWindow = this.windows.get(key)
-          if (existingWindow) {
-            const widthNum = parseInt(width, 10)
-            const heightNum = parseInt(height, 10)
-            // Only update and display if dimensions actually changed
+          // Update dimensions for all panes in this window
+          const widthNum = parseInt(width, 10)
+          const heightNum = parseInt(height, 10)
+          let hasChanges = false
+
+          for (const [paneId, pane] of this.panes) {
             if (
-              existingWindow.width !== widthNum ||
-              existingWindow.height !== heightNum
+              pane.sessionName === info.session &&
+              pane.windowIndex === info.index
             ) {
-              this.windows.set(key, {
-                ...existingWindow,
-                width: widthNum,
-                height: heightNum,
-              })
-              console.log(`Window resized: ${key} to ${widthNum}x${heightNum}`)
-              this.displayPaneList()
+              if (pane.width !== widthNum || pane.height !== heightNum) {
+                this.panes.set(paneId, {
+                  ...pane,
+                  width: widthNum,
+                  height: heightNum,
+                })
+                hasChanges = true
+              }
             }
+          }
+
+          if (hasChanges) {
+            console.log(`Window resized: ${key} to ${widthNum}x${heightNum}`)
+            this.displayPaneList()
           }
         }
       }

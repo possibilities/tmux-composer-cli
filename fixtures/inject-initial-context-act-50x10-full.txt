@@ -2,7 +2,7 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/control-test-imVI0H- │
+│ /home/mike/code/worktrees/control-test-11WrOF- │
 │ worktree-001                                   │
 │                                                │
 │ Claude Code may read files in this folder.     │
@@ -25,8 +25,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-imV
-I0H-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-11W
+rOF-worktree-001
 
  Tips for getting started:
 
@@ -39,9 +39,13 @@ ructions for Claude
 eer for the best
     results
 
+ ※ Tip: Run /install-github-app to tag @claude rig
+ht from your Github
+ issues and PRs
+
 
 ╭────────────────────────────────────────────────╮
-│ > Try "how does <filepath> work?"              │
+│ > Try "fix typecheck errors"                   │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

@@ -1,12 +1,12 @@
-┌─╼[18:49:25]
-└─╼[~/code/worktrees/control-test-E0WQ3k-worktree-001]
- ╰╼[worktree-001]╾─╼[280592d]
+┌─╼[19:24:17]
+└─╼[~/code/worktrees/control-test-ANJXv3-worktree-001]
+ ╰╼[worktree-001]╾─╼[61c29d8]
 ▶ claude
 ╭──────────────────────────────────────────────────────────────────────────────╮
 │                                                                              │
 │ Do you trust the files in this folder?                                       │
 │                                                                              │
-│ /home/mike/code/worktrees/control-test-E0WQ3k-worktree-001                   │
+│ /home/mike/code/worktrees/control-test-ANJXv3-worktree-001                   │
 │                                                                              │
 │ Claude Code may read files in this folder. Reading untrusted files may lead  │
 │ Claude Code to behave in unexpected ways.                                    │

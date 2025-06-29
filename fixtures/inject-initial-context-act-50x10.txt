@@ -1,8 +1,8 @@
-    results
+ issues and PRs
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "how does <filepath> work?"              │
+│ > Try "fix typecheck errors"                   │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

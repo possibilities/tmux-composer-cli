@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-7ZC
-24Q-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-cp2
+z11-worktree-001
 
  Tips for getting started:
 
@@ -22,15 +22,15 @@ eer for the best
    saving, add 1 more funny word to it.
 
 ● I'll create a file with funny words and
-  then add one more to it.
+  then add one more.
 
 ● Write(funny.txt)
   ⎿  Wrote 5 lines to funny.txt
-     wobble
+     bumblebee
      kerfuffle
-     brouhaha
-     discombobulate
      flibbertigibbet
+     brouhaha
+     gobbledygook
 
 ● Update(funny.txt)
 
@@ -40,12 +40,12 @@ eer for the best
 │ │ funny.txt                                  │ │
 │ │                                            │ │
 │ │   2    kerfuffle                           │ │
-│ │   3    brouhaha                            │ │
-│ │   4    discombobulate                      │ │
-│ │   5 -  flibbertigibbet                     │ │
+│ │   3    flibbertigibbet                     │ │
+│ │   4    brouhaha                            │ │
+│ │   5 -  gobbledygook                        │ │
 │ │   5   \ No newline at end of file          │ │
-│ │   6 +  flibbertigibbet                     │ │
-│ │   7 +  bamboozle                           │ │
+│ │   6 +  gobbledygook                        │ │
+│ │   7 +  nincompoop                          │ │
 │ │   8   \ No newline at end of file          │ │
 │ ╰────────────────────────────────────────────╯ │
 │ Do you want to make this edit to funny.txt?    │
