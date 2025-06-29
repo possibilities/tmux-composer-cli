@@ -43,7 +43,7 @@ export const MATCHERS: Matcher[] = [
   },
   {
     name: 'dismiss-edit-file-confirmation',
-    trigger: ['Edit file', 'Do you want to edit', '1. Yes'],
+    trigger: ['Edit file', 'Do you want to make this edit to', '1. Yes'],
     response: '1',
   },
 ]

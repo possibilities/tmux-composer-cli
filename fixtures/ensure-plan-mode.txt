@@ -1,3 +1,4 @@
+   Enter to confirm · Esc to exit
 ╭─────────────────────────────────────────────────────────────╮
 │ ✻ Welcome to Claude Code!                                   │
 │                                                             │
@@ -12,11 +13,10 @@
  2. Use Claude to help with file analysis, editing, bash commands and git
  3. Be as specific as you would with another engineer for the best results
 
- ※ Tip: Ask Claude to create a todo list when working on complex tasks to track
- progress and remain on track
+ ※ Tip: Did you know you can drag and drop image files into your terminal?
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "how do I log an error?"                                               │
+│ > Try "how does <filepath> work?"                                            │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
 

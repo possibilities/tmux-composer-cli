@@ -80,4 +80,24 @@ describe('Matcher mechanism', () => {
 
     expect(result).toBe(true)
   })
+
+  it('should match dismiss-edit-file-confirmation pattern', () => {
+    const fixturePath = join(
+      __dirname,
+      '../../fixtures/dismiss-edit-file-confirmation.txt',
+    )
+    const tmuxOutput = readFileSync(fixturePath, 'utf-8')
+    const planModeOnMatcher = MATCHERS.find(
+      m => m.name === 'dismiss-edit-file-confirmation',
+    )
+    if (!planModeOnMatcher) {
+      throw new Error('dismiss-edit-file-confirmation matcher not found')
+    }
+
+    const cleanedContent = cleanContent(tmuxOutput)
+    const contentLines = cleanedContent.split('\n')
+    const result = matchesPattern(contentLines, planModeOnMatcher.trigger)
+
+    expect(result).toBe(true)
+  })
 })
