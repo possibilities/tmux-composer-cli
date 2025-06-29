@@ -1,6 +1,6 @@
- 1. Run /init to create a CLAUDE.md file with instructions for Claude
- 2. Use Claude to help with file analysis, editing, bash commands and git
  3. Be as specific as you would with another engineer for the best results
+
+ ※ Tip: Use /permissions to pre-approve and pre-deny bash, edit, and MCP tools
 
 > Read the file '/tmp/control-e2e-basic-date1.txt' and show he content
 

@@ -1,3 +1,5 @@
+claude
+
 ┌─╼[18:28:46]
 └─╼[~/code/worktrees/control-test-xBYsXo-worktree-001]
  ╰╼[worktree-001]╾─╼[89aea2a]

@@ -1,6 +1,6 @@
-   he content
 
-● I'll read the file and show its content.
+● I'll read the file and show you its
+  content.
 
 ● Read(../../../../../tmp/control-e2e-basic-d
       ate1.txt)

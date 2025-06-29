@@ -1,3 +1,10 @@
+claude
+
+┌─╼[18:29:55]
+└─╼[~/code/worktrees/control-test-idpisV-worktree-
+001]
+ ╰╼[worktree-001]╾─╼[d6fbc18]
+▶ claude
 ╭────────────────────────────────────────────────╮
 │                                                │
 │ Do you trust the files in this folder?         │

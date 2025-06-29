@@ -1,6 +1,7 @@
 export const POLL_INTERVAL = 500
 export const MAX_CHECKSUM_CACHE_SIZE = 1000
 export const AUTOMATION_PAUSE_MS = 500
+export const MAX_SCROLLBACK_LINES = 2000
 
 export const TERMINAL_SIZES = {
   big: { width: 80, height: 24 },

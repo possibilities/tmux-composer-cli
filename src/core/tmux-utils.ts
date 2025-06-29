@@ -2,7 +2,7 @@ import { execSync, exec } from 'child_process'
 import { promisify } from 'util'
 import { getTmuxSocketString } from './tmux-socket.js'
 import type { TmuxSocketOptions } from './tmux-socket.js'
-import { TERMINAL_SIZES } from './constants.js'
+import { TERMINAL_SIZES, MAX_SCROLLBACK_LINES } from './constants.js'
 
 const execAsync = promisify(exec)
 
@@ -51,6 +51,37 @@ export async function capturePane(
     },
   )
   return stdout
+}
+
+export async function capturePaneWithScrollback(
+  sessionName: string,
+  windowName: string,
+  socketOptions: TmuxSocketOptions = {},
+): Promise<string> {
+  const socketArgs = getTmuxSocketString(socketOptions)
+  const { stdout } = await execAsync(
+    `tmux ${socketArgs} capture-pane -p -S -${MAX_SCROLLBACK_LINES} -t ${sessionName}:${windowName}`,
+    {
+      encoding: 'utf-8',
+      maxBuffer: 10 * 1024 * 1024,
+    },
+  )
+  return stdout
+}
+
+export function capturePaneWithScrollbackSync(
+  sessionName: string,
+  windowName: string,
+  socketOptions: TmuxSocketOptions = {},
+): string {
+  const socketArgs = getTmuxSocketString(socketOptions)
+  return execSync(
+    `tmux ${socketArgs} capture-pane -p -S -${MAX_SCROLLBACK_LINES} -t ${sessionName}:${windowName}`,
+    {
+      encoding: 'utf-8',
+      maxBuffer: 10 * 1024 * 1024,
+    },
+  )
 }
 
 export function sendKeys(

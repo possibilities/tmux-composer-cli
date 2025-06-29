@@ -1,3 +1,4 @@
+
  Tips for getting started:
 
  1. Run /init to create a CLAUDE.md file with inst
@@ -9,14 +10,13 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Want Claude to remember something? Hit # t
-o add preferences,
- tools, and instructions to Claude's memory
-
+ ※ Tip: Run claude --continue or claude --resume t
+o resume a
+ conversation
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "fix lint errors"                        │
+│ > Try "create a util logging.py that..."       │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

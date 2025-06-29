@@ -10,13 +10,13 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Did you know you can drag and drop image f
-iles into your
- terminal?
+ ※ Tip: Hit Enter to queue up additional messages
+while Claude is
+ working.
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "fix lint errors"                        │
+│ > Try "refactor <filepath>"                    │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

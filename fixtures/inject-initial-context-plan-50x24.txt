@@ -10,13 +10,13 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Run /install-github-app to tag @claude rig
-ht from your Github
- issues and PRs
+ ※ Tip: Hit shift+tab to cycle between default mod
+e, auto-accept edit
+ mode, and plan mode
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "fix lint errors"                        │
+│ > Try "refactor <filepath>"                    │
 ╰────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

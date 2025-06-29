@@ -17,7 +17,10 @@ import { join, dirname } from 'path'
 import { createHash } from 'crypto'
 import { fileURLToPath } from 'url'
 import dedent from 'dedent'
-import { TEST_TERMINAL_SIZES } from '../../src/core/constants.js'
+import {
+  TERMINAL_SIZES,
+  MAX_SCROLLBACK_LINES,
+} from '../../src/core/constants.js'
 
 const DEFAULT_CONFIG = dedent`
   name: default-test-project
@@ -28,6 +31,8 @@ const DEFAULT_CONFIG = dedent`
     act: echo "Do nothing but wait for my feature description to make a plan"
     plan: echo "Do nothing but wait for my feature description to make a plan"
 `
+
+const TEST_TERMINAL_SIZES = Object.values(TERMINAL_SIZES)
 
 const TEST_RUNS = [
   {
@@ -384,6 +389,27 @@ function captureScreen(): string {
   }
 }
 
+function captureScreenWithScrollback(): string {
+  if (!actualSessionName || !workWindowIndex) {
+    console.error('No session name or window index available')
+    return ''
+  }
+
+  try {
+    const output = execSync(
+      `tmux -L ${SOCKET_NAME} capture-pane -t ${actualSessionName}:${workWindowIndex} -p -S -${MAX_SCROLLBACK_LINES}`,
+      {
+        encoding: 'utf-8',
+        maxBuffer: 10 * 1024 * 1024,
+      },
+    )
+    return output
+  } catch (error) {
+    console.error('Failed to capture screen with scrollback:', error)
+    return ''
+  }
+}
+
 function calculateChecksum(content: string): string {
   return createHash('md5').update(content).digest('hex')
 }
@@ -485,9 +511,7 @@ async function runIteration(
   const additionalArgs = testRun.automateClaudeArguments
   console.log(`\n${'='.repeat(60)}`)
   console.log(`=== Iteration ${iterationNumber} ===`)
-  console.log(
-    `Terminal size: ${terminalSize.width}x${terminalSize.height} (${terminalSize.name})`,
-  )
+  console.log(`Terminal size: ${terminalSize.width}x${terminalSize.height}`)
   console.log(
     `Flags: ${additionalArgs.length > 0 ? additionalArgs.join(' ') : '(none)'}`,
   )
@@ -536,17 +560,28 @@ async function runIteration(
 
   const screenContent = await waitForStableScreen()
 
+  const screenContentWithScrollback = captureScreenWithScrollback()
+
   console.log(`\n--- Screen output for iteration ${iterationNumber} ---`)
   console.log(screenContent)
   console.log(`--- End of iteration ${iterationNumber} ---\n`)
 
   if (SAVE_FIXTURES && testRun.fixtureFileName) {
-    // Add terminal size to fixture filename
     const baseName = testRun.fixtureFileName.replace('.txt', '')
+
     const sizedFileName = `${baseName}-${terminalSize.width}x${terminalSize.height}.txt`
     const tempFixturePath = join(TEMP_FIXTURES_DIR, sizedFileName)
     writeFileSync(tempFixturePath, screenContent)
-    console.error(`Saved fixture to temporary location: ${tempFixturePath}`)
+    console.error(
+      `Saved pane fixture to temporary location: ${tempFixturePath}`,
+    )
+
+    const fullFileName = `${baseName}-${terminalSize.width}x${terminalSize.height}-full.txt`
+    const tempFullFixturePath = join(TEMP_FIXTURES_DIR, fullFileName)
+    writeFileSync(tempFullFixturePath, screenContentWithScrollback)
+    console.error(
+      `Saved full scrollback fixture to temporary location: ${tempFullFixturePath}`,
+    )
   }
 
   if (!NO_CLEANUP) {
@@ -725,6 +760,7 @@ function copyFixturesToFinalLocation() {
   for (const baseFileName of baseFileNames) {
     for (const terminalSize of TEST_TERMINAL_SIZES) {
       const baseName = baseFileName.replace('.txt', '')
+
       const sizedFileName = `${baseName}-${terminalSize.width}x${terminalSize.height}.txt`
       const tempPath = join(TEMP_FIXTURES_DIR, sizedFileName)
       const finalPath = join(finalFixturesDir, sizedFileName)
@@ -732,6 +768,15 @@ function copyFixturesToFinalLocation() {
       if (existsSync(tempPath)) {
         copyFileSync(tempPath, finalPath)
         console.error(`Copied ${sizedFileName} to ${finalPath}`)
+      }
+
+      const fullFileName = `${baseName}-${terminalSize.width}x${terminalSize.height}-full.txt`
+      const tempFullPath = join(TEMP_FIXTURES_DIR, fullFileName)
+      const finalFullPath = join(finalFixturesDir, fullFileName)
+
+      if (existsSync(tempFullPath)) {
+        copyFileSync(tempFullPath, finalFullPath)
+        console.error(`Copied ${fullFileName} to ${finalFullPath}`)
       }
     }
   }

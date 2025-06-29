@@ -78,3 +78,40 @@ export function matchesPattern(
   console.log(`[DEBUG matchesPattern] Final result: ${result}`)
   return result
 }
+
+export function matchesLastPattern(
+  contentLines: string[],
+  patternLines: string[],
+): boolean {
+  if (patternLines.length === 0) {
+    return false
+  }
+
+  console.log('[DEBUG matchesLastPattern] Checking only last pattern item')
+  console.log(
+    `[DEBUG matchesLastPattern] Last pattern: "${patternLines[patternLines.length - 1]}"`,
+  )
+
+  const lastPattern = patternLines[patternLines.length - 1]
+
+  for (let i = contentLines.length - 1; i >= 0; i--) {
+    if (contentLines[i] === '') continue
+
+    if (contentLines[i].includes(lastPattern)) {
+      console.log(
+        `[DEBUG matchesLastPattern] Found match at line ${i}: "${contentLines[i]}"`,
+      )
+      return true
+    }
+  }
+
+  console.log('[DEBUG matchesLastPattern] No match found for last pattern')
+  return false
+}
+
+export function matchesFullPattern(
+  contentLines: string[],
+  patternLines: string[],
+): boolean {
+  return matchesPattern(contentLines, patternLines)
+}

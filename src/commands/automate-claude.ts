@@ -2,11 +2,17 @@ import { createHash } from 'crypto'
 import { execSync } from 'child_process'
 import { LRUCache } from 'lru-cache'
 import { EventBus } from '../core/event-bus.js'
-import { cleanContent, matchesPattern } from '../matcher.js'
+import {
+  cleanContent,
+  matchesPattern,
+  matchesLastPattern,
+  matchesFullPattern,
+} from '../matcher.js'
 import {
   listSessions,
   listWindows,
   capturePane,
+  capturePaneWithScrollback,
   sendKeys,
   sendKey,
   pasteBuffer,
@@ -363,8 +369,50 @@ export class TmuxAutomator {
             `[DEBUG] Trigger patterns: ${JSON.stringify(matcher.trigger)}`,
           )
 
-          const patternMatches = matchesPattern(cleanedLines, matcher.trigger)
-          console.log(`[DEBUG] Pattern matches: ${patternMatches}`)
+          let patternMatches = false
+
+          if (matcher.trigger.length === 1) {
+            patternMatches = matchesPattern(cleanedLines, matcher.trigger)
+            console.log(`[DEBUG] Single pattern matches: ${patternMatches}`)
+          } else {
+            console.log(
+              `[DEBUG] Two-phase matching for ${matcher.trigger.length} patterns`,
+            )
+
+            const lastPatternMatches = matchesLastPattern(
+              cleanedLines,
+              matcher.trigger,
+            )
+            console.log(
+              `[DEBUG] Phase 1 - Last pattern matches: ${lastPatternMatches}`,
+            )
+
+            if (lastPatternMatches) {
+              console.log(
+                '[DEBUG] Phase 2 - Capturing full scrollback for complete match',
+              )
+              try {
+                const fullContent = await capturePaneWithScrollback(
+                  sessionName,
+                  windowName,
+                  this.socketOptions,
+                )
+                const cleanedFullContent = cleanContent(fullContent)
+                const cleanedFullLines = cleanedFullContent.split('\n')
+
+                patternMatches = matchesFullPattern(
+                  cleanedFullLines,
+                  matcher.trigger,
+                )
+                console.log(
+                  `[DEBUG] Phase 2 - Full pattern matches: ${patternMatches}`,
+                )
+              } catch (error) {
+                console.error('[DEBUG] Error capturing scrollback:', error)
+                patternMatches = matchesPattern(cleanedLines, matcher.trigger)
+              }
+            }
+          }
 
           if (patternMatches) {
             const matcherKey = `${sessionName}:${windowName}:${matcher.name}`
