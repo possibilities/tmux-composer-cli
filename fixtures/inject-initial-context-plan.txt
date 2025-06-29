@@ -1,3 +1,12 @@
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+   Enter to confirm · Esc to exit
+╭─────────────────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                                   │
+│                                                             │
+│   /help for help, /status for your current setup            │
+│                                                             │
+│   cwd: /home/mike/code/worktrees/test-project-worktree-003  │
 ╰─────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
@@ -6,19 +15,10 @@
  2. Use Claude to help with file analysis, editing, bash commands and git
  3. Be as specific as you would with another engineer for the best results
 
- ※ Tip: Press Esc twice to edit your previous messages
-
-> Do nothing but wait for my feature description to make a plan
-
-● I'm ready to help you plan your feature. Please describe what you'd like
-  to build, and I'll create a detailed plan for implementation.
-
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ >                                                                            │
+│ > Try "create a util logging.py that..."                                     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
-
-
 
 
 

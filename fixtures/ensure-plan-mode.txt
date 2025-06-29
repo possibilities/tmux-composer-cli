@@ -1,3 +1,5 @@
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
    Enter to confirm · Esc to exit
 ╭─────────────────────────────────────────────────────────────╮
 │ ✻ Welcome to Claude Code!                                   │
@@ -13,10 +15,8 @@
  2. Use Claude to help with file analysis, editing, bash commands and git
  3. Be as specific as you would with another engineer for the best results
 
- ※ Tip: Did you know you can drag and drop image files into your terminal?
-
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "how does <filepath> work?"                                            │
+│ > Try "refactor <filepath>"                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
 
