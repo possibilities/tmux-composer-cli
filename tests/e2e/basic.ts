@@ -19,10 +19,8 @@ import dedent from 'dedent'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// Parse command-line arguments
 const SAVE_FIXTURES = process.argv.includes('--save-fixtures')
 
-// Generate unique socket name for this test run to avoid conflicts
 const SOCKET_NAME = `control-test-${process.pid}-${Date.now()}`
 const STABILITY_WAIT_MS = 1000
 const POLL_INTERVAL_MS = 100
@@ -33,7 +31,6 @@ const TEMP_FIXTURES_DIR = join(
   `control-cli-fixtures-temp-${process.pid}-${Date.now()}`,
 )
 
-// Default control.yaml configuration
 const DEFAULT_CONFIG = dedent`
   name: test-project
   agents:
@@ -44,7 +41,6 @@ const DEFAULT_CONFIG = dedent`
     plan: echo "Let us make a plan"
 `
 
-// Define the different automate-claude flag configurations for each iteration
 const TEST_RUNS = [
   {
     automateClaudeArguments: [
@@ -91,7 +87,6 @@ function killExistingSession() {
     })
     console.error(`Killed existing test server for socket: ${SOCKET_NAME}`)
   } catch {
-    // Server doesn't exist, that's fine
     console.error(`No existing server found for socket: ${SOCKET_NAME}`)
   }
 }
@@ -124,10 +119,8 @@ function createTempProject(configContent: string): string {
   const tempDir = mkdtempSync(join(tmpdir(), 'control-test-'))
   console.error(`Created temp directory: ${tempDir}`)
 
-  // Initialize git repo
   execSync('git init', { cwd: tempDir })
 
-  // Create a minimal package.json
   const packageJson = {
     name: 'test-project',
     version: '1.0.0',
@@ -141,13 +134,10 @@ function createTempProject(configContent: string): string {
     JSON.stringify(packageJson, null, 2),
   )
 
-  // Create control.yaml with the provided config content
   writeFileSync(join(tempDir, 'control.yaml'), configContent)
 
-  // Create readme
   writeFileSync(join(tempDir, 'readme.md'), '')
 
-  // Add all files and commit
   execSync('git add .', { cwd: tempDir })
   execSync('git commit -m "Initial commit"', { cwd: tempDir })
 
@@ -204,7 +194,6 @@ function createSession(projectPath: string, additionalArgs: string[] = []) {
         return
       }
 
-      // Parse session name from output
       const sessionMatch = output.match(/Session name: (\S+)/)
       if (sessionMatch) {
         actualSessionName = sessionMatch[1]
@@ -261,7 +250,6 @@ async function waitForStableScreen(): Promise<string> {
         return content
       }
     } else {
-      // Content changed, reset stability timer
       lastContent = content
       lastChecksum = checksum
       stableStartTime = Date.now()
@@ -314,22 +302,16 @@ async function runIteration(
   )
   console.log(`${'='.repeat(60)}\n`)
 
-  // Kill any existing test instance
   killExistingSession()
 
-  // Create temp project with the test run's config
   const projectPath = createTempProject(testRun.configFile)
 
-  // Start automate-claude process with iteration-specific flags
   await startAutomateClaude(additionalArgs)
 
-  // Create the session with additional arguments if any
   await createSession(projectPath, testRun.createSessionArguments)
 
-  // Wait a bit for session to initialize
   await new Promise(resolve => setTimeout(resolve, 2000))
 
-  // Verify session exists and find work window
   try {
     const windows = execSync(
       `tmux -L ${SOCKET_NAME} list-windows -t ${actualSessionName} -F "#{window_index} #{window_name}"`,
@@ -338,7 +320,6 @@ async function runIteration(
     console.error('Available windows:')
     console.error(windows)
 
-    // Find the work window
     const windowLines = windows.trim().split('\n')
     for (const line of windowLines) {
       const [index, name] = line.split(' ')
@@ -357,26 +338,21 @@ async function runIteration(
     console.error('Failed to list windows:', error)
   }
 
-  // Wait for stable screen and capture
   const screenContent = await waitForStableScreen()
 
-  // Output to stdout
   console.log(`\n--- Screen output for iteration ${iterationNumber} ---`)
   console.log(screenContent)
   console.log(`--- End of iteration ${iterationNumber} ---\n`)
 
-  // Save fixtures to temporary directory if --save-fixtures flag is set
   if (SAVE_FIXTURES && testRun.fixtureFileName) {
     const tempFixturePath = join(TEMP_FIXTURES_DIR, testRun.fixtureFileName)
     writeFileSync(tempFixturePath, screenContent)
     console.error(`Saved fixture to temporary location: ${tempFixturePath}`)
   }
 
-  // Clean up
   cleanupProcesses()
   killExistingSession()
 
-  // Reset variables for next iteration
   actualSessionName = ''
   workWindowIndex = ''
 }
@@ -432,12 +408,10 @@ function copyFixturesToFinalLocation() {
 
   const finalFixturesDir = join(process.cwd(), 'fixtures')
 
-  // Create final fixtures directory if it doesn't exist
   if (!existsSync(finalFixturesDir)) {
     mkdirSync(finalFixturesDir, { recursive: true })
   }
 
-  // Copy each fixture file that was defined in TEST_RUNS
   const fixturesToCopy = TEST_RUNS.map(run => run.fixtureFileName).filter(
     (fileName): fileName is string => fileName !== null,
   )
@@ -452,7 +426,6 @@ function copyFixturesToFinalLocation() {
     }
   }
 
-  // Clean up temp directory
   try {
     rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
     console.error('Cleaned up temporary fixtures directory')
@@ -501,17 +474,14 @@ async function main() {
     console.error('Fixtures will be saved')
   }
 
-  // Create temp fixtures directory if saving fixtures
   if (SAVE_FIXTURES && !existsSync(TEMP_FIXTURES_DIR)) {
     mkdirSync(TEMP_FIXTURES_DIR, { recursive: true })
   }
 
-  // Register cleanup handlers
   const performFullCleanup = () => {
     cleanupProcesses()
     killExistingSession()
     cleanupTestDatabase()
-    // Clean up temp fixtures if they were created
     if (SAVE_FIXTURES) {
       try {
         rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
@@ -541,11 +511,9 @@ async function main() {
     process.exit(1)
   })
 
-  // Clean up any existing test-project worktrees and database before starting
   cleanupTestProjectWorktrees()
   cleanupTestDatabase()
 
-  // Run migrations once before starting any tests
   try {
     await runMigrations()
   } catch (error) {
@@ -554,19 +522,16 @@ async function main() {
   }
 
   try {
-    // Run iterations with different configurations
     for (let i = 0; i < TEST_RUNS.length; i++) {
       await runIteration(i + 1, TEST_RUNS[i])
     }
 
     console.error('All iterations complete!')
 
-    // Copy fixtures to final location only if all iterations succeeded and --save-fixtures is set
     if (SAVE_FIXTURES) {
       copyFixturesToFinalLocation()
     }
 
-    // Final cleanup of test artifacts
     console.error('Performing final cleanup...')
     cleanupProcesses()
     killExistingSession()
@@ -574,13 +539,11 @@ async function main() {
     cleanupTestProjectWorktrees()
   } catch (error) {
     console.error('Error during iterations:', error)
-    // Clean up temp fixtures on error if they were created
     if (SAVE_FIXTURES) {
       try {
         rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
       } catch {}
     }
-    // Also clean up test artifacts on error
     cleanupProcesses()
     killExistingSession()
     cleanupTestDatabase()
