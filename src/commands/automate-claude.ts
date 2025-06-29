@@ -20,6 +20,7 @@ import {
   getProcessTree,
   findDescendant,
   hasBufferContent,
+  getSessionEnvironment,
 } from '../core/tmux-utils.js'
 import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 import {
@@ -116,6 +117,7 @@ export class TmuxAutomator {
       case 'ensure-plan-mode':
         return this.skipEnsurePlanMode
       case 'inject-initial-context-plan':
+      case 'inject-initial-context-act':
         return (
           this.skipInjectInitialContext || !hasBufferContent(this.socketOptions)
         )
@@ -338,10 +340,25 @@ export class TmuxAutomator {
           `Checking ${sessionName}:${windowName} for automation patterns (claude detected)...`,
         )
 
+        const sessionMode = getSessionEnvironment(
+          sessionName,
+          'CONTROL_MODE',
+          this.socketOptions,
+        )
+
         for (const matcher of MATCHERS) {
           if (this.shouldSkipMatcher(matcher.name)) {
             if (process.env.VERBOSE) {
               console.log(`Skipping matcher: ${matcher.name}`)
+            }
+            continue
+          }
+
+          if (matcher.mode && sessionMode && matcher.mode !== sessionMode) {
+            if (process.env.VERBOSE) {
+              console.log(
+                `Skipping matcher ${matcher.name} - mode mismatch (matcher: ${matcher.mode}, session: ${sessionMode})`,
+              )
             }
             continue
           }

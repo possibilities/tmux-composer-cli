@@ -3,6 +3,7 @@ export interface Matcher {
   trigger: string[]
   response: string
   runOnce: boolean
+  mode?: 'act' | 'plan'
 }
 
 export const MATCHERS: Matcher[] = [
@@ -20,20 +21,20 @@ export const MATCHERS: Matcher[] = [
     trigger: [' ? for shortcuts'],
     response: '<S-Tab><S-Tab>',
     runOnce: true,
-    onlyMode: 'plan',
+    mode: 'plan',
   },
   {
     name: 'inject-initial-context-plan',
     trigger: [' ⏸ plan mode on (shift+tab to cycle)'],
     response: '{paste-buffer}<Enter>',
     runOnce: true,
-    onlyMode: 'plan',
+    mode: 'plan',
   },
   {
     name: 'inject-initial-context-act',
     trigger: [' ? for shortcuts'],
     response: '{paste-buffer}<Enter>',
     runOnce: true,
-    onlyMode: 'act',
+    mode: 'act',
   },
 ]

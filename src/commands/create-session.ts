@@ -23,6 +23,7 @@ import type { NewSession, NewWindow } from '../db/schema.js'
 
 interface CreateSessionOptions extends TmuxSocketOptions {
   projectName?: string
+  mode?: 'act' | 'plan'
 }
 
 export class SessionCreator {
@@ -47,6 +48,11 @@ export class SessionCreator {
     const projectName = options.projectName || path.basename(projectPath)
     const worktreeNum = getNextWorktreeNumber(projectName)
     const sessionName = `${projectName}-worktree-${worktreeNum}`
+
+    const mode = options.mode || 'act'
+    if (mode !== 'act' && mode !== 'plan') {
+      throw new Error('Invalid mode. Must be either "act" or "plan".')
+    }
 
     this.eventBus.emitEvent({
       type: 'session-creating',
@@ -80,7 +86,12 @@ export class SessionCreator {
       }
       await saveSession(newSession, this.dbPath)
 
-      await this.createTmuxSession(sessionName, worktreePath, expectedWindows)
+      await this.createTmuxSession(
+        sessionName,
+        worktreePath,
+        expectedWindows,
+        mode,
+      )
 
       this.eventBus.emitEvent({
         type: 'session-ready',
@@ -147,6 +158,7 @@ export class SessionCreator {
     sessionName: string,
     worktreePath: string,
     expectedWindows: string[],
+    mode: 'act' | 'plan',
   ) {
     const packageJsonPath = path.join(worktreePath, 'package.json')
     if (!fs.existsSync(packageJsonPath)) {
@@ -197,6 +209,13 @@ export class SessionCreator {
         },
       )
       tmuxProcess.unref()
+
+      setTimeout(() => {
+        const socketArgsStr = getTmuxSocketArgs(this.socketOptions).join(' ')
+        execSync(
+          `tmux ${socketArgsStr} setenv -t ${sessionName} CONTROL_MODE ${mode}`,
+        )
+      }, 50)
 
       setTimeout(() => {
         const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
@@ -323,14 +342,13 @@ export class SessionCreator {
       })
     }
 
-    if (!controlConfig?.agents?.act || !controlConfig?.agents?.plan) {
-      if (expectedWindows.includes('work')) {
+    if (expectedWindows.includes('work')) {
+      if (!controlConfig?.agents?.[mode]) {
         throw new Error(
-          'control.yaml must contain all required fields: agents.act, agents.plan',
+          `control.yaml must contain agents.${mode} for ${mode} mode`,
         )
       }
-    } else if (expectedWindows.includes('work')) {
-      const command = controlConfig.agents.plan
+      const command = controlConfig.agents[mode]
 
       if (!firstWindowCreated) {
         createSession('work', command)
@@ -342,16 +360,16 @@ export class SessionCreator {
         sessionName,
         index: windowIndex++,
         name: 'work',
-        command: controlConfig.agents.plan,
+        command: controlConfig.agents[mode],
         description: 'Work session',
       }
       await saveWindow(window, this.dbPath)
 
-      if (controlConfig.context?.plan) {
+      if (controlConfig.context?.[mode]) {
         console.log('  Preparing context...')
         let contextOutput: string
         try {
-          contextOutput = execSync(controlConfig.context.plan, {
+          contextOutput = execSync(controlConfig.context[mode], {
             encoding: 'utf-8',
             cwd: worktreePath,
             stdio: ['pipe', 'pipe', 'pipe'],

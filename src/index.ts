@@ -83,6 +83,7 @@ async function main() {
     .command('create-session <project-path>')
     .description('Create a new tmux session with git worktree')
     .option('--project-name <name>', 'Override project name')
+    .option('--mode <mode>', 'Session mode (act or plan)', 'act')
     .option('-L <socket-name>', 'Use a different tmux socket name')
     .option('-S <socket-path>', 'Use a different tmux socket path')
     .addOption(
@@ -113,6 +114,7 @@ async function main() {
       try {
         await creator.create(projectPath, {
           projectName: options.projectName,
+          mode: options.mode,
           ...socketOptions,
         })
       } catch (error) {

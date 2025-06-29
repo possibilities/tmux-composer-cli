@@ -188,6 +188,30 @@ export function convertToTmuxKey(keyName: string): string {
   return keyName
 }
 
+export function getSessionEnvironment(
+  sessionName: string,
+  variable: string,
+  socketOptions: TmuxSocketOptions = {},
+): string | null {
+  try {
+    const socketArgs = getTmuxSocketString(socketOptions)
+    const output = execSync(
+      `tmux ${socketArgs} showenv -t ${sessionName} ${variable}`,
+      {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'ignore'],
+      },
+    ).trim()
+
+    if (output.startsWith(`${variable}=`)) {
+      return output.substring(variable.length + 1)
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 export interface Pane {
   sessionId: string
   windowIndex: string

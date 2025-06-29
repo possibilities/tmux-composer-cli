@@ -313,7 +313,11 @@ async function runIteration(
 
   await startAutomateClaude(additionalArgs)
 
-  await createSession(projectPath, testRun.createSessionArguments)
+  await createSession(projectPath, [
+    '--mode',
+    'plan',
+    ...testRun.createSessionArguments,
+  ])
 
   await new Promise(resolve => setTimeout(resolve, 2000))
 
