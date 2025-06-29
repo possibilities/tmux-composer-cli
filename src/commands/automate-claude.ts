@@ -25,11 +25,11 @@ import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 import {
   POLL_INTERVAL,
   MAX_CHECKSUM_CACHE_SIZE,
-  MATCHERS,
   AUTOMATION_PAUSE_MS,
   DEFAULT_TERMINAL_WIDTH,
   DEFAULT_TERMINAL_HEIGHT,
 } from '../core/constants.js'
+import { MATCHERS } from '../core/matchers.js'
 
 interface AutomateTmuxOptions extends TmuxSocketOptions {
   skipTrustFolder?: boolean
