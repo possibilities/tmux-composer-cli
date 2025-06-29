@@ -18,12 +18,19 @@ import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const SOCKET_NAME = 'control-test-instance'
+// Parse command-line arguments
+const SAVE_FIXTURES = process.argv.includes('--save-fixtures')
+
+// Generate unique socket name for this test run to avoid conflicts
+const SOCKET_NAME = `control-test-${process.pid}-${Date.now()}`
 const STABILITY_WAIT_MS = 1000
 const POLL_INTERVAL_MS = 100
 const WORKTREES_PATH = join(homedir(), 'code', 'worktrees')
 const DB_PATH = join(homedir(), '.control', `cli-${SOCKET_NAME}.db`)
-const TEMP_FIXTURES_DIR = join(tmpdir(), 'control-cli-fixtures-temp')
+const TEMP_FIXTURES_DIR = join(
+  tmpdir(),
+  `control-cli-fixtures-temp-${process.pid}-${Date.now()}`,
+)
 
 // Define the different automate-claude flag configurations for each iteration
 const TEST_RUNS = [
@@ -54,9 +61,10 @@ function killExistingSession() {
     execSync(`tmux -L ${SOCKET_NAME} kill-server`, {
       stdio: 'ignore',
     })
-    console.error('Killed existing test server')
+    console.error(`Killed existing test server for socket: ${SOCKET_NAME}`)
   } catch {
     // Server doesn't exist, that's fine
+    console.error(`No existing server found for socket: ${SOCKET_NAME}`)
   }
 }
 
@@ -143,6 +151,7 @@ function createSession(projectPath: string) {
         'test-project',
         '-L',
         SOCKET_NAME,
+        '--skip-migrations',
       ],
       {
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -252,6 +261,7 @@ async function startAutomateClaude(additionalArgs: string[]) {
       'automate-claude',
       '-L',
       SOCKET_NAME,
+      '--skip-migrations',
       ...additionalArgs,
     ],
     {
@@ -329,20 +339,22 @@ async function runIteration(iterationNumber: number, additionalArgs: string[]) {
   console.log(screenContent)
   console.log(`--- End of iteration ${iterationNumber} ---\n`)
 
-  // Save fixtures to temporary directory
-  let fixtureFileName: string | null = null
-  if (iterationNumber === 1) {
-    fixtureFileName = 'trust-folder.txt'
-  } else if (iterationNumber === 2) {
-    fixtureFileName = 'ensure-plan-mode.txt'
-  } else if (iterationNumber === 3) {
-    fixtureFileName = 'inject-initial-context.txt'
-  }
+  // Save fixtures to temporary directory if --save-fixtures flag is set
+  if (SAVE_FIXTURES) {
+    let fixtureFileName: string | null = null
+    if (iterationNumber === 1) {
+      fixtureFileName = 'trust-folder.txt'
+    } else if (iterationNumber === 2) {
+      fixtureFileName = 'ensure-plan-mode.txt'
+    } else if (iterationNumber === 3) {
+      fixtureFileName = 'inject-initial-context.txt'
+    }
 
-  if (fixtureFileName) {
-    const tempFixturePath = join(TEMP_FIXTURES_DIR, fixtureFileName)
-    writeFileSync(tempFixturePath, screenContent)
-    console.error(`Saved fixture to temporary location: ${tempFixturePath}`)
+    if (fixtureFileName) {
+      const tempFixturePath = join(TEMP_FIXTURES_DIR, fixtureFileName)
+      writeFileSync(tempFixturePath, screenContent)
+      console.error(`Saved fixture to temporary location: ${tempFixturePath}`)
+    }
   }
 
   // Clean up
@@ -436,52 +448,97 @@ function copyFixturesToFinalLocation() {
   }
 }
 
-async function main() {
-  console.error('Starting save-screen script...')
+async function runMigrations() {
+  console.error('Running database migrations...')
+  return new Promise<void>((resolve, reject) => {
+    const migrateProcess = spawn(
+      'node',
+      [
+        join(__dirname, '..', 'dist', 'cli.js'),
+        'run-migrations',
+        '-L',
+        SOCKET_NAME,
+      ],
+      {
+        stdio: 'inherit',
+      },
+    )
 
-  // Create temp fixtures directory
-  if (!existsSync(TEMP_FIXTURES_DIR)) {
+    migrateProcess.on('error', error => {
+      console.error('Error running migrations:', error)
+      reject(error)
+    })
+
+    migrateProcess.on('exit', code => {
+      if (code !== 0) {
+        reject(new Error(`Migration process exited with code ${code}`))
+      } else {
+        console.error('Migrations completed successfully')
+        resolve()
+      }
+    })
+  })
+}
+
+async function main() {
+  console.error('Starting e2e-basic script...')
+  console.error(`Using unique socket name: ${SOCKET_NAME}`)
+  console.error(`Database path: ${DB_PATH}`)
+  if (SAVE_FIXTURES) {
+    console.error('Fixtures will be saved')
+  }
+
+  // Create temp fixtures directory if saving fixtures
+  if (SAVE_FIXTURES && !existsSync(TEMP_FIXTURES_DIR)) {
     mkdirSync(TEMP_FIXTURES_DIR, { recursive: true })
   }
 
   // Register cleanup handlers
-  process.on('exit', () => {
+  const performFullCleanup = () => {
     cleanupProcesses()
+    killExistingSession()
+    cleanupTestDatabase()
+    // Clean up temp fixtures if they were created
+    if (SAVE_FIXTURES) {
+      try {
+        rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
+      } catch {}
+    }
+  }
+
+  process.on('exit', () => {
+    performFullCleanup()
   })
 
   process.on('SIGINT', () => {
     console.error('\nReceived SIGINT, cleaning up...')
-    cleanupProcesses()
-    // Clean up temp fixtures on interrupt
-    try {
-      rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
-    } catch {}
+    performFullCleanup()
     process.exit(1)
   })
 
   process.on('SIGTERM', () => {
     console.error('\nReceived SIGTERM, cleaning up...')
-    cleanupProcesses()
-    // Clean up temp fixtures on termination
-    try {
-      rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
-    } catch {}
+    performFullCleanup()
     process.exit(1)
   })
 
   process.on('uncaughtException', error => {
     console.error('Uncaught exception:', error)
-    cleanupProcesses()
-    // Clean up temp fixtures on exception
-    try {
-      rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
-    } catch {}
+    performFullCleanup()
     process.exit(1)
   })
 
   // Clean up any existing test-project worktrees and database before starting
   cleanupTestProjectWorktrees()
   cleanupTestDatabase()
+
+  // Run migrations once before starting any tests
+  try {
+    await runMigrations()
+  } catch (error) {
+    console.error('Failed to run migrations:', error)
+    process.exit(1)
+  }
 
   try {
     // Run iterations with different configurations
@@ -491,14 +548,29 @@ async function main() {
 
     console.error('All iterations complete!')
 
-    // Copy fixtures to final location only if all iterations succeeded
-    copyFixturesToFinalLocation()
+    // Copy fixtures to final location only if all iterations succeeded and --save-fixtures is set
+    if (SAVE_FIXTURES) {
+      copyFixturesToFinalLocation()
+    }
+
+    // Final cleanup of test artifacts
+    console.error('Performing final cleanup...')
+    cleanupProcesses()
+    killExistingSession()
+    cleanupTestDatabase()
+    cleanupTestProjectWorktrees()
   } catch (error) {
     console.error('Error during iterations:', error)
-    // Clean up temp fixtures on error
-    try {
-      rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
-    } catch {}
+    // Clean up temp fixtures on error if they were created
+    if (SAVE_FIXTURES) {
+      try {
+        rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
+      } catch {}
+    }
+    // Also clean up test artifacts on error
+    cleanupProcesses()
+    killExistingSession()
+    cleanupTestDatabase()
     throw error
   }
 }

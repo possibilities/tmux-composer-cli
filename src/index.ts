@@ -1,4 +1,4 @@
-import { Command } from 'commander'
+import { Command, Option } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
 import { EventBus } from './core/event-bus.js'
 import { TmuxAutomator } from './commands/automate-claude.js'
@@ -29,6 +29,9 @@ async function main() {
       '--skip-inject-initial-context',
       'Skip the "inject initial context" matcher',
     )
+    .addOption(
+      new Option('--skip-migrations', 'Skip database migrations').hideHelp(),
+    )
     .action(async options => {
       const socketOptions: TmuxSocketOptions = {
         socketName: options.L,
@@ -37,11 +40,16 @@ async function main() {
 
       // Run migrations for the specific database
       const dbPath = getDatabasePath(socketOptions)
-      try {
-        runMigrations(dbPath)
-      } catch (error) {
-        console.error(`Failed to run database migrations for ${dbPath}:`, error)
-        process.exit(1)
+      if (!options.skipMigrations) {
+        try {
+          runMigrations(dbPath)
+        } catch (error) {
+          console.error(
+            `Failed to run database migrations for ${dbPath}:`,
+            error,
+          )
+          process.exit(1)
+        }
       }
 
       const eventBus = new EventBus()
@@ -78,6 +86,9 @@ async function main() {
     .option('--project-name <name>', 'Override project name')
     .option('-L <socket-name>', 'Use a different tmux socket name')
     .option('-S <socket-path>', 'Use a different tmux socket path')
+    .addOption(
+      new Option('--skip-migrations', 'Skip database migrations').hideHelp(),
+    )
     .action(async (projectPath, options) => {
       const socketOptions: TmuxSocketOptions = {
         socketName: options.L,
@@ -86,11 +97,16 @@ async function main() {
 
       // Run migrations for the specific database
       const dbPath = getDatabasePath(socketOptions)
-      try {
-        runMigrations(dbPath)
-      } catch (error) {
-        console.error(`Failed to run database migrations for ${dbPath}:`, error)
-        process.exit(1)
+      if (!options.skipMigrations) {
+        try {
+          runMigrations(dbPath)
+        } catch (error) {
+          console.error(
+            `Failed to run database migrations for ${dbPath}:`,
+            error,
+          )
+          process.exit(1)
+        }
       }
 
       const eventBus = new EventBus()
@@ -105,6 +121,29 @@ async function main() {
         console.error(
           `\nFailed to create session: ${error instanceof Error ? error.message : String(error)}`,
         )
+        process.exit(1)
+      }
+    })
+
+  program
+    .command('run-migrations', { hidden: true })
+    .description('Run database migrations')
+    .option('-L <socket-name>', 'Use a different tmux socket name')
+    .option('-S <socket-path>', 'Use a different tmux socket path')
+    .action(async options => {
+      const socketOptions: TmuxSocketOptions = {
+        socketName: options.L,
+        socketPath: options.S,
+      }
+
+      const dbPath = getDatabasePath(socketOptions)
+      console.log(`Running migrations for database: ${dbPath}`)
+
+      try {
+        runMigrations(dbPath)
+        console.log('Migrations completed successfully')
+      } catch (error) {
+        console.error(`Failed to run database migrations for ${dbPath}:`, error)
         process.exit(1)
       }
     })

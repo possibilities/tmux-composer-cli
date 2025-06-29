@@ -1,8 +1,8 @@
 claude
 
-┌─╼[00:38:37]
+┌─╼[01:11:38]
 └─╼[~/code/worktrees/test-project-worktree-003]
- ╰╼[worktree-003]╾─╼[75a7b3b]
+ ╰╼[worktree-003]╾─╼[ca12c7d]
 ▶ claude
 ╭─────────────────────────────────────────────────────────────╮
 │ ✻ Welcome to Claude Code!                                   │
@@ -14,7 +14,7 @@ claude
 
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "how does <filepath> work?"                                            │
+│ > Try "fix typecheck errors"                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 
