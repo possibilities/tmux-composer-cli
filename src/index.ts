@@ -26,12 +26,21 @@ async function main() {
     .option('-L <socket-name>', 'Use a different tmux socket name')
     .option('-S <socket-path>', 'Use a different tmux socket path')
     .option('--poll-interval <ms>', 'Polling interval in milliseconds', '500')
+    .option('--skip-trust-folder', 'Skip the "trust folder" matcher')
+    .option('--skip-ensure-plan-mode', 'Skip the "ensure plan mode" matcher')
+    .option(
+      '--skip-inject-initial-context',
+      'Skip the "inject initial context" matcher',
+    )
     .action(async options => {
       const eventBus = new EventBus()
       const automator = new TmuxAutomator(eventBus, {
         socketName: options.L,
         socketPath: options.S,
         pollInterval: parseInt(options.pollInterval, 10),
+        skipTrustFolder: options.skipTrustFolder,
+        skipEnsurePlanMode: options.skipEnsurePlanMode,
+        skipInjectInitialContext: options.skipInjectInitialContext,
       })
 
       console.log('Monitoring tmux sessions... Press Ctrl+C to stop')

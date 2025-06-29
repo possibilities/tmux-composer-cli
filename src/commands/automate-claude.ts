@@ -30,6 +30,9 @@ import {
 
 interface AutomateTmuxOptions extends TmuxSocketOptions {
   pollInterval?: number
+  skipTrustFolder?: boolean
+  skipEnsurePlanMode?: boolean
+  skipInjectInitialContext?: boolean
 }
 
 export class TmuxAutomator {
@@ -49,6 +52,9 @@ export class TmuxAutomator {
   private checkedPanes = new Set<string>()
   private lastClaudeCheck = 0
   private readonly CLAUDE_CHECK_INTERVAL = 500
+  private skipTrustFolder: boolean
+  private skipEnsurePlanMode: boolean
+  private skipInjectInitialContext: boolean
 
   constructor(eventBus: EventBus, options: AutomateTmuxOptions = {}) {
     this.eventBus = eventBus
@@ -57,6 +63,9 @@ export class TmuxAutomator {
       socketPath: options.socketPath,
     }
     this.pollInterval = options.pollInterval || POLL_INTERVAL
+    this.skipTrustFolder = options.skipTrustFolder || false
+    this.skipEnsurePlanMode = options.skipEnsurePlanMode || false
+    this.skipInjectInitialContext = options.skipInjectInitialContext || false
   }
 
   async start() {
@@ -93,6 +102,19 @@ export class TmuxAutomator {
 
   private socketExists(): boolean {
     return socketExists(this.socketOptions)
+  }
+
+  private shouldSkipMatcher(matcherName: string): boolean {
+    switch (matcherName) {
+      case 'trust-folder':
+        return this.skipTrustFolder
+      case 'ensure-plan-mode':
+        return this.skipEnsurePlanMode
+      case 'inject-initial-context':
+        return this.skipInjectInitialContext
+      default:
+        return false
+    }
   }
 
   private async updateClaudeWindowsCache() {
@@ -315,6 +337,13 @@ export class TmuxAutomator {
         )
 
         for (const matcher of MATCHERS) {
+          if (this.shouldSkipMatcher(matcher.name)) {
+            if (process.env.VERBOSE) {
+              console.log(`Skipping matcher: ${matcher.name}`)
+            }
+            continue
+          }
+
           const patternMatches = matchesPattern(cleanedLines, matcher.trigger)
 
           if (patternMatches) {

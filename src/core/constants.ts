@@ -11,7 +11,7 @@ export interface Matcher {
 
 export const MATCHERS: Matcher[] = [
   {
-    name: 'do-you-trust-this-folder',
+    name: 'trust-folder',
     trigger: [
       'Do you trust the files in this folder?',
       ' Enter to confirm · Esc to exit',
