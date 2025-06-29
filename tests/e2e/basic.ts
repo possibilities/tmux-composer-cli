@@ -317,7 +317,6 @@ function createSession(
       projectPath,
       '-L',
       SOCKET_NAME,
-      '--skip-migrations',
     ]
 
     if (terminalWidth !== undefined && terminalHeight !== undefined) {
@@ -457,7 +456,6 @@ async function startAutomateClaude(additionalArgs: string[]) {
         'automate',
         '-L',
         SOCKET_NAME,
-        '--skip-migrations',
         ...additionalArgs,
       ],
       {
@@ -490,7 +488,7 @@ async function startAutomateClaude(additionalArgs: string[]) {
         }
         console.error('Command was:')
         console.error(
-          `  node ${join(__dirname, '..', '..', 'dist', 'cli.js')} claude automate -L ${SOCKET_NAME} --skip-migrations ${additionalArgs.join(' ')}`,
+          `  node ${join(__dirname, '..', '..', 'dist', 'cli.js')} claude automate -L ${SOCKET_NAME} ${additionalArgs.join(' ')}`,
         )
         console.error('='.repeat(60) + '\n')
         cleanupProcesses()
@@ -879,12 +877,13 @@ async function main() {
   cleanupTestProjectWorktrees()
   cleanupTestDatabase()
 
-  try {
-    await runMigrations()
-  } catch (error) {
-    console.error('Failed to run migrations:', error)
-    process.exit(1)
-  }
+  // Skip migrations - they appear to be handled automatically now
+  // try {
+  //   await runMigrations()
+  // } catch (error) {
+  //   console.error('Failed to run migrations:', error)
+  //   process.exit(1)
+  // }
 
   try {
     let iterationNumber = 1

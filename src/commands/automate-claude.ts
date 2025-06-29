@@ -55,20 +55,14 @@ export class TmuxAutomator {
   private lastClaudeCheck = 0
   private readonly CLAUDE_CHECK_INTERVAL = 500
   private skipMatchers: Record<string, boolean>
-  private dbPath?: string
 
-  constructor(
-    eventBus: EventBus,
-    options: AutomateTmuxOptions = {},
-    dbPath?: string,
-  ) {
+  constructor(eventBus: EventBus, options: AutomateTmuxOptions = {}) {
     this.eventBus = eventBus
     this.socketOptions = {
       socketName: options.socketName,
       socketPath: options.socketPath,
     }
     this.skipMatchers = options.skipMatchers || {}
-    this.dbPath = dbPath
   }
 
   async start() {

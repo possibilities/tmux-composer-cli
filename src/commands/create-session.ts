@@ -14,8 +14,6 @@ import {
   WORKTREES_PATH,
 } from '../core/git-utils.js'
 import { ControlConfig, TERMINAL_SIZES } from '../core/constants.js'
-import { saveSession, saveWindow } from '../db/index.js'
-import type { NewSession, NewWindow } from '../db/schema.js'
 
 interface CreateSessionOptions extends TmuxSocketOptions {
   mode?: 'act' | 'plan'
@@ -26,19 +24,12 @@ interface CreateSessionOptions extends TmuxSocketOptions {
 export class SessionCreator {
   private eventBus: EventBus
   private socketOptions: TmuxSocketOptions
-  private dbPath?: string
-
-  constructor(
-    eventBus: EventBus,
-    options: CreateSessionOptions = {},
-    dbPath?: string,
-  ) {
+  constructor(eventBus: EventBus, options: CreateSessionOptions = {}) {
     this.eventBus = eventBus
     this.socketOptions = {
       socketName: options.socketName,
       socketPath: options.socketPath,
     }
-    this.dbPath = dbPath
   }
 
   async create(projectPath: string, options: CreateSessionOptions = {}) {
@@ -75,13 +66,6 @@ export class SessionCreator {
         worktreeNumber: parseInt(worktreeNum),
         expectedWindows,
       })
-
-      const newSession: NewSession = {
-        sessionName,
-        projectName,
-        worktreePath,
-      }
-      await saveSession(newSession, this.dbPath)
 
       await this.createTmuxSession(
         sessionName,
@@ -254,15 +238,7 @@ export class SessionCreator {
         createWindow('server', command)
       }
 
-      const window: NewWindow = {
-        sessionName,
-        index: windowIndex++,
-        name: 'server',
-        command: 'pnpm run dev',
-        description: 'Development server',
-        port,
-      }
-      await saveWindow(window, this.dbPath)
+      windowIndex++
 
       this.eventBus.emitEvent({
         type: 'window-ready',
@@ -280,14 +256,7 @@ export class SessionCreator {
         createWindow('lint', command)
       }
 
-      const window: NewWindow = {
-        sessionName,
-        index: windowIndex++,
-        name: 'lint',
-        command: 'pnpm run lint:watch',
-        description: 'Linting watch mode',
-      }
-      await saveWindow(window, this.dbPath)
+      windowIndex++
 
       this.eventBus.emitEvent({
         type: 'window-ready',
@@ -304,14 +273,7 @@ export class SessionCreator {
         createWindow('types', command)
       }
 
-      const window: NewWindow = {
-        sessionName,
-        index: windowIndex++,
-        name: 'types',
-        command: 'pnpm run types:watch',
-        description: 'TypeScript type checking',
-      }
-      await saveWindow(window, this.dbPath)
+      windowIndex++
 
       this.eventBus.emitEvent({
         type: 'window-ready',
@@ -328,14 +290,7 @@ export class SessionCreator {
         createWindow('test', command)
       }
 
-      const window: NewWindow = {
-        sessionName,
-        index: windowIndex++,
-        name: 'test',
-        command: 'pnpm run test:watch',
-        description: 'Test watch mode',
-      }
-      await saveWindow(window, this.dbPath)
+      windowIndex++
 
       this.eventBus.emitEvent({
         type: 'window-ready',
@@ -357,14 +312,7 @@ export class SessionCreator {
         createWindow('work', command)
       }
 
-      const window: NewWindow = {
-        sessionName,
-        index: windowIndex++,
-        name: 'work',
-        command: controlConfig.agents[mode],
-        description: 'Work session',
-      }
-      await saveWindow(window, this.dbPath)
+      windowIndex++
 
       if (controlConfig.context?.[mode]) {
         console.log('  Preparing context...')
