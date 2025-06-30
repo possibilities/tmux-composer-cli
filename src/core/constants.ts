@@ -9,13 +9,16 @@ export const TERMINAL_SIZES = {
 }
 
 export interface ControlConfig {
-  name?: string
-  agents?: {
-    act?: string
-    plan?: string
-  }
-  context?: {
-    act?: string
-    plan?: string
-  }
+  agents?:
+    | string
+    | {
+        act?: string
+        plan?: string
+      }
+  context?:
+    | string
+    | {
+        act?: string
+        plan?: string
+      }
 }

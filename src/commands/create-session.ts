@@ -128,9 +128,7 @@ export class SessionCreator {
         controlConfig = yaml.load(controlYamlContent) as ControlConfig
       } catch {}
 
-      if (controlConfig?.agents?.act && controlConfig?.agents?.plan) {
-        windows.push('work')
-      }
+      windows.push('work')
 
       return windows
     } catch {
@@ -311,12 +309,15 @@ export class SessionCreator {
     }
 
     if (expectedWindows.includes('work')) {
-      if (!controlConfig?.agents?.[mode]) {
-        throw new Error(
-          `control.yaml must contain agents.${mode} for ${mode} mode`,
-        )
+      let command = 'claude'
+
+      if (controlConfig?.agents) {
+        if (typeof controlConfig.agents === 'string') {
+          command = controlConfig.agents
+        } else if (controlConfig.agents[mode]) {
+          command = controlConfig.agents[mode]
+        }
       }
-      const command = controlConfig.agents[mode]
 
       if (!firstWindowCreated) {
         createSession('work', command)
@@ -326,18 +327,28 @@ export class SessionCreator {
 
       windowIndex++
 
-      if (controlConfig.context?.[mode]) {
+      let contextCommand: string | undefined
+
+      if (controlConfig?.context) {
+        if (typeof controlConfig.context === 'string') {
+          contextCommand = controlConfig.context
+        } else if (controlConfig.context[mode]) {
+          contextCommand = controlConfig.context[mode]
+        }
+      }
+
+      if (contextCommand) {
         console.log('  Preparing context...')
         let contextOutput: string
         try {
-          contextOutput = execSync(controlConfig.context[mode], {
+          contextOutput = execSync(contextCommand, {
             encoding: 'utf-8',
             cwd: worktreePath,
             stdio: ['pipe', 'pipe', 'pipe'],
           }).trim()
         } catch (error) {
           throw new Error(
-            `Failed to execute context.plan command: ${error instanceof Error ? error.message : String(error)}`,
+            `Failed to execute context command: ${error instanceof Error ? error.message : String(error)}`,
           )
         }
 
