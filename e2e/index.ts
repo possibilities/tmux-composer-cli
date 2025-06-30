@@ -123,7 +123,7 @@ const SAVE_FIXTURES = process.argv.includes('--save-fixtures')
 const NO_CLEANUP = process.argv.includes('--no-cleanup')
 const FORCE = process.argv.includes('--force')
 
-const SOCKET_NAME = `control-test-${process.pid}-${Date.now()}`
+const SOCKET_NAME = `tmux-composer-test-${process.pid}-${Date.now()}`
 const STABILITY_WAIT_MS = 2000
 const POLL_INTERVAL_MS = 100
 const WORKTREES_PATH = join(homedir(), 'code', 'worktrees')
@@ -147,7 +147,7 @@ function cleanupPreviousTestRuns() {
     const tmuxDir = '/tmp/tmux-1000'
     if (existsSync(tmuxDir)) {
       const files = readdirSync(tmuxDir)
-      const testSockets = files.filter(f => f.startsWith('control-test-'))
+      const testSockets = files.filter(f => f.startsWith('tmux-composer-test-'))
 
       for (const socket of testSockets) {
         const socketPath = join(tmuxDir, socket)
@@ -210,7 +210,7 @@ function cleanupProcesses() {
 }
 
 function createTempProject(configContent: string): string {
-  const tempDir = mkdtempSync(join(tmpdir(), 'control-test-'))
+  const tempDir = mkdtempSync(join(tmpdir(), 'tmux-composer-test-'))
   console.error(`Created temp directory: ${tempDir}`)
 
   execSync('git init', { cwd: tempDir })
@@ -627,11 +627,11 @@ function cleanupTestProjectWorktrees() {
         for (const [key, value] of Object.entries(claudeJson.projects)) {
           if (
             key.match(
-              /\/home\/mike\/code\/worktrees\/control-test-[^/]+-worktree-\d+$/,
+              /\/home\/mike\/code\/worktrees\/tmux-composer-test-[^/]+-worktree-\d+$/,
             ) ||
-            key.match(/\/tmp\/control-test-[^/]+$/) ||
-            key.match(/\/control-test-[^/]+$/) ||
-            key.includes('control-test-')
+            key.match(/\/tmp\/tmux-composer-test-[^/]+$/) ||
+            key.match(/\/tmux-composer-test-[^/]+$/) ||
+            key.includes('tmux-composer-test-')
           ) {
             console.error(`Removing test project entry: ${key}`)
             removedCount++
@@ -673,7 +673,7 @@ function cleanupTestProjectWorktrees() {
     const testWorktrees = dirs.filter(
       dir =>
         dir.startsWith('test-project-worktree-') ||
-        dir.match(/^control-test-[^/]+-worktree-\d+$/),
+        dir.match(/^tmux-composer-test-[^/]+-worktree-\d+$/),
     )
 
     for (const dir of testWorktrees) {
@@ -703,7 +703,9 @@ function cleanupTempTestDirectories(excludeFixtureDir?: string) {
 
   try {
     const tmpDirs = readdirSync(tmpdir())
-    const testDirs = tmpDirs.filter(dir => dir.startsWith('control-test-'))
+    const testDirs = tmpDirs.filter(dir =>
+      dir.startsWith('tmux-composer-test-'),
+    )
 
     for (const dir of testDirs) {
       const dirPath = join(tmpdir(), dir)
@@ -716,7 +718,7 @@ function cleanupTempTestDirectories(excludeFixtureDir?: string) {
     }
 
     if (testDirs.length === 0) {
-      console.error('No control-test-* directories found in /tmp')
+      console.error('No tmux-composer-test-* directories found in /tmp')
     } else {
       console.error(`Cleaned up ${testDirs.length} temp test directories`)
     }
