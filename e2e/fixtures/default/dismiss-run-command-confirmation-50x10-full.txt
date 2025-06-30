@@ -2,39 +2,42 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-V37
-hw3-worktree-001
+   cwd: /home/mike/code/worktrees/tmux-composer-te
+st-4dC2RO-worktree-001
 
  Tips for getting started:
 
  1. Run /init to create a CLAUDE.md file with inst
 ructions for Claude
  2. Use Claude to help with file analysis, editing
-, bash commands and
-    git
+, bash commands and git
  3. Be as specific as you would with another engin
-eer for the best
-    results
+eer for the best results
+
+
 
 
 > Run 'ls -lsa /tmp' in the current directory
 
-● I'll run the ls -lsa /tmp command for you.
+● I'll run the ls -lsa /tmp command to show
+  all files in the /tmp directory with
+  detailed information.
 
-● Bash(ls -lsa /tmp)
+  Bash(ls -lsa /tmp)
   ⎿  Running…
 
 ╭────────────────────────────────────────────────╮
 │ Bash command                                   │
 │                                                │
 │   ls -lsa /tmp                                 │
-│   List all files in /tmp with details          │
+│   List all files in /tmp directory with        │
+│   details                                      │
 │                                                │
 │ Do you want to proceed?                        │
 │ ❯ 1. Yes                                       │
 │  2. Yes, and don't ask again for ls commands   │
-│  in /home/mike/code/worktrees/control-test-V37 │
-│  hw3-worktree-001                              │
+│  in /home/mike/code/worktrees/tmux-composer-te │
+│  st-4dC2RO-worktree-001                        │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 ╰────────────────────────────────────────────────╯

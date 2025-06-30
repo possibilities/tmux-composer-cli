@@ -1,8 +1,8 @@
-    results
+
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "refactor <filepath>"                    │
+│ > Try "fix typecheck errors"                   │
 ╰────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

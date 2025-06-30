@@ -1,13 +1,13 @@
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
    Enter to confirm · Esc to exit
-╭────────────────────────────────────────────────────────────────────╮
-│ ✻ Welcome to Claude Code!                                          │
-│                                                                    │
-│   /help for help, /status for your current setup                   │
-│                                                                    │
-│   cwd: /home/mike/code/worktrees/control-test-gIPptZ-worktree-001  │
-╰────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                                                │
+│                                                                          │
+│   /help for help, /status for your current setup                         │
+│                                                                          │
+│   cwd: /home/mike/code/worktrees/tmux-composer-test-V9S7ar-worktree-001  │
+╰──────────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
 
@@ -16,7 +16,7 @@
  3. Be as specific as you would with another engineer for the best results
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "edit <filepath> to..."                                                │
+│ > Try "fix typecheck errors"                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
 

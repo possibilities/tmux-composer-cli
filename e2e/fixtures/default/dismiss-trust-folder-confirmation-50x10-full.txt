@@ -2,8 +2,8 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/control-test-7UwVup- │
-│ worktree-001                                   │
+│ /home/mike/code/worktrees/tmux-composer-test-B │
+│ Nn1ph-worktree-001                             │
 │                                                │
 │ Claude Code may read files in this folder.     │
 │ Reading untrusted files may lead Claude Code   │

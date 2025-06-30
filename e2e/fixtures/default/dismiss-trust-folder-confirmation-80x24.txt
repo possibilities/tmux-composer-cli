@@ -1,10 +1,10 @@
- ╰╼[worktree-001]╾─╼[7b82bef]
+ ╰╼[worktree-001]╾─╼[8ed8288]
 ▶ claude
 ╭──────────────────────────────────────────────────────────────────────────────╮
 │                                                                              │
 │ Do you trust the files in this folder?                                       │
 │                                                                              │
-│ /home/mike/code/worktrees/control-test-RfHHpY-worktree-001                   │
+│ /home/mike/code/worktrees/tmux-composer-test-Yi6JB6-worktree-001             │
 │                                                                              │
 │ Claude Code may read files in this folder. Reading untrusted files may lead  │
 │ Claude Code to behave in unexpected ways.                                    │

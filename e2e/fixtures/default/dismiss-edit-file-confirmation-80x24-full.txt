@@ -1,10 +1,10 @@
-╭────────────────────────────────────────────────────────────────────╮
-│ ✻ Welcome to Claude Code!                                          │
-│                                                                    │
-│   /help for help, /status for your current setup                   │
-│                                                                    │
-│   cwd: /home/mike/code/worktrees/control-test-Mk2y5X-worktree-001  │
-╰────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                                                │
+│                                                                          │
+│   /help for help, /status for your current setup                         │
+│                                                                          │
+│   cwd: /home/mike/code/worktrees/tmux-composer-test-xbxIPg-worktree-001  │
+╰──────────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
 
@@ -19,11 +19,11 @@
 
 ● Write(funny.txt)
   ⎿  Wrote 5 lines to funny.txt
-     brouhaha
      kerfuffle
+     brouhaha
+     discombobulated
      nincompoop
-     bamboozle
-     flibbertigibbet
+     shenanigans
 
 ● Update(funny.txt)
 
@@ -32,13 +32,13 @@
 │ ╭──────────────────────────────────────────────────────────────────────────╮ │
 │ │ funny.txt                                                                │ │
 │ │                                                                          │ │
-│ │   2    kerfuffle                                                         │ │
-│ │   3    nincompoop                                                        │ │
-│ │   4    bamboozle                                                         │ │
-│ │   5 -  flibbertigibbet                                                   │ │
+│ │   2    brouhaha                                                          │ │
+│ │   3    discombobulated                                                   │ │
+│ │   4    nincompoop                                                        │ │
+│ │   5 -  shenanigans                                                       │ │
 │ │   5   \ No newline at end of file                                        │ │
-│ │   6 +  flibbertigibbet                                                   │ │
-│ │   7 +  gobbledygook                                                      │ │
+│ │   6 +  shenanigans                                                       │ │
+│ │   7 +  bamboozled                                                        │ │
 │ │   8   \ No newline at end of file                                        │ │
 │ ╰──────────────────────────────────────────────────────────────────────────╯ │
 │ Do you want to make this edit to funny.txt?                                  │

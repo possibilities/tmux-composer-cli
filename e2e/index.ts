@@ -129,7 +129,7 @@ const POLL_INTERVAL_MS = 100
 const WORKTREES_PATH = join(homedir(), 'code', 'worktrees')
 const TEMP_FIXTURES_DIR = join(
   tmpdir(),
-  `control-cli-fixtures-temp-${process.pid}-${Date.now()}`,
+  `tmux-composer-cli-fixtures-temp-${process.pid}-${Date.now()}`,
 )
 
 let actualSessionName = ''
@@ -740,7 +740,7 @@ function cleanupTempTestDirectories(excludeFixtureDir?: string) {
     }
 
     const fixturesDirs = tmpDirs.filter(dir => {
-      if (!dir.startsWith('control-cli-fixtures-temp-')) return false
+      if (!dir.startsWith('tmux-composer-cli-fixtures-temp-')) return false
       if (excludeFixtureDir && join(tmpdir(), dir) === excludeFixtureDir)
         return false
       return true

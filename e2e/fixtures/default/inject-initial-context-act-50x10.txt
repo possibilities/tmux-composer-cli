@@ -1,8 +1,8 @@
-    results
+
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "create a util logging.py that..."       │
+│ > Try "edit <filepath> to..."                  │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

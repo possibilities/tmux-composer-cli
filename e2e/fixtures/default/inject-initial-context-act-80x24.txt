@@ -1,13 +1,13 @@
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
    Enter to confirm · Esc to exit
-╭────────────────────────────────────────────────────────────────────╮
-│ ✻ Welcome to Claude Code!                                          │
-│                                                                    │
-│   /help for help, /status for your current setup                   │
-│                                                                    │
-│   cwd: /home/mike/code/worktrees/control-test-iV79At-worktree-001  │
-╰────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                                                │
+│                                                                          │
+│   /help for help, /status for your current setup                         │
+│                                                                          │
+│   cwd: /home/mike/code/worktrees/tmux-composer-test-mp4mc1-worktree-001  │
+╰──────────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
 
@@ -16,7 +16,7 @@
  3. Be as specific as you would with another engineer for the best results
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "create a util logging.py that..."                                     │
+│ > Try "write a test for <filepath>"                                          │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
 
