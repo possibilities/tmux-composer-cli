@@ -6,7 +6,7 @@
 │                                                                          │
 │   /help for help, /status for your current setup                         │
 │                                                                          │
-│   cwd: /home/mike/code/worktrees/tmux-composer-test-PHSh3M-worktree-001  │
+│   cwd: /home/mike/code/worktrees/tmux-composer-test-zNhmPq-worktree-001  │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
@@ -16,7 +16,7 @@
  3. Be as specific as you would with another engineer for the best results
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "refactor <filepath>"                                                  │
+│ > Try "fix lint errors"                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
 

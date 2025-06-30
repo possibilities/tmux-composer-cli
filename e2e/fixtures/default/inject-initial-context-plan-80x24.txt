@@ -6,7 +6,7 @@
 │                                                                          │
 │   /help for help, /status for your current setup                         │
 │                                                                          │
-│   cwd: /home/mike/code/worktrees/tmux-composer-test-Yly5NV-worktree-001  │
+│   cwd: /home/mike/code/worktrees/tmux-composer-test-oafTLY-worktree-001  │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:

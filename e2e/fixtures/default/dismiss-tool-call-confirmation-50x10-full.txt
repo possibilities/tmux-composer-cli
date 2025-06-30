@@ -3,7 +3,7 @@
    /help for help, /status for your current setup
 
    cwd: /home/mike/code/worktrees/tmux-composer-te
-st-aq8OwA-worktree-001
+st-FP2xI3-worktree-001
 
  Tips for getting started:
 
@@ -25,7 +25,7 @@ eer for the best results
 
 ● everything:echo (MCP)(message: "Hello! This
                         is an echo message
-                       using the MCP
+                       from the mcp
                        everything echo
                        tool.")
 
@@ -33,7 +33,7 @@ eer for the best results
 │ Tool use                                       │
 │                                                │
 │   everything:echo(message: "Hello! This is     │
-│   an echo message using the MCP everything     │
+│   an echo message from the mcp everything      │
 │   echo tool.") (MCP)                           │
 │   Echoes back the input                        │
 │                                                │
@@ -42,7 +42,7 @@ eer for the best results
 │  2. Yes, and don't ask again for               │
 │  everything:echo commands in                   │
 │  /home/mike/code/worktrees/tmux-composer-test- │
-│  aq8OwA-worktree-001                           │
+│  FP2xI3-worktree-001                           │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 │                                                │

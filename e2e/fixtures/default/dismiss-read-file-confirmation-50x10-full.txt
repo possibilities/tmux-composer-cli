@@ -3,7 +3,7 @@
    /help for help, /status for your current setup
 
    cwd: /home/mike/code/worktrees/tmux-composer-te
-st-g2tBZ7-worktree-001
+st-cTRQfF-worktree-001
 
  Tips for getting started:
 
@@ -22,7 +22,7 @@ eer for the best results
   and show he content
 
 ● I'll read the file and show you its
-  content.
+  contents.
 
 ● Read(../../../../../tmp/tmux-composer-e2e-b
       asic-date1.txt)
