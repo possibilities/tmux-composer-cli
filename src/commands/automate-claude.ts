@@ -365,47 +365,69 @@ export class TmuxAutomator {
 
           let patternMatches = false
 
-          if (matcher.trigger.length === 1) {
-            patternMatches = matchesPattern(cleanedLines, matcher.trigger)
-            console.log(`[DEBUG] Single pattern matches: ${patternMatches}`)
-          } else {
-            console.log(
-              `[DEBUG] Two-phase matching for ${matcher.trigger.length} patterns`,
-            )
-
-            const lastPatternMatches = matchesLastPattern(
-              cleanedLines,
-              matcher.trigger,
-            )
-            console.log(
-              `[DEBUG] Phase 1 - Last pattern matches: ${lastPatternMatches}`,
-            )
-
-            if (lastPatternMatches) {
+          const checkTrigger = async (
+            trigger: string[],
+            triggerType: string,
+          ): Promise<boolean> => {
+            if (trigger.length === 1) {
+              const matches = matchesPattern(cleanedLines, trigger)
               console.log(
-                '[DEBUG] Phase 2 - Capturing full scrollback for complete match',
+                `[DEBUG] ${triggerType} - Single pattern matches: ${matches}`,
               )
-              try {
-                const fullContent = await capturePaneWithScrollback(
-                  sessionName,
-                  windowName,
-                  this.socketOptions,
-                )
-                const cleanedFullContent = cleanContent(fullContent)
-                const cleanedFullLines = cleanedFullContent.split('\n')
+              return matches
+            } else {
+              console.log(
+                `[DEBUG] ${triggerType} - Two-phase matching for ${trigger.length} patterns`,
+              )
 
-                patternMatches = matchesFullPattern(
-                  cleanedFullLines,
-                  matcher.trigger,
-                )
+              const lastPatternMatches = matchesLastPattern(
+                cleanedLines,
+                trigger,
+              )
+              console.log(
+                `[DEBUG] ${triggerType} - Phase 1 - Last pattern matches: ${lastPatternMatches}`,
+              )
+
+              if (lastPatternMatches) {
                 console.log(
-                  `[DEBUG] Phase 2 - Full pattern matches: ${patternMatches}`,
+                  `[DEBUG] ${triggerType} - Phase 2 - Capturing full scrollback for complete match`,
                 )
-              } catch (error) {
-                console.error('[DEBUG] Error capturing scrollback:', error)
-                patternMatches = matchesPattern(cleanedLines, matcher.trigger)
+                try {
+                  const fullContent = await capturePaneWithScrollback(
+                    sessionName,
+                    windowName,
+                    this.socketOptions,
+                  )
+                  const cleanedFullContent = cleanContent(fullContent)
+                  const cleanedFullLines = cleanedFullContent.split('\n')
+
+                  const matches = matchesFullPattern(cleanedFullLines, trigger)
+                  console.log(
+                    `[DEBUG] ${triggerType} - Phase 2 - Full pattern matches: ${matches}`,
+                  )
+                  return matches
+                } catch (error) {
+                  console.error('[DEBUG] Error capturing scrollback:', error)
+                  return matchesPattern(cleanedLines, trigger)
+                }
               }
+              return false
             }
+          }
+
+          patternMatches = await checkTrigger(
+            matcher.trigger,
+            'Regular trigger',
+          )
+
+          if (!patternMatches && matcher.wrappedTrigger) {
+            console.log(
+              `[DEBUG] Regular trigger didn't match, trying wrapped trigger`,
+            )
+            patternMatches = await checkTrigger(
+              matcher.wrappedTrigger,
+              'Wrapped trigger',
+            )
           }
 
           if (patternMatches) {

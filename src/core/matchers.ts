@@ -1,6 +1,7 @@
 export interface Matcher {
   name: string
   trigger: string[]
+  wrappedTrigger?: string[]
   response: string
   runOnce: boolean
   mode: 'act' | 'plan' | 'all'
@@ -20,13 +21,14 @@ export const MATCHERS: Matcher[] = [
   {
     name: 'ensure-plan-mode',
     trigger: ['? for shortcuts'],
+    wrappedTrigger: ['? for', 'shortcuts'],
     response: '<S-Tab><S-Tab>',
     runOnce: true,
     mode: 'plan',
   },
   {
     name: 'inject-initial-context-plan',
-    trigger: ['⏸ plan mode on (shift+tab to cycle)'],
+    trigger: ['⏸ plan mode on'],
     response: '{paste-buffer}<Enter>',
     runOnce: true,
     mode: 'plan',
@@ -34,6 +36,7 @@ export const MATCHERS: Matcher[] = [
   {
     name: 'inject-initial-context-act',
     trigger: ['? for shortcuts'],
+    wrappedTrigger: ['? for', 'shortcuts'],
     response: '{paste-buffer}<Enter>',
     runOnce: true,
     mode: 'act',
