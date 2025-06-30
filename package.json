@@ -1,12 +1,12 @@
 {
-  "name": "control-cli",
+  "name": "tmux-composer",
   "version": "0.1.0",
   "author": "Mike Bannister <notimpossiblemike@gmail.com>",
   "license": "MIT",
-  "description": "Control CLI",
+  "description": "Tmux Composer CLI",
   "type": "module",
   "bin": {
-    "control": "./dist/cli.js"
+    "tmux-composer": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsup",

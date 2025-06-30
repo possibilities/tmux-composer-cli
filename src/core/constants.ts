@@ -8,7 +8,7 @@ export const TERMINAL_SIZES = {
   small: { width: 50, height: 10 },
 }
 
-export interface ControlConfig {
+export interface TmuxComposerConfig {
   agents?:
     | string
     | {

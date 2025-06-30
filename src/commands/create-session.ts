@@ -13,7 +13,7 @@ import {
   WORKTREES_PATH,
 } from '../core/git-utils.js'
 import { socketExists } from '../core/tmux-utils.js'
-import { ControlConfig, TERMINAL_SIZES } from '../core/constants.js'
+import { TmuxComposerConfig, TERMINAL_SIZES } from '../core/constants.js'
 
 interface CreateSessionOptions extends TmuxSocketOptions {
   mode?: 'act' | 'plan'
@@ -101,11 +101,11 @@ export class SessionCreator {
         windows.push('test')
       }
 
-      let controlConfig: ControlConfig | null = null
+      let controlConfig: TmuxComposerConfig | null = null
       try {
         const controlYamlPath = path.join(worktreePath, 'control.yaml')
         const controlYamlContent = fs.readFileSync(controlYamlPath, 'utf-8')
-        controlConfig = yaml.load(controlYamlContent) as ControlConfig
+        controlConfig = yaml.load(controlYamlContent) as TmuxComposerConfig
       } catch {}
 
       windows.push('work')
@@ -132,11 +132,11 @@ export class SessionCreator {
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
     const scripts = packageJson.scripts || {}
 
-    let controlConfig: ControlConfig | null = null
+    let controlConfig: TmuxComposerConfig | null = null
     try {
       const controlYamlPath = path.join(worktreePath, 'control.yaml')
       const controlYamlContent = fs.readFileSync(controlYamlPath, 'utf-8')
-      controlConfig = yaml.load(controlYamlContent) as ControlConfig
+      controlConfig = yaml.load(controlYamlContent) as TmuxComposerConfig
     } catch {}
 
     let firstWindowCreated = false

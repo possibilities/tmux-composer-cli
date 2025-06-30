@@ -10,8 +10,8 @@ async function main() {
   const program = new Command()
 
   program
-    .name('control')
-    .description('Control CLI')
+    .name('tmux-composer')
+    .description('Tmux Composer CLI')
     .version(packageJson.version)
 
   // Claude command with automate subcommand
