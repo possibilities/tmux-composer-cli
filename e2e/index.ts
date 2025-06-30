@@ -17,6 +17,7 @@ import { join, dirname } from 'path'
 import { createHash } from 'crypto'
 import { fileURLToPath } from 'url'
 import dedent from 'dedent'
+import prompts from 'prompts'
 import { TERMINAL_SIZES, MAX_SCROLLBACK_LINES } from '../src/core/constants.js'
 
 const DEFAULT_CONFIG = dedent`
@@ -141,6 +142,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const SAVE_FIXTURES = process.argv.includes('--save-fixtures')
 const NO_CLEANUP = process.argv.includes('--no-cleanup')
+const FORCE = process.argv.includes('--force')
 
 const SOCKET_NAME = `control-test-${process.pid}-${Date.now()}`
 const STABILITY_WAIT_MS = 2000
@@ -746,6 +748,48 @@ async function main() {
   }
   if (NO_CLEANUP) {
     console.error('No-cleanup mode: artifacts will be preserved for inspection')
+  }
+
+  // Display warning and confirmation prompt
+  if (!FORCE) {
+    console.error('\n' + '='.repeat(80))
+    console.error('⚠️  WARNING: E2E TEST WILL USE REAL CLAUDE API TOKENS ⚠️')
+    console.error('='.repeat(80))
+    console.error('\nThis test will:')
+    console.error('  • Run Claude automation commands that consume API tokens')
+    console.error(
+      '  • Execute multiple test iterations (8 tests × 2 terminal sizes = 16 runs)',
+    )
+    console.error(
+      '  • Potentially incur significant costs depending on your API usage',
+    )
+    console.error(
+      '\nEach test run creates a temporary project and runs Claude commands.',
+    )
+    console.error(
+      'Make sure you understand the costs associated with Claude API usage.',
+    )
+    console.error(
+      '\nTo skip this confirmation in the future, use the --force flag.',
+    )
+    console.error('='.repeat(80) + '\n')
+
+    const response = await prompts({
+      type: 'confirm',
+      name: 'continue',
+      message: 'Do you want to continue with the e2e tests?',
+      initial: false,
+    })
+
+    if (!response.continue) {
+      console.error('\nE2E tests cancelled by user.')
+      process.exit(0)
+    }
+  } else {
+    console.error('\n' + '='.repeat(80))
+    console.error('⚠️  WARNING: E2E TEST WILL USE REAL CLAUDE API TOKENS ⚠️')
+    console.error('='.repeat(80))
+    console.error('Running with --force flag, skipping confirmation...\n')
   }
 
   // Clean up any previous test runs first

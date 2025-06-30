@@ -3,7 +3,7 @@
 │                                                                    │
 │   /help for help, /status for your current setup                   │
 │                                                                    │
-│   cwd: /home/mike/code/worktrees/control-test-mim8ud-worktree-001  │
+│   cwd: /home/mike/code/worktrees/control-test-aA7NAl-worktree-001  │
 ╰────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
@@ -16,7 +16,7 @@
   your project or ~/.claude/commands/ for commands that work in any project
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "how do I log an error?"                                               │
+│ > Try "fix lint errors"                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
 

@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-3nJ
-dah-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-Vup
+044-worktree-001
 
  Tips for getting started:
 
@@ -32,9 +32,9 @@ eer for the best
 │ │                                            │ │
 │ │ bamboozle                                  │ │
 │ │ kerfuffle                                  │ │
-│ │ gobbledygook                               │ │
-│ │ nincompoop                                 │ │
+│ │ discombobulate                             │ │
 │ │ flibbertigibbet                            │ │
+│ │ nincompoop                                 │ │
 │ ╰────────────────────────────────────────────╯ │
 │ Do you want to create funny.txt?               │
 │ ❯ 1. Yes                                       │

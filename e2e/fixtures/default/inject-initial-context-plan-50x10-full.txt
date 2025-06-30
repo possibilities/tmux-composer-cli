@@ -2,7 +2,7 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/control-test-fS2ZAh- │
+│ /home/mike/code/worktrees/control-test-kZP6U2- │
 │ worktree-001                                   │
 │                                                │
 │ Claude Code may read files in this folder.     │
@@ -25,8 +25,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-fS2
-ZAh-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-kZP
+6U2-worktree-001
 
  Tips for getting started:
 
@@ -38,11 +38,6 @@ ructions for Claude
  3. Be as specific as you would with another engin
 eer for the best
     results
-
- ※ Tip: Ask Claude to create a todo list when work
-ing on complex tasks
-  to track progress and remain on track
-
 
 
 ╭────────────────────────────────────────────────╮

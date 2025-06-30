@@ -2,7 +2,7 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/control-test-TOk63h- │
+│ /home/mike/code/worktrees/control-test-yKBZdi- │
 │ worktree-001                                   │
 │                                                │
 │ Claude Code may read files in this folder.     │
@@ -25,8 +25,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-TOk
-63h-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-yKB
+Zdi-worktree-001
 
  Tips for getting started:
 
@@ -41,7 +41,7 @@ eer for the best
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "how do I log an error?"                 │
+│ > Try "write a test for <filepath>"            │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

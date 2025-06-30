@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-gT0
-G6e-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-bxx
+Mlo-worktree-001
 
  Tips for getting started:
 
@@ -16,9 +16,9 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Hit shift+tab to cycle between default mod
-e, auto-accept edit
- mode, and plan mode
+ ※ Tip: Run claude --continue or claude --resume t
+o resume a
+ conversation
 
 
 > Read the file
