@@ -2,7 +2,7 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/control-test-wUIDi9- │
+│ /home/mike/code/worktrees/control-test-j7LWHD- │
 │ worktree-001                                   │
 │                                                │
 │ Claude Code may read files in this folder.     │
@@ -28,8 +28,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-wUI
-Di9-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-j7L
+WHD-worktree-001
 
  Tips for getting started:
 
@@ -42,16 +42,13 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Create custom slash commands by adding .md
- files to
- .claude/commands/ in your project or ~/.claude/co
-mmands/ for commands
-  that work in any project
-
+ ※ Tip: Run claude --continue or claude --resume t
+o resume a
+ conversation
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "create a util logging.py that..."       │
+│ > Try "write a test for <filepath>"            │
 ╰────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

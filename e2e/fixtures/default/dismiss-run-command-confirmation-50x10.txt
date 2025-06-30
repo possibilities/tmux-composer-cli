@@ -1,7 +1,7 @@
 │ ❯ 1. Yes                                       │
 │  2. Yes, and don't ask again for ls commands   │
-│  in /home/mike/code/worktrees/control-test-dq0 │
-│  Gjp-worktree-001                              │
+│  in /home/mike/code/worktrees/control-test-xt6 │
+│  m3T-worktree-001                              │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 ╰────────────────────────────────────────────────╯

@@ -1,8 +1,8 @@
- mode, and plan mode
+
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "how does <filepath> work?"              │
+│ > Try "refactor <filepath>"                    │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

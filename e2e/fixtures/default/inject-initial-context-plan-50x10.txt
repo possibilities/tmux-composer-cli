@@ -1,8 +1,8 @@
-
+ conversation
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "create a util logging.py that..."       │
+│ > Try "write a test for <filepath>"            │
 ╰────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

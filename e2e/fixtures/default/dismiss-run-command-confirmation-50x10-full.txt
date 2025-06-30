@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-dq0
-Gjp-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-xt6
+m3T-worktree-001
 
  Tips for getting started:
 
@@ -19,10 +19,11 @@ eer for the best
 
 > Run 'ls -lsa /tmp' in the current directory
 
-● I'll run the ls -lsa command on the /tmp
-  directory.
+● I'll run the ls -lsa /tmp command to show
+  detailed information about all files in the
+   /tmp directory.
 
-● Bash(ls -lsa /tmp)
+  Bash(ls -lsa /tmp)
   ⎿  Running…
 
 ╭────────────────────────────────────────────────╮
@@ -34,8 +35,8 @@ eer for the best
 │ Do you want to proceed?                        │
 │ ❯ 1. Yes                                       │
 │  2. Yes, and don't ask again for ls commands   │
-│  in /home/mike/code/worktrees/control-test-dq0 │
-│  Gjp-worktree-001                              │
+│  in /home/mike/code/worktrees/control-test-xt6 │
+│  m3T-worktree-001                              │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 ╰────────────────────────────────────────────────╯

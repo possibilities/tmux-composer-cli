@@ -1,9 +1,10 @@
+   Enter to confirm · Esc to exit
 ╭────────────────────────────────────────────────────────────────────╮
 │ ✻ Welcome to Claude Code!                                          │
 │                                                                    │
 │   /help for help, /status for your current setup                   │
 │                                                                    │
-│   cwd: /home/mike/code/worktrees/control-test-TavXdu-worktree-001  │
+│   cwd: /home/mike/code/worktrees/control-test-5k7mEC-worktree-001  │
 ╰────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
@@ -12,11 +13,10 @@
  2. Use Claude to help with file analysis, editing, bash commands and git
  3. Be as specific as you would with another engineer for the best results
 
- ※ Tip: Ask Claude to create a todo list when working on complex tasks to track
- progress and remain on track
+ ※ Tip: Hit Enter to queue up additional messages while Claude is working.
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "fix lint errors"                                                      │
+│ > Try "create a util logging.py that..."                                     │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
 

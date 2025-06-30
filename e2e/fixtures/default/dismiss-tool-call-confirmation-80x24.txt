@@ -1,21 +1,21 @@
 > Echo any message using the mcp everything echo tool
 
-● I'll echo a message using the MCP everything echo tool.
+● I'll use the mcp everything echo tool to echo a message.
 
-● everything:echo (MCP)(message: "Hello! This is an echoed message using
-                       the MCP everything echo tool.")
+● everything:echo (MCP)(message: "Hello! This is an echo message using the
+                       MCP everything echo tool.")
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
 │ Tool use                                                                     │
 │                                                                              │
-│   everything:echo(message: "Hello! This is an echoed message using the MCP   │
-│    everything echo tool.") (MCP)                                             │
+│   everything:echo(message: "Hello! This is an echo message using the MCP     │
+│   everything echo tool.") (MCP)                                              │
 │   Echoes back the input                                                      │
 │                                                                              │
 │ Do you want to proceed?                                                      │
 │ ❯ 1. Yes                                                                     │
 │   2. Yes, and don't ask again for everything:echo commands in                │
-│   /home/mike/code/worktrees/control-test-8EGrCz-worktree-001                 │
+│   /home/mike/code/worktrees/control-test-5F1EIr-worktree-001                 │
 │   3. No, and tell Claude what to do differently (esc)                        │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯

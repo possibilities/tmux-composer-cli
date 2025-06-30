@@ -4,7 +4,7 @@
 │                                                                    │
 │   /help for help, /status for your current setup                   │
 │                                                                    │
-│   cwd: /home/mike/code/worktrees/control-test-zuMSRY-worktree-001  │
+│   cwd: /home/mike/code/worktrees/control-test-rdvzi6-worktree-001  │
 ╰────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
@@ -13,10 +13,10 @@
  2. Use Claude to help with file analysis, editing, bash commands and git
  3. Be as specific as you would with another engineer for the best results
 
- ※ Tip: Send messages to Claude while it works to steer Claude in real-time
+ ※ Tip: Use /theme to change the color theme
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "edit <filepath> to..."                                                │
+│ > Try "fix typecheck errors"                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

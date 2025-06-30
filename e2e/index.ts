@@ -112,7 +112,6 @@ const TEST_RUNS = [
     mode: 'act' as const,
     fixtureFileName: 'dismiss-tool-call-confirmation.txt',
     configFile: dedent`
-      agents: claude --disallowedTools Write --disallowedTools Read --disallowedTools Bash --disallowedTools Task --disallowedTools Glob --disallowedTools Grep --disallowedTools LS --disallowedTools Edit --disallowedTools MultiEdit --disallowedTools NotebookRead --disallowedTools NotebookEdit --disallowedTools WebFetch --disallowedTools TodoRead --disallowedTools TodoWrite --disallowedTools WebSearch
       context: echo "Echo any message using the mcp everything echo tool"
     `,
   },
