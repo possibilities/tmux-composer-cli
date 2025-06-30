@@ -3,7 +3,7 @@
    /help for help, /status for your current setup
 
    cwd: /home/mike/code/worktrees/tmux-composer-te
-st-DBUmti-worktree-001
+st-GZGbDq-worktree-001
 
  Tips for getting started:
 
@@ -19,7 +19,9 @@ eer for the best results
 
 > Run 'ls -lsa /tmp' in the current directory
 
-● I'll run the ls -lsa /tmp command for you.
+● I'll run the ls -lsa command on the /tmp
+  directory to show all files including
+  hidden ones with detailed information.
 
   Bash(ls -lsa /tmp)
   ⎿  Running…
@@ -34,7 +36,7 @@ eer for the best results
 │ ❯ 1. Yes                                       │
 │  2. Yes, and don't ask again for ls commands   │
 │  in /home/mike/code/worktrees/tmux-composer-te │
-│  st-DBUmti-worktree-001                        │
+│  st-GZGbDq-worktree-001                        │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 ╰────────────────────────────────────────────────╯

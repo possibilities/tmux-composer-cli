@@ -3,19 +3,19 @@
 ● I'll use the mcp everything echo tool to echo a message.
 
 ● everything:echo (MCP)(message: "Hello! This is an echo message from the
-                       MCP everything echo tool.")
+                       MCP everything server.")
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
 │ Tool use                                                                     │
 │                                                                              │
 │   everything:echo(message: "Hello! This is an echo message from the MCP      │
-│   everything echo tool.") (MCP)                                              │
+│   everything server.") (MCP)                                                 │
 │   Echoes back the input                                                      │
 │                                                                              │
 │ Do you want to proceed?                                                      │
 │ ❯ 1. Yes                                                                     │
 │   2. Yes, and don't ask again for everything:echo commands in                │
-│   /home/mike/code/worktrees/tmux-composer-test-mL5Xh7-worktree-001           │
+│   /home/mike/code/worktrees/tmux-composer-test-XYQMBU-worktree-001           │
 │   3. No, and tell Claude what to do differently (esc)                        │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯

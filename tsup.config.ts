@@ -1,4 +1,6 @@
 import { defineConfig } from 'tsup'
+import { copyFileSync } from 'fs'
+import { join } from 'path'
 
 export default defineConfig({
   entry: {
@@ -22,5 +24,10 @@ export default defineConfig({
     }
     options.platform = 'node'
     options.format = 'esm'
+  },
+  onSuccess: async () => {
+    // Copy matchers.yaml to dist directory
+    copyFileSync('matchers.yaml', join('dist', 'matchers.yaml'))
+    console.log('Copied matchers.yaml to dist/')
   },
 })

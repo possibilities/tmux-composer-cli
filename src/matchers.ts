@@ -1,81 +1,36 @@
+import { readFileSync } from 'fs'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
+import yaml from 'js-yaml'
 import { type Matcher, parseMatchers } from './schemas/matcher-schema.js'
 
 export { type Matcher } from './schemas/matcher-schema.js'
 
-const matchersData = [
-  {
-    name: 'dismiss-trust-folder-confirmation',
-    trigger: [
-      'Do you trust the files in this folder?',
-      'Enter to confirm · Esc to exit',
-    ],
-    response: '<Enter>',
-    runOnce: false,
-    mode: 'all',
-  },
-  {
-    name: 'ensure-plan-mode',
-    trigger: ['? for shortcuts'],
-    wrappedTrigger: ['? for', 'shortcuts'],
-    response: '<S-Tab><S-Tab>',
-    runOnce: true,
-    mode: 'plan',
-  },
-  {
-    name: 'inject-initial-context-plan',
-    trigger: ['⏸ plan mode on'],
-    response: '{pause|500}{paste-buffer}<Enter>',
-    runOnce: true,
-    mode: 'plan',
-  },
-  {
-    name: 'inject-initial-context-act',
-    trigger: ['? for shortcuts'],
-    wrappedTrigger: ['? for', 'shortcuts'],
-    response: '{pause|500}{paste-buffer}<Enter>',
-    runOnce: true,
-    mode: 'act',
-  },
-  {
-    name: 'dismiss-create-file-confirmation',
-    trigger: ['Create file', 'Do you want to create', '1. Yes'],
-    response: '1',
-    runOnce: false,
-    mode: 'all',
-  },
-  {
-    name: 'dismiss-edit-file-confirmation',
-    trigger: ['Edit file', 'Do you want to make this edit to', '1. Yes'],
-    response: '1',
-    runOnce: false,
-    mode: 'all',
-  },
-  {
-    name: 'dismiss-run-command-confirmation',
-    trigger: ['Bash command', 'Do you want to proceed', '1. Yes'],
-    response: '1',
-    runOnce: false,
-    mode: 'all',
-  },
-  {
-    name: 'dismiss-read-file-confirmation',
-    trigger: ['Read files', 'Do you want to proceed', '1. Yes'],
-    response: '1',
-    runOnce: false,
-    mode: 'all',
-  },
-  {
-    name: 'dismiss-tool-call-confirmation',
-    trigger: [
-      'Tool use',
-      'Do you want to proceed',
-      '1. Yes',
-      '3. No, and tell Claude',
-    ],
-    response: '1',
-    runOnce: false,
-    mode: 'all',
-  },
-]
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
-export const MATCHERS: Matcher[] = parseMatchers(matchersData)
+function loadMatchers(): Matcher[] {
+  let matchersPath: string
+
+  // Try to load from dist directory first (production)
+  try {
+    matchersPath = join(__dirname, 'matchers.yaml')
+    const content = readFileSync(matchersPath, 'utf8')
+    const data = yaml.load(content)
+    return parseMatchers(data)
+  } catch (error) {
+    // Fallback to project root (development)
+    try {
+      matchersPath = join(__dirname, '..', 'matchers.yaml')
+      const content = readFileSync(matchersPath, 'utf8')
+      const data = yaml.load(content)
+      return parseMatchers(data)
+    } catch (fallbackError) {
+      throw new Error(
+        `Failed to load matchers.yaml from both production and development paths: ${error.message}, ${fallbackError.message}`,
+      )
+    }
+  }
+}
+
+export const MATCHERS: Matcher[] = loadMatchers()

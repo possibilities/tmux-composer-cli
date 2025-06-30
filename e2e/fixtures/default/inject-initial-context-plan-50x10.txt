@@ -2,7 +2,7 @@
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "edit <filepath> to..."                  │
+│ > Try "write a test for <filepath>"            │
 ╰────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

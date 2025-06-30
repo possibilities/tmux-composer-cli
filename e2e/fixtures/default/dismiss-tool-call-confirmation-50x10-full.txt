@@ -3,7 +3,7 @@
    /help for help, /status for your current setup
 
    cwd: /home/mike/code/worktrees/tmux-composer-te
-st-mEEhGh-worktree-001
+st-aq8OwA-worktree-001
 
  Tips for getting started:
 
@@ -42,7 +42,7 @@ eer for the best results
 │  2. Yes, and don't ask again for               │
 │  everything:echo commands in                   │
 │  /home/mike/code/worktrees/tmux-composer-test- │
-│  mEEhGh-worktree-001                           │
+│  aq8OwA-worktree-001                           │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 │                                                │

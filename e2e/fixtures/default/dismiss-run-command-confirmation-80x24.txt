@@ -1,10 +1,10 @@
 
 > Run 'ls -lsa /tmp' in the current directory
 
-● I'll run the command to list the contents of the /tmp directory with
-  detailed information.
+● I'll run the ls -lsa /tmp command to list all files in the /tmp directory
+   with detailed information.
 
-● Bash(ls -lsa /tmp)
+  Bash(ls -lsa /tmp)
   ⎿  Running…
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
@@ -16,7 +16,7 @@
 │ Do you want to proceed?                                                      │
 │ ❯ 1. Yes                                                                     │
 │   2. Yes, and don't ask again for ls commands in                             │
-│   /home/mike/code/worktrees/tmux-composer-test-lg8b5d-worktree-001           │
+│   /home/mike/code/worktrees/tmux-composer-test-Zo9URf-worktree-001           │
 │   3. No, and tell Claude what to do differently (esc)                        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 

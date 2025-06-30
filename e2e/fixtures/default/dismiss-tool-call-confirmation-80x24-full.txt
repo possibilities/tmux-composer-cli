@@ -1,14 +1,14 @@
 claude
 
-┌─╼[13:20:48]
-└─╼[~/code/worktrees/tmux-composer-test-mL5Xh7-worktree-001]
- ╰╼[worktree-001]╾─╼[eff024b]
+┌─╼[13:35:10]
+└─╼[~/code/worktrees/tmux-composer-test-XYQMBU-worktree-001]
+ ╰╼[worktree-001]╾─╼[cd20a15]
 ▶ claude
 ╭──────────────────────────────────────────────────────────────────────────────╮
 │                                                                              │
 │ Do you trust the files in this folder?                                       │
 │                                                                              │
-│ /home/mike/code/worktrees/tmux-composer-test-mL5Xh7-worktree-001             │
+│ /home/mike/code/worktrees/tmux-composer-test-XYQMBU-worktree-001             │
 │                                                                              │
 │ Claude Code may read files in this folder. Reading untrusted files may lead  │
 │ Claude Code to behave in unexpected ways.                                    │
@@ -30,7 +30,7 @@ claude
 │                                                                          │
 │   /help for help, /status for your current setup                         │
 │                                                                          │
-│   cwd: /home/mike/code/worktrees/tmux-composer-test-mL5Xh7-worktree-001  │
+│   cwd: /home/mike/code/worktrees/tmux-composer-test-XYQMBU-worktree-001  │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
@@ -44,19 +44,19 @@ claude
 ● I'll use the mcp everything echo tool to echo a message.
 
 ● everything:echo (MCP)(message: "Hello! This is an echo message from the
-                       MCP everything echo tool.")
+                       MCP everything server.")
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
 │ Tool use                                                                     │
 │                                                                              │
 │   everything:echo(message: "Hello! This is an echo message from the MCP      │
-│   everything echo tool.") (MCP)                                              │
+│   everything server.") (MCP)                                                 │
 │   Echoes back the input                                                      │
 │                                                                              │
 │ Do you want to proceed?                                                      │
 │ ❯ 1. Yes                                                                     │
 │   2. Yes, and don't ask again for everything:echo commands in                │
-│   /home/mike/code/worktrees/tmux-composer-test-mL5Xh7-worktree-001           │
+│   /home/mike/code/worktrees/tmux-composer-test-XYQMBU-worktree-001           │
 │   3. No, and tell Claude what to do differently (esc)                        │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
