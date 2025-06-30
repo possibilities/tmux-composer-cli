@@ -14,19 +14,14 @@ export function getTmuxSocketArgs(options: TmuxSocketOptions): string[] {
   } else if (options.socketPath) {
     args.push('-S', options.socketPath)
   } else {
-    // Check if we're inside a tmux session
     const tmuxEnv = process.env.TMUX
     if (tmuxEnv) {
-      // TMUX env var format: /path/to/socket,pid,pane
       const socketPath = tmuxEnv.split(',')[0]
       if (socketPath) {
         args.push('-S', socketPath)
       } else {
-        // Fallback to default tmux socket if parsing fails
-        // (no args means use default)
       }
     } else {
-      // Outside tmux, use default socket (no args means use default)
     }
   }
 

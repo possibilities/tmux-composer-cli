@@ -89,7 +89,6 @@ export class TmuxAutomator {
     let skip = false
     let reason = ''
 
-    // Special handling for inject-initial-context matchers
     if (
       matcherName === 'inject-initial-context-plan' ||
       matcherName === 'inject-initial-context-act'
@@ -278,7 +277,6 @@ export class TmuxAutomator {
         const cleanedContent = cleanContent(rawContent)
         const cleanedLines = cleanedContent.split('\n')
 
-        // Check for logout detection
         if (cleanedContent.includes("Let's get started")) {
           console.error('\n❌ ERROR: Claude has been logged out unexpectedly!')
           console.error(
@@ -492,7 +490,6 @@ export class TmuxAutomator {
             })
           }
         } else if (part.type === 'command') {
-          // Handle commands with parameters (e.g., {pause|500})
           const [command, ...params] = part.value.split('|')
 
           if (command === 'paste-buffer') {

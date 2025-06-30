@@ -14,7 +14,6 @@ async function main() {
     .description('Tmux Composer CLI')
     .version(packageJson.version)
 
-  // Claude command with automate subcommand
   const claudeCommand = program
     .command('claude')
     .description('Claude-related commands')
@@ -25,7 +24,6 @@ async function main() {
     .option('-L <socket-name>', 'Tmux socket name')
     .option('-S <socket-path>', 'Tmux socket path')
 
-  // Dynamically add skip options for each matcher
   for (const matcher of MATCHERS) {
     const optionName = `--skip-${matcher.name}`
     const description = `Skip the "${matcher.name.replace(/-/g, ' ')}" matcher`
@@ -38,7 +36,6 @@ async function main() {
       socketPath: options.S,
     }
 
-    // Build skipMatchers object from options
     const skipMatchers: Record<string, boolean> = {}
     for (const matcher of MATCHERS) {
       const optionKey = `skip${matcher.name
@@ -68,7 +65,6 @@ async function main() {
     })
   })
 
-  // Claude automate-new subcommand
   claudeCommand
     .command('automate-new')
     .description('New automation approach (does nothing for now)')
@@ -85,7 +81,6 @@ async function main() {
       await automator.start()
     })
 
-  // Session command with create subcommand
   const sessionCommand = program
     .command('session')
     .description('Session management commands')

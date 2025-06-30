@@ -168,7 +168,6 @@ export class SessionCreator {
       )
       tmuxProcess.unref()
 
-      // Wait for tmux server to be ready
       let attempts = 0
       while (!socketExists(this.socketOptions) && attempts < 50) {
         execSync('sleep 0.1')
