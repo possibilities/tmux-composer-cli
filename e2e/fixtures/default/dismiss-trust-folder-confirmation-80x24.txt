@@ -1,0 +1,24 @@
+┌─╼[20:17:15]
+└─╼[~/code/worktrees/control-test-yv4kek-worktree-001]
+ ╰╼[worktree-001]╾─╼[fd9830f]
+▶ claude
+╭──────────────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│ Do you trust the files in this folder?                                       │
+│                                                                              │
+│ /home/mike/code/worktrees/control-test-yv4kek-worktree-001                   │
+│                                                                              │
+│ Claude Code may read files in this folder. Reading untrusted files may lead  │
+│ Claude Code to behave in unexpected ways.                                    │
+│                                                                              │
+│ With your permission Claude Code may execute files in this folder. Executing │
+│  untrusted code is unsafe.                                                   │
+│                                                                              │
+│ https://docs.anthropic.com/s/claude-code-security                            │
+│                                                                              │
+│ ❯ 1. Yes, proceed                                                            │
+│   2. No, exit                                                                │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+   Enter to confirm · Esc to exit
+

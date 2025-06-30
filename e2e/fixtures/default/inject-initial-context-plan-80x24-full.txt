@@ -1,0 +1,48 @@
+claude
+
+┌─╼[20:17:24]
+└─╼[~/code/worktrees/control-test-r8LYek-worktree-001]
+ ╰╼[worktree-001]╾─╼[38a78d9]
+▶ claude
+╭──────────────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│ Do you trust the files in this folder?                                       │
+│                                                                              │
+│ /home/mike/code/worktrees/control-test-r8LYek-worktree-001                   │
+│                                                                              │
+│ Claude Code may read files in this folder. Reading untrusted files may lead  │
+│ Claude Code to behave in unexpected ways.                                    │
+│                                                                              │
+│ With your permission Claude Code may execute files in this folder. Executing │
+│  untrusted code is unsafe.                                                   │
+│                                                                              │
+│ https://docs.anthropic.com/s/claude-code-security                            │
+│                                                                              │
+│ ❯ 1. Yes, proceed                                                            │
+│   2. No, exit                                                                │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+   Enter to confirm · Esc to exit
+╭────────────────────────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                                          │
+│                                                                    │
+│   /help for help, /status for your current setup                   │
+│                                                                    │
+│   cwd: /home/mike/code/worktrees/control-test-r8LYek-worktree-001  │
+╰────────────────────────────────────────────────────────────────────╯
+
+ Tips for getting started:
+
+ 1. Run /init to create a CLAUDE.md file with instructions for Claude
+ 2. Use Claude to help with file analysis, editing, bash commands and git
+ 3. Be as specific as you would with another engineer for the best results
+
+ ※ Tip: Press Esc twice to edit your previous messages
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ > Try "how do I log an error?"                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+  ⏸ plan mode on (shift+tab to cycle)
+
+
+

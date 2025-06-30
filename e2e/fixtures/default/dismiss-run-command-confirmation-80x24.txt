@@ -1,0 +1,24 @@
+ ※ Tip: Use /theme to change the color theme
+
+> Run 'ls -lsa /tmp' in the current directory
+
+● I'll run the ls -lsa /tmp command for you.
+
+● Bash(ls -lsa /tmp)
+  ⎿  Running…
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Bash command                                                                 │
+│                                                                              │
+│   ls -lsa /tmp                                                               │
+│   List all files in /tmp with details                                        │
+│                                                                              │
+│ Do you want to proceed?                                                      │
+│ ❯ 1. Yes                                                                     │
+│   2. Yes, and don't ask again for ls commands in                             │
+│   /home/mike/code/worktrees/control-test-2e2b3b-worktree-001                 │
+│   3. No, and tell Claude what to do differently (esc)                        │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+

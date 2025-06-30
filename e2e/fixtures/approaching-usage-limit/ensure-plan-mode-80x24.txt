@@ -1,0 +1,24 @@
+╰──────────────────────────────────────────────────────────────────────────────╯
+   Enter to confirm · Esc to exit
+╭────────────────────────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                                          │
+│                                                                    │
+│   /help for help, /status for your current setup                   │
+│                                                                    │
+│   cwd: /home/mike/code/worktrees/control-test-p1AI59-worktree-001  │
+╰────────────────────────────────────────────────────────────────────╯
+
+ Tips for getting started:
+
+ 1. Run /init to create a CLAUDE.md file with instructions for Claude
+ 2. Use Claude to help with file analysis, editing, bash commands and git
+ 3. Be as specific as you would with another engineer for the best results
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ > Try "create a util logging.py that..."                                     │
+╰──────────────────────────────────────────────────────────────────────────────╯
+  ? for           Approaching Opus usage limit · /model to use best available
+  shortcuts       model
+
+
+

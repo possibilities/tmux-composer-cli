@@ -1,0 +1,53 @@
+ ✻ Welcome to Claude Code!
+
+   /help for help, /status for your current setup
+
+   cwd: /home/mike/code/worktrees/control-test-ckb
+dDY-worktree-001
+
+ Tips for getting started:
+
+ 1. Run /init to create a CLAUDE.md file with inst
+ructions for Claude
+ 2. Use Claude to help with file analysis, editing
+, bash commands and
+    git
+ 3. Be as specific as you would with another engin
+eer for the best
+    results
+
+ ※ Tip: Hit shift+tab to cycle between default mod
+e, auto-accept edit
+ mode, and plan mode
+
+
+> Create a file called funny.txt with 5 funny
+   words in it, one on each line
+
+● I'll create a file called funny.txt with 5
+  funny words, one per line.
+
+● Write(funny.txt)
+
+╭────────────────────────────────────────────────╮
+│ Create file                                    │
+│ ╭────────────────────────────────────────────╮ │
+│ │ funny.txt                                  │ │
+│ │                                            │ │
+│ │ discombobulate                             │ │
+│ │ flibbertigibbet                            │ │
+│ │ kerfuffle                                  │ │
+│ │ shenanigans                                │ │
+│ │ gobbledygook                               │ │
+│ ╰────────────────────────────────────────────╯ │
+│ Do you want to create funny.txt?               │
+│ ❯ 1. Yes                                       │
+│   2. Yes, and don't ask again this session     │
+│   (shift+tab)                                  │
+│  3. No, and tell Claude what to do differently │
+│   (esc)                                        │
+│                                                │
+╰────────────────────────────────────────────────╯
+
+
+

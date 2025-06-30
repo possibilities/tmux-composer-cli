@@ -1,0 +1,62 @@
+claude
+
+┌─╼[19:39:49]
+└─╼[~/code/worktrees/control-test-WbjbOJ-worktree-001]
+ ╰╼[worktree-001]╾─╼[a7b0674]
+▶ claude
+╭──────────────────────────────────────────────────────────────────────────────╮
+│                                                                              │
+│ Do you trust the files in this folder?                                       │
+│                                                                              │
+│ /home/mike/code/worktrees/control-test-WbjbOJ-worktree-001                   │
+│                                                                              │
+│ Claude Code may read files in this folder. Reading untrusted files may lead  │
+│ Claude Code to behave in unexpected ways.                                    │
+│                                                                              │
+│ With your permission Claude Code may execute files in this folder. Executing │
+│  untrusted code is unsafe.                                                   │
+│                                                                              │
+│ https://docs.anthropic.com/s/claude-code-security                            │
+│                                                                              │
+│ ❯ 1. Yes, proceed                                                            │
+│   2. No, exit                                                                │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+   Enter to confirm · Esc to exit
+╭────────────────────────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                                          │
+│                                                                    │
+│   /help for help, /status for your current setup                   │
+│                                                                    │
+│   cwd: /home/mike/code/worktrees/control-test-WbjbOJ-worktree-001  │
+╰────────────────────────────────────────────────────────────────────╯
+
+ Tips for getting started:
+
+ 1. Run /init to create a CLAUDE.md file with instructions for Claude
+ 2. Use Claude to help with file analysis, editing, bash commands and git
+ 3. Be as specific as you would with another engineer for the best results
+
+ ※ Tip: Ask Claude to create a todo list when working on complex tasks to track
+ progress and remain on track
+
+> Read the file '/tmp/control-e2e-basic-date1.txt' and show he content
+
+● I'll read the file and show its content.
+
+● Read(../../../../../tmp/control-e2e-basic-date1.txt)
+
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ Read files                                                                   │
+│                                                                              │
+│   Read(../../../../../tmp/control-e2e-basic-date1.txt)                       │
+│                                                                              │
+│ Do you want to proceed?                                                      │
+│ ❯ 1. Yes                                                                     │
+│   2. Yes, and add /tmp as a working directory for this session               │
+│   3. No, and tell Claude what to do differently (esc)                        │
+│                                                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+

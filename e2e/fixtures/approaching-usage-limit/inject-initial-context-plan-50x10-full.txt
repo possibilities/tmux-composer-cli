@@ -1,0 +1,58 @@
+╭────────────────────────────────────────────────╮
+│                                                │
+│ Do you trust the files in this folder?         │
+│                                                │
+│ /home/mike/code/worktrees/control-test-VDJSxL- │
+│ worktree-001                                   │
+│                                                │
+│ Claude Code may read files in this folder.     │
+│ Reading untrusted files may lead Claude Code   │
+│ to behave in unexpected ways.                  │
+│                                                │
+│ With your permission Claude Code may execute   │
+│ files in this folder. Executing untrusted code │
+│  is unsafe.                                    │
+│                                                │
+│ https://docs.anthropic.com/s/claude-code-secur │
+│ ity                                            │
+│                                                │
+│ ❯ 1. Yes, proceed                              │
+│   2. No, exit                                  │
+│                                                │
+╰────────────────────────────────────────────────╯
+   Enter to confirm · Esc to exit
+ ✻ Welcome to Claude Code!
+
+   /help for help, /status for your current setup
+
+   cwd: /home/mike/code/worktrees/control-test-VDJ
+SxL-worktree-001
+
+ Tips for getting started:
+
+ 1. Run /init to create a CLAUDE.md file with inst
+ructions for Claude
+ 2. Use Claude to help with file analysis, editing
+, bash commands and
+    git
+ 3. Be as specific as you would with another engin
+eer for the best
+    results
+
+ ※ Tip: Create custom slash commands by adding .md
+ files to
+ .claude/commands/ in your project or ~/.claude/co
+mmands/ for commands
+  that work in any project
+
+
+
+╭────────────────────────────────────────────────╮
+│ > Try "write a test for <filepath>"            │
+╰────────────────────────────────────────────────╯
+  ⏸ plan mode on         Approaching Opus usage
+  (shift+tab to cycle)   limit · /model to use
+                         best available model
+
+
+

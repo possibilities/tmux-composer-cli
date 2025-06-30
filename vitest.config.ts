@@ -4,6 +4,6 @@ export default defineConfig({
   test: {
     globals: false,
     environment: 'node',
-    forceRerunTriggers: ['**/fixtures/**/*.txt'],
+    forceRerunTriggers: ['**/e2e/fixtures/**/*.txt'],
   },
 })

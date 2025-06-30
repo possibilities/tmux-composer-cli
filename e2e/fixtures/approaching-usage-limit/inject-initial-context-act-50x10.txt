@@ -1,0 +1,10 @@
+
+
+╭────────────────────────────────────────────────╮
+│ > Try "create a util logging.py that..."       │
+╰────────────────────────────────────────────────╯
+  ? for        Approaching Opus usage limit ·
+  shortcuts    /model to use best available model
+
+
+

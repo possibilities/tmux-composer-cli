@@ -20,7 +20,7 @@ describe('Matcher mechanism', () => {
         it(`should match ${matcher.name} pattern with pane view`, () => {
           const fixturePath = join(
             __dirname,
-            '../../fixtures',
+            '../../e2e/fixtures/default',
             `${matcher.name}-${terminalSize.width}x${terminalSize.height}.txt`,
           )
           const tmuxOutput = readFileSync(fixturePath, 'utf-8')
@@ -42,12 +42,12 @@ describe('Matcher mechanism', () => {
           it(`should match ${matcher.name} pattern with two-phase matching`, () => {
             const paneFixturePath = join(
               __dirname,
-              '../../fixtures',
+              '../../e2e/fixtures/default',
               `${matcher.name}-${terminalSize.width}x${terminalSize.height}.txt`,
             )
             const fullFixturePath = join(
               __dirname,
-              '../../fixtures',
+              '../../e2e/fixtures/default',
               `${matcher.name}-${terminalSize.width}x${terminalSize.height}-full.txt`,
             )
 

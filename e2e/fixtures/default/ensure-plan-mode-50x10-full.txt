@@ -1,0 +1,53 @@
+╭────────────────────────────────────────────────╮
+│                                                │
+│ Do you trust the files in this folder?         │
+│                                                │
+│ /home/mike/code/worktrees/control-test-3qos9I- │
+│ worktree-001                                   │
+│                                                │
+│ Claude Code may read files in this folder.     │
+│ Reading untrusted files may lead Claude Code   │
+│ to behave in unexpected ways.                  │
+│                                                │
+│ With your permission Claude Code may execute   │
+│ files in this folder. Executing untrusted code │
+│  is unsafe.                                    │
+│                                                │
+│ https://docs.anthropic.com/s/claude-code-secur │
+│ ity                                            │
+│                                                │
+│ ❯ 1. Yes, proceed                              │
+│   2. No, exit                                  │
+│                                                │
+╰────────────────────────────────────────────────╯
+   Enter to confirm · Esc to exit
+ ✻ Welcome to Claude Code!
+
+   /help for help, /status for your current setup
+
+   cwd: /home/mike/code/worktrees/control-test-3qo
+s9I-worktree-001
+
+ Tips for getting started:
+
+ 1. Run /init to create a CLAUDE.md file with inst
+ructions for Claude
+ 2. Use Claude to help with file analysis, editing
+, bash commands and
+    git
+ 3. Be as specific as you would with another engin
+eer for the best
+    results
+
+ ※ Tip: Send messages to Claude while it works to
+steer Claude in
+ real-time
+
+
+╭────────────────────────────────────────────────╮
+│ > Try "write a test for <filepath>"            │
+╰────────────────────────────────────────────────╯
+  ? for shortcuts
+
+
+
