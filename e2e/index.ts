@@ -757,9 +757,7 @@ async function main() {
     console.error('='.repeat(80))
     console.error('\nThis test will:')
     console.error('  • Run Claude automation commands that consume API tokens')
-    console.error(
-      '  • Execute multiple test iterations (8 tests × 2 terminal sizes = 16 runs)',
-    )
+    console.error('  • Execute multiple test iterations')
     console.error(
       '  • Potentially incur significant costs depending on your API usage',
     )
