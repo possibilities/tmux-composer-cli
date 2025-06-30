@@ -3,7 +3,7 @@
 │                                                                    │
 │   /help for help, /status for your current setup                   │
 │                                                                    │
-│   cwd: /home/mike/code/worktrees/control-test-t5sObp-worktree-001  │
+│   cwd: /home/mike/code/worktrees/control-test-tqAyex-worktree-001  │
 ╰────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
@@ -19,11 +19,13 @@
 
 ● Write(funny.txt)
   ⎿  Wrote 5 lines to funny.txt
-     wobble
-     kerfuffle
      bamboozle
+     kerfuffle
+     hullabaloo
+     shenanigans
      flibbertigibbet
-     nincompoop
+
+● Now I'll add one more funny word to the file.
 
 ● Update(funny.txt)
 
@@ -33,12 +35,12 @@
 │ │ funny.txt                                                                │ │
 │ │                                                                          │ │
 │ │   2    kerfuffle                                                         │ │
-│ │   3    bamboozle                                                         │ │
-│ │   4    flibbertigibbet                                                   │ │
-│ │   5 -  nincompoop                                                        │ │
+│ │   3    hullabaloo                                                        │ │
+│ │   4    shenanigans                                                       │ │
+│ │   5 -  flibbertigibbet                                                   │ │
 │ │   5   \ No newline at end of file                                        │ │
-│ │   6 +  nincompoop                                                        │ │
-│ │   7 +  hullabaloo                                                        │ │
+│ │   6 +  flibbertigibbet                                                   │ │
+│ │   7 +  gobbledygook                                                      │ │
 │ │   8   \ No newline at end of file                                        │ │
 │ ╰──────────────────────────────────────────────────────────────────────────╯ │
 │ Do you want to make this edit to funny.txt?                                  │

@@ -2,7 +2,7 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/control-test-HUKQec- │
+│ /home/mike/code/worktrees/control-test-CzD9Xr- │
 │ worktree-001                                   │
 │                                                │
 │ Claude Code may read files in this folder.     │
@@ -28,8 +28,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-HUK
-Qec-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-CzD
+9Xr-worktree-001
 
  Tips for getting started:
 
@@ -44,7 +44,7 @@ eer for the best
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "create a util logging.py that..."       │
+│ > Try "fix lint errors"                        │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

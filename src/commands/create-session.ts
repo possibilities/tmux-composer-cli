@@ -101,11 +101,11 @@ export class SessionCreator {
         windows.push('test')
       }
 
-      let controlConfig: TmuxComposerConfig | null = null
+      let tmuxComposerConfig: TmuxComposerConfig | null = null
       try {
         const controlYamlPath = path.join(worktreePath, 'control.yaml')
         const controlYamlContent = fs.readFileSync(controlYamlPath, 'utf-8')
-        controlConfig = yaml.load(controlYamlContent) as TmuxComposerConfig
+        tmuxComposerConfig = yaml.load(controlYamlContent) as TmuxComposerConfig
       } catch {}
 
       windows.push('work')
@@ -132,11 +132,11 @@ export class SessionCreator {
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
     const scripts = packageJson.scripts || {}
 
-    let controlConfig: TmuxComposerConfig | null = null
+    let tmuxComposerConfig: TmuxComposerConfig | null = null
     try {
       const controlYamlPath = path.join(worktreePath, 'control.yaml')
       const controlYamlContent = fs.readFileSync(controlYamlPath, 'utf-8')
-      controlConfig = yaml.load(controlYamlContent) as TmuxComposerConfig
+      tmuxComposerConfig = yaml.load(controlYamlContent) as TmuxComposerConfig
     } catch {}
 
     let firstWindowCreated = false
@@ -257,11 +257,11 @@ export class SessionCreator {
     if (expectedWindows.includes('work')) {
       let command = 'claude'
 
-      if (controlConfig?.agents) {
-        if (typeof controlConfig.agents === 'string') {
-          command = controlConfig.agents
-        } else if (controlConfig.agents[mode]) {
-          command = controlConfig.agents[mode]
+      if (tmuxComposerConfig?.agents) {
+        if (typeof tmuxComposerConfig.agents === 'string') {
+          command = tmuxComposerConfig.agents
+        } else if (tmuxComposerConfig.agents[mode]) {
+          command = tmuxComposerConfig.agents[mode]
         }
       }
 
@@ -275,11 +275,11 @@ export class SessionCreator {
 
       let contextCommand: string | undefined
 
-      if (controlConfig?.context) {
-        if (typeof controlConfig.context === 'string') {
-          contextCommand = controlConfig.context
-        } else if (controlConfig.context[mode]) {
-          contextCommand = controlConfig.context[mode]
+      if (tmuxComposerConfig?.context) {
+        if (typeof tmuxComposerConfig.context === 'string') {
+          contextCommand = tmuxComposerConfig.context
+        } else if (tmuxComposerConfig.context[mode]) {
+          contextCommand = tmuxComposerConfig.context[mode]
         }
       }
 

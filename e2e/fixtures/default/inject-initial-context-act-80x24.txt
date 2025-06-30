@@ -6,7 +6,7 @@
 │                                                                    │
 │   /help for help, /status for your current setup                   │
 │                                                                    │
-│   cwd: /home/mike/code/worktrees/control-test-ZAZ1FS-worktree-001  │
+│   cwd: /home/mike/code/worktrees/control-test-NT66BF-worktree-001  │
 ╰────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:

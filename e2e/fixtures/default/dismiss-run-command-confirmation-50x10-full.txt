@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-cZH
-760-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-CKM
+gqU-worktree-001
 
  Tips for getting started:
 
@@ -19,9 +19,10 @@ eer for the best
 
 > Run 'ls -lsa /tmp' in the current directory
 
-● I'll run the ls command to list the
-  contents of the /tmp directory with
-  detailed information.
+● I'll run the ls -lsa /tmp command to show
+  you the contents of the /tmp directory with
+   detailed information including hidden
+  files.
 
   Bash(ls -lsa /tmp)
   ⎿  Running…
@@ -35,8 +36,8 @@ eer for the best
 │ Do you want to proceed?                        │
 │ ❯ 1. Yes                                       │
 │  2. Yes, and don't ask again for ls commands   │
-│  in /home/mike/code/worktrees/control-test-cZH │
-│  760-worktree-001                              │
+│  in /home/mike/code/worktrees/control-test-CKM │
+│  gqU-worktree-001                              │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 ╰────────────────────────────────────────────────╯
