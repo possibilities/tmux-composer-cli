@@ -1,7 +1,6 @@
 import { createHash } from 'crypto'
 import { execSync } from 'child_process'
 import { LRUCache } from 'lru-cache'
-import { EventBus } from '../core/event-bus.js'
 import {
   cleanContent,
   matchesPattern,
@@ -47,7 +46,6 @@ export class TmuxAutomator {
   private knownWindows = new Set<string>()
   private socketExistenceLogged = false
   private lastSocketState = false
-  private eventBus: EventBus
   private socketOptions: TmuxSocketOptions
   private claudeWindowsCache = new Set<string>()
   private claudeSeenWindows = new Set<string>()
@@ -56,8 +54,7 @@ export class TmuxAutomator {
   private readonly CLAUDE_CHECK_INTERVAL = 500
   private skipMatchers: Record<string, boolean>
 
-  constructor(eventBus: EventBus, options: AutomateTmuxOptions = {}) {
-    this.eventBus = eventBus
+  constructor(options: AutomateTmuxOptions = {}) {
     this.socketOptions = {
       socketName: options.socketName,
       socketPath: options.socketPath,
@@ -78,22 +75,10 @@ export class TmuxAutomator {
     }
 
     setInterval(() => {
-      this.pollAllWindows().catch(error => {
-        this.eventBus.emitEvent({
-          type: 'error',
-          message: 'Error during polling',
-          error: error instanceof Error ? error : new Error(String(error)),
-        })
-      })
+      this.pollAllWindows().catch(error => {})
     }, POLL_INTERVAL)
 
-    this.pollAllWindows().catch(error => {
-      this.eventBus.emitEvent({
-        type: 'error',
-        message: 'Error during initial polling',
-        error: error instanceof Error ? error : new Error(String(error)),
-      })
-    })
+    this.pollAllWindows().catch(error => {})
   }
 
   private socketExists(): boolean {
@@ -178,13 +163,7 @@ export class TmuxAutomator {
           Array.from(this.claudeWindowsCache),
         )
       }
-    } catch (error) {
-      this.eventBus.emitEvent({
-        type: 'error',
-        message: 'Error finding claude processes',
-        error: error instanceof Error ? error : new Error(String(error)),
-      })
-    }
+    } catch (error) {}
   }
 
   private hasClaudeRunning(sessionId: string, windowIndex: string): boolean {
@@ -236,13 +215,7 @@ export class TmuxAutomator {
           ),
         )
       }
-    } catch (error) {
-      this.eventBus.emitEvent({
-        type: 'error',
-        message: 'Error listing sessions',
-        error: error instanceof Error ? error : new Error(String(error)),
-      })
-    }
+    } catch (error) {}
   }
 
   private async captureWindow(sessionName: string, windowName: string) {
@@ -278,13 +251,6 @@ export class TmuxAutomator {
         if (isNewWindow && process.env.VERBOSE) {
           console.log(`New window detected: ${sessionName}:${windowName}`)
         }
-
-        this.eventBus.emitEvent({
-          type: 'window-content',
-          sessionName,
-          windowName,
-          content: rawContent,
-        })
       }
 
       const windowInfo = await getWindowInfo(
@@ -450,23 +416,10 @@ export class TmuxAutomator {
               this.executedMatchers.add(matcherKey)
               console.log(`[DEBUG] Marked matcher ${matcher.name} as executed`)
             }
-
-            this.eventBus.emitEvent({
-              type: 'window-automation',
-              sessionName,
-              windowName,
-              matcherName: matcher.name,
-            })
           }
         }
       }
-    } catch (error) {
-      this.eventBus.emitEvent({
-        type: 'error',
-        message: `Error capturing ${sessionName}:${windowName}`,
-        error: error instanceof Error ? error : new Error(String(error)),
-      })
-    }
+    } catch (error) {}
   }
 
   private calculateChecksum(content: string): string {
@@ -561,13 +514,7 @@ export class TmuxAutomator {
             })
           }
         }
-      } catch (error) {
-        this.eventBus.emitEvent({
-          type: 'error',
-          message: `Failed to send keys to ${sessionName}:${windowName}`,
-          error: error instanceof Error ? error : new Error(String(error)),
-        })
-      }
+      } catch (error) {}
     }
   }
 }

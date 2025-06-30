@@ -2,7 +2,7 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/control-test-QZoDdR- │
+│ /home/mike/code/worktrees/control-test-6lRfvb- │
 │ worktree-001                                   │
 │                                                │
 │ Claude Code may read files in this folder.     │
@@ -28,8 +28,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-QZo
-DdR-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-6lR
+fvb-worktree-001
 
  Tips for getting started:
 
@@ -42,16 +42,13 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Create custom slash commands by adding .md
- files to
- .claude/commands/ in your project or ~/.claude/co
-mmands/ for commands
-  that work in any project
-
+ ※ Tip: Use /permissions to pre-approve and pre-de
+ny bash, edit, and
+ MCP tools
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "refactor <filepath>"                    │
+│ > Try "how do I log an error?"                 │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

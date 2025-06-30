@@ -1,8 +1,8 @@
-
+ MCP tools
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "refactor <filepath>"                    │
+│ > Try "how do I log an error?"                 │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

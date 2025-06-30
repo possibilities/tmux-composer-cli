@@ -1,6 +1,6 @@
- 3. Be as specific as you would with another engineer for the best results
 
- ※ Tip: Did you know you can drag and drop image files into your terminal?
+ ※ Tip: Want Claude to remember something? Hit # to add preferences, tools, and
+ instructions to Claude's memory
 
 > Read the file '/tmp/control-e2e-basic-date1.txt' and show he content
 

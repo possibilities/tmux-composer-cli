@@ -1,6 +1,5 @@
 import { Command, Option } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
-import { EventBus } from './core/event-bus.js'
 import { TmuxAutomator } from './commands/automate-claude.js'
 import { TmuxAutomatorNew } from './commands/automate-new.js'
 import { SessionCreator } from './commands/create-session.js'
@@ -49,8 +48,7 @@ async function main() {
       skipMatchers[matcher.name] = options[optionKey] || false
     }
 
-    const eventBus = new EventBus()
-    const automator = new TmuxAutomator(eventBus, {
+    const automator = new TmuxAutomator({
       ...socketOptions,
       skipMatchers,
     })
@@ -82,8 +80,7 @@ async function main() {
         socketPath: options.S,
       }
 
-      const eventBus = new EventBus()
-      const automator = new TmuxAutomatorNew(eventBus, socketOptions)
+      const automator = new TmuxAutomatorNew(socketOptions)
 
       await automator.start()
     })
@@ -107,8 +104,7 @@ async function main() {
         socketPath: options.S,
       }
 
-      const eventBus = new EventBus()
-      const creator = new SessionCreator(eventBus, socketOptions)
+      const creator = new SessionCreator(socketOptions)
 
       try {
         await creator.create(projectPath, {

@@ -1,8 +1,8 @@
+ 3. Be as specific as you would with another engineer for the best results
 
 > Run 'ls -lsa /tmp' in the current directory
 
-● I'll run the ls -lsa /tmp command to show you the detailed contents of
-  the /tmp directory.
+● I'll run the ls -lsa /tmp command for you.
 
 ● Bash(ls -lsa /tmp)
   ⎿  Running…
@@ -11,12 +11,12 @@
 │ Bash command                                                                 │
 │                                                                              │
 │   ls -lsa /tmp                                                               │
-│   Lists detailed contents of /tmp directory                                  │
+│   List all files in /tmp with details                                        │
 │                                                                              │
 │ Do you want to proceed?                                                      │
 │ ❯ 1. Yes                                                                     │
 │   2. Yes, and don't ask again for ls commands in                             │
-│   /home/mike/code/worktrees/control-test-182tMS-worktree-001                 │
+│   /home/mike/code/worktrees/control-test-PVUGbp-worktree-001                 │
 │   3. No, and tell Claude what to do differently (esc)                        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 

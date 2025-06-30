@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-CU0
-0Zf-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-J8k
+vUZ-worktree-001
 
  Tips for getting started:
 
@@ -16,9 +16,9 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Hit shift+tab to cycle between default mod
-e, auto-accept edit
- mode, and plan mode
+ ※ Tip: Use /memory to view and manage Claude memo
+ry
+
 
 
 > Create a file called funny.txt with 5 funny
@@ -34,11 +34,11 @@ e, auto-accept edit
 │ ╭────────────────────────────────────────────╮ │
 │ │ funny.txt                                  │ │
 │ │                                            │ │
+│ │ giggles                                    │ │
 │ │ bamboozle                                  │ │
 │ │ kerfuffle                                  │ │
 │ │ shenanigans                                │ │
 │ │ flibbertigibbet                            │ │
-│ │ gobbledygook                               │ │
 │ ╰────────────────────────────────────────────╯ │
 │ Do you want to create funny.txt?               │
 │ ❯ 1. Yes                                       │

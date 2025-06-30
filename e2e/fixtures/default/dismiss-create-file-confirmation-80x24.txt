@@ -1,4 +1,4 @@
-● I'll create a file called funny.txt with 5 funny words, one per line.
+● I'll create a file called funny.txt with 5 funny words.
 
 ● Write(funny.txt)
 
@@ -9,9 +9,9 @@
 │ │                                                                          │ │
 │ │ kerfuffle                                                                │ │
 │ │ brouhaha                                                                 │ │
+│ │ hullabaloo                                                               │ │
+│ │ discombobulated                                                          │ │
 │ │ flibbertigibbet                                                          │ │
-│ │ gobbledygook                                                             │ │
-│ │ discombobulate                                                           │ │
 │ ╰──────────────────────────────────────────────────────────────────────────╯ │
 │ Do you want to create funny.txt?                                             │
 │ ❯ 1. Yes                                                                     │

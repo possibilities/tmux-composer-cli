@@ -2,7 +2,7 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/control-test-79zPrO- │
+│ /home/mike/code/worktrees/control-test-NnIewe- │
 │ worktree-001                                   │
 │                                                │
 │ Claude Code may read files in this folder.     │
@@ -28,8 +28,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-79z
-PrO-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-NnI
+ewe-worktree-001
 
  Tips for getting started:
 
@@ -42,9 +42,9 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Use /permissions to pre-approve and pre-de
-ny bash, edit, and
- MCP tools
+ ※ Tip: Did you know you can drag and drop image f
+iles into your
+ terminal?
 
 
 ╭────────────────────────────────────────────────╮

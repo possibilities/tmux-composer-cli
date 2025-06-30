@@ -2,7 +2,6 @@ import { execSync, spawn } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import yaml from 'js-yaml'
-import { EventBus } from '../core/event-bus.js'
 import { getTmuxSocketArgs } from '../core/tmux-socket.js'
 import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 import {
@@ -23,10 +22,8 @@ interface CreateSessionOptions extends TmuxSocketOptions {
 }
 
 export class SessionCreator {
-  private eventBus: EventBus
   private socketOptions: TmuxSocketOptions
-  constructor(eventBus: EventBus, options: CreateSessionOptions = {}) {
-    this.eventBus = eventBus
+  constructor(options: CreateSessionOptions = {}) {
     this.socketOptions = {
       socketName: options.socketName,
       socketPath: options.socketPath,
@@ -43,11 +40,6 @@ export class SessionCreator {
       throw new Error('Invalid mode. Must be either "act" or "plan".')
     }
 
-    this.eventBus.emitEvent({
-      type: 'session-creating',
-      sessionName,
-    })
-
     try {
       if (!isGitRepositoryClean(projectPath)) {
         throw new Error(
@@ -62,12 +54,6 @@ export class SessionCreator {
 
       const expectedWindows = await this.getExpectedWindows(worktreePath)
 
-      this.eventBus.emitEvent({
-        type: 'worktree-created',
-        worktreeNumber: parseInt(worktreeNum),
-        expectedWindows,
-      })
-
       await this.createTmuxSession(
         sessionName,
         worktreePath,
@@ -76,12 +62,6 @@ export class SessionCreator {
         options.terminalWidth,
         options.terminalHeight,
       )
-
-      this.eventBus.emitEvent({
-        type: 'session-ready',
-        sessionName,
-        worktreeNumber: parseInt(worktreeNum),
-      })
 
       console.log(`\n✓ Session created successfully!`)
       console.log(`\nSession name: ${sessionName}`)
@@ -163,12 +143,6 @@ export class SessionCreator {
     let windowIndex = 0
 
     const createSession = (windowName: string, command: string) => {
-      this.eventBus.emitEvent({
-        type: 'window-starting',
-        windowName,
-        command,
-      })
-
       const socketArgs = getTmuxSocketArgs(this.socketOptions)
       const tmuxProcess = spawn(
         'tmux',
@@ -223,12 +197,6 @@ export class SessionCreator {
     }
 
     const createWindow = (windowName: string, command: string) => {
-      this.eventBus.emitEvent({
-        type: 'window-starting',
-        windowName,
-        command,
-      })
-
       const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
       execSync(
         `tmux ${socketArgs} new-window -t ${sessionName} -n '${windowName}' -c ${worktreePath}`,
@@ -249,12 +217,6 @@ export class SessionCreator {
       }
 
       windowIndex++
-
-      this.eventBus.emitEvent({
-        type: 'window-ready',
-        windowName: 'server',
-        port,
-      })
     }
 
     if (scripts['lint:watch'] && expectedWindows.includes('lint')) {
@@ -267,11 +229,6 @@ export class SessionCreator {
       }
 
       windowIndex++
-
-      this.eventBus.emitEvent({
-        type: 'window-ready',
-        windowName: 'lint',
-      })
     }
 
     if (scripts['types:watch'] && expectedWindows.includes('types')) {
@@ -284,11 +241,6 @@ export class SessionCreator {
       }
 
       windowIndex++
-
-      this.eventBus.emitEvent({
-        type: 'window-ready',
-        windowName: 'types',
-      })
     }
 
     if (scripts['test:watch'] && expectedWindows.includes('test')) {
@@ -301,11 +253,6 @@ export class SessionCreator {
       }
 
       windowIndex++
-
-      this.eventBus.emitEvent({
-        type: 'window-ready',
-        windowName: 'test',
-      })
     }
 
     if (expectedWindows.includes('work')) {
@@ -363,11 +310,6 @@ export class SessionCreator {
           } catch {}
         }
       }
-
-      this.eventBus.emitEvent({
-        type: 'window-ready',
-        windowName: 'work',
-      })
     }
 
     setTimeout(() => {

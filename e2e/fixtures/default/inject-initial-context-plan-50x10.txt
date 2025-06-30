@@ -1,8 +1,8 @@
- conversation
+
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "write a test for <filepath>"            │
+│ > Try "fix lint errors"                        │
 ╰────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

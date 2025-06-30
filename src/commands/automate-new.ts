@@ -1,4 +1,3 @@
-import { EventBus } from '../core/event-bus.js'
 import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 import { getTmuxSocketString } from '../core/tmux-socket.js'
 import { socketExists } from '../core/tmux-utils.js'
@@ -10,7 +9,6 @@ const sleep = promisify(setTimeout)
 interface AutomateNewOptions extends TmuxSocketOptions {}
 
 export class TmuxAutomatorNew {
-  private eventBus: EventBus
   private socketOptions: TmuxSocketOptions
   private controlModeProcess: any = null
   private isConnected = false
@@ -37,8 +35,7 @@ export class TmuxAutomatorNew {
   private isCheckingClaude = false
   private claudeCheckResults = new Map<string, boolean>()
 
-  constructor(eventBus: EventBus, options: AutomateNewOptions = {}) {
-    this.eventBus = eventBus
+  constructor(options: AutomateNewOptions = {}) {
     this.socketOptions = {
       socketName: options.socketName,
       socketPath: options.socketPath,
@@ -48,15 +45,14 @@ export class TmuxAutomatorNew {
   async start() {
     console.log('Starting tmux control mode monitor...')
 
-    process.on('SIGINT', () => {
-      this.shutdown()
-    })
-
-    process.on('SIGTERM', () => {
-      this.shutdown()
-    })
-
+    this.setupSignalHandlers()
     await this.monitorAndConnect()
+  }
+
+  private setupSignalHandlers() {
+    const signalHandler = () => this.shutdown()
+    process.on('SIGINT', signalHandler)
+    process.on('SIGTERM', signalHandler)
   }
 
   private async monitorAndConnect() {
@@ -102,6 +98,18 @@ export class TmuxAutomatorNew {
 
   private async connectControlMode() {
     if (this.controlModeProcess) {
+      // Clean up existing process properly
+      this.controlModeProcess.stdout.removeAllListeners()
+      this.controlModeProcess.stderr.removeAllListeners()
+      this.controlModeProcess.removeAllListeners()
+
+      if (
+        this.controlModeProcess.stdin &&
+        !this.controlModeProcess.stdin.destroyed
+      ) {
+        this.controlModeProcess.stdin.end()
+      }
+
       this.controlModeProcess.kill()
       this.controlModeProcess = null
     }
@@ -115,52 +123,84 @@ export class TmuxAutomatorNew {
       stdio: ['pipe', 'pipe', 'pipe'],
     })
 
-    this.controlModeProcess.stdout.on('data', (data: Buffer) => {
+    const stdoutHandler = (data: Buffer) => {
       const output = data.toString()
       const lines = output.split('\n').filter(line => line.trim())
 
       for (const line of lines) {
         this.processControlModeOutput(line)
       }
-    })
+    }
 
-    this.controlModeProcess.stderr.on('data', (data: Buffer) => {
+    const stderrHandler = (data: Buffer) => {
       console.error('Control mode error:', data.toString())
-    })
+    }
 
-    this.controlModeProcess.on('close', (code: number) => {
+    const closeHandler = (code: number) => {
       console.log(`Control mode process exited with code ${code}`)
-      this.isConnected = false
-      this.controlModeProcess = null
-      // Clear pane data when control mode closes
-      this.panes.clear()
-      this.windowIdMap.clear()
-      this.paneToKeyMap.clear()
-      this.hasDisplayedInitialList = false
-      // Stop claude checking
-      if (this.claudeCheckInterval) {
-        clearInterval(this.claudeCheckInterval)
-        this.claudeCheckInterval = null
-      }
-    })
+      this.cleanupControlMode()
+    }
 
-    this.controlModeProcess.on('error', (error: Error) => {
+    const errorHandler = (error: Error) => {
       console.error('Failed to start control mode:', error)
       this.isConnected = false
-    })
+    }
+
+    this.controlModeProcess.stdout.on('data', stdoutHandler)
+    this.controlModeProcess.stderr.on('data', stderrHandler)
+    this.controlModeProcess.on('close', closeHandler)
+    this.controlModeProcess.on('error', errorHandler)
 
     this.isConnected = true
 
     // Wait a bit for connection to establish
     await sleep(100)
 
-    // Request list of all panes with detailed info
-    this.controlModeProcess.stdin.write(
-      'list-panes -a -F "PANE %#{pane_id} #{session_name}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n',
-    )
+    try {
+      // Request list of all panes with detailed info
+      this.controlModeProcess.stdin.write(
+        'list-panes -a -F "PANE %#{pane_id} #{session_name}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n',
+      )
 
-    // Start periodic claude checking
-    this.startClaudeChecking()
+      // Start periodic claude checking
+      this.startClaudeChecking()
+    } catch (error) {
+      console.error('Failed to initialize control mode:', error)
+      this.cleanupControlMode()
+    }
+  }
+
+  private cleanupControlMode() {
+    this.isConnected = false
+
+    // Remove all event listeners from the process before nulling it
+    if (this.controlModeProcess) {
+      this.controlModeProcess.stdout.removeAllListeners()
+      this.controlModeProcess.stderr.removeAllListeners()
+      this.controlModeProcess.removeAllListeners()
+
+      // Close stdin to prevent EPIPE errors
+      if (
+        this.controlModeProcess.stdin &&
+        !this.controlModeProcess.stdin.destroyed
+      ) {
+        this.controlModeProcess.stdin.end()
+      }
+
+      this.controlModeProcess = null
+    }
+
+    // Clear pane data when control mode closes
+    this.panes.clear()
+    this.windowIdMap.clear()
+    this.paneToKeyMap.clear()
+    this.hasDisplayedInitialList = false
+
+    // Stop claude checking
+    if (this.claudeCheckInterval) {
+      clearInterval(this.claudeCheckInterval)
+      this.claudeCheckInterval = null
+    }
   }
 
   private processControlModeOutput(line: string) {
@@ -415,15 +455,26 @@ export class TmuxAutomatorNew {
   }
 
   private async refreshPaneList() {
-    if (this.controlModeProcess && this.controlModeProcess.stdin) {
-      // Clear existing data before refresh
-      this.panes.clear()
-      this.windowIdMap.clear()
-      this.paneToKeyMap.clear()
-      this.controlModeProcess.stdin.write(
-        'list-panes -a -F "PANE %#{pane_id} #{session_name}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n',
-      )
-      // The pane list will be displayed when the %end marker is received
+    if (
+      this.controlModeProcess &&
+      this.controlModeProcess.stdin &&
+      !this.controlModeProcess.stdin.destroyed
+    ) {
+      try {
+        // Clear existing data before refresh
+        this.panes.clear()
+        this.windowIdMap.clear()
+        this.paneToKeyMap.clear()
+        this.controlModeProcess.stdin.write(
+          'list-panes -a -F "PANE %#{pane_id} #{session_name}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n',
+        )
+        // The pane list will be displayed when the %end marker is received
+      } catch (error) {
+        console.error('Failed to refresh pane list:', error)
+        if (error.code === 'EPIPE') {
+          this.cleanupControlMode()
+        }
+      }
     }
   }
 
@@ -462,7 +513,8 @@ export class TmuxAutomatorNew {
     if (
       !this.controlModeProcess ||
       !this.controlModeProcess.stdin ||
-      !this.hasDisplayedInitialList
+      !this.hasDisplayedInitialList ||
+      this.controlModeProcess.stdin.destroyed
     ) {
       return
     }
@@ -486,27 +538,54 @@ export class TmuxAutomatorNew {
       }, 3000)
     }
 
-    // Clear previous results and request updated pane info to check for claude
-    this.claudeCheckResults.clear()
-    this.isCheckingClaude = true
-    this.controlModeProcess.stdin.write(
-      'list-panes -a -F "CHECK %#{pane_id} #{pane_current_command}"\n',
-    )
+    try {
+      // Clear previous results and request updated pane info to check for claude
+      this.claudeCheckResults.clear()
+      this.isCheckingClaude = true
+      this.controlModeProcess.stdin.write(
+        'list-panes -a -F "CHECK %#{pane_id} #{pane_current_command}"\n',
+      )
+    } catch (error) {
+      console.error('Failed to check for Claude updates:', error)
+      if (error.code === 'EPIPE') {
+        this.cleanupControlMode()
+      }
+    }
   }
 
   private shutdown() {
     console.log('\nShutting down...')
     this.isShuttingDown = true
 
+    // Clean up intervals
     if (this.claudeCheckInterval) {
       clearInterval(this.claudeCheckInterval)
       this.claudeCheckInterval = null
     }
 
+    // Clean up control mode process
     if (this.controlModeProcess) {
+      // Remove listeners before killing to prevent errors
+      this.controlModeProcess.stdout.removeAllListeners()
+      this.controlModeProcess.stderr.removeAllListeners()
+      this.controlModeProcess.removeAllListeners()
+
+      // Close stdin before killing
+      if (
+        this.controlModeProcess.stdin &&
+        !this.controlModeProcess.stdin.destroyed
+      ) {
+        this.controlModeProcess.stdin.end()
+      }
+
+      // Kill the process
       this.controlModeProcess.kill()
       this.controlModeProcess = null
     }
+
+    // Remove signal handlers to prevent duplicate handlers on restart
+    process.removeAllListeners('SIGINT')
+    process.removeAllListeners('SIGTERM')
 
     process.exit(0)
   }
