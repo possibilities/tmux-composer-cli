@@ -1,0 +1,2 @@
+agents: claude --mcp-config mcp.json
+context: context-composer work-on-typescripe-cli
