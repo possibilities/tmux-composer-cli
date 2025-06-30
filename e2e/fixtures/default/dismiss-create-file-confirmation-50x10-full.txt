@@ -3,7 +3,7 @@
    /help for help, /status for your current setup
 
    cwd: /home/mike/code/worktrees/tmux-composer-te
-st-qqqzNc-worktree-001
+st-S6RcnO-worktree-001
 
  Tips for getting started:
 
@@ -30,11 +30,11 @@ eer for the best results
 │ ╭────────────────────────────────────────────╮ │
 │ │ funny.txt                                  │ │
 │ │                                            │ │
+│ │ gobbledygook                               │ │
+│ │ flibbertigibbet                            │ │
 │ │ kerfuffle                                  │ │
 │ │ brouhaha                                   │ │
-│ │ flibbertigibbet                            │ │
 │ │ discombobulated                            │ │
-│ │ shenanigans                                │ │
 │ ╰────────────────────────────────────────────╯ │
 │ Do you want to create funny.txt?               │
 │ ❯ 1. Yes                                       │

@@ -103,7 +103,10 @@ export class SessionCreator {
 
       let tmuxComposerConfig: TmuxComposerConfig | null = null
       try {
-        const tmuxComposerYamlPath = path.join(worktreePath, 'control.yaml')
+        const tmuxComposerYamlPath = path.join(
+          worktreePath,
+          'tmux-composer.yaml',
+        )
         const tmuxComposerYamlContent = fs.readFileSync(
           tmuxComposerYamlPath,
           'utf-8',
@@ -139,7 +142,7 @@ export class SessionCreator {
 
     let tmuxComposerConfig: TmuxComposerConfig | null = null
     try {
-      const tmuxComposerYamlPath = path.join(worktreePath, 'control.yaml')
+      const tmuxComposerYamlPath = path.join(worktreePath, 'tmux-composer.yaml')
       const tmuxComposerYamlContent = fs.readFileSync(
         tmuxComposerYamlPath,
         'utf-8',

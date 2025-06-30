@@ -2,7 +2,7 @@
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "refactor <filepath>"                    │
+│ > Try "create a util logging.py that..."       │
 ╰────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

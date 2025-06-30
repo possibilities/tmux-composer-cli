@@ -228,7 +228,7 @@ function createTempProject(configContent: string): string {
     JSON.stringify(packageJson, null, 2),
   )
 
-  writeFileSync(join(tempDir, 'control.yaml'), configContent)
+  writeFileSync(join(tempDir, 'tmux-composer.yaml'), configContent)
 
   writeFileSync(join(tempDir, 'readme.md'), '# Example project')
 

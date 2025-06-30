@@ -3,7 +3,7 @@
    /help for help, /status for your current setup
 
    cwd: /home/mike/code/worktrees/tmux-composer-te
-st-6lSKYS-worktree-001
+st-oxLVtp-worktree-001
 
  Tips for getting started:
 
