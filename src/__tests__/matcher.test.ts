@@ -7,8 +7,8 @@ import {
   matchesPattern,
   matchesLastPattern,
   matchesFullPattern,
-} from '../matcher.js'
-import { MATCHERS } from '../core/matchers.js'
+} from '../core/matcher.js'
+import { MATCHERS } from '../matchers.js'
 import { TERMINAL_SIZES } from '../core/constants.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))

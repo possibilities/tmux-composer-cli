@@ -4,7 +4,7 @@ import { TmuxAutomator } from './commands/automate-claude.js'
 import { TmuxAutomatorNew } from './commands/automate-new.js'
 import { SessionCreator } from './commands/create-session.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
-import { MATCHERS } from './core/matchers.js'
+import { MATCHERS } from './matchers.js'
 
 async function main() {
   const program = new Command()

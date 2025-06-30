@@ -6,7 +6,7 @@ import {
   matchesPattern,
   matchesLastPattern,
   matchesFullPattern,
-} from '../matcher.js'
+} from '../core/matcher.js'
 import {
   listSessions,
   listWindows,
@@ -32,7 +32,7 @@ import {
   AUTOMATION_PAUSE_MS,
   TERMINAL_SIZES,
 } from '../core/constants.js'
-import { MATCHERS } from '../core/matchers.js'
+import { MATCHERS } from '../matchers.js'
 
 interface AutomateTmuxOptions extends TmuxSocketOptions {
   skipMatchers?: Record<string, boolean>
