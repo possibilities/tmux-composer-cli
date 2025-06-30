@@ -1,13 +1,8 @@
-export interface Matcher {
-  name: string
-  trigger: string[]
-  wrappedTrigger?: string[]
-  response: string
-  runOnce: boolean
-  mode: 'act' | 'plan' | 'all'
-}
+import { type Matcher, parseMatchers } from './schemas/matcher-schema.js'
 
-export const MATCHERS: Matcher[] = [
+export { type Matcher } from './schemas/matcher-schema.js'
+
+const matchersData = [
   {
     name: 'dismiss-trust-folder-confirmation',
     trigger: [
@@ -82,3 +77,5 @@ export const MATCHERS: Matcher[] = [
     mode: 'all',
   },
 ]
+
+export const MATCHERS: Matcher[] = parseMatchers(matchersData)

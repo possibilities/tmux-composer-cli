@@ -8,17 +8,4 @@ export const TERMINAL_SIZES = {
   small: { width: 50, height: 10 },
 }
 
-export interface TmuxComposerConfig {
-  agents?:
-    | string
-    | {
-        act?: string
-        plan?: string
-      }
-  context?:
-    | string
-    | {
-        act?: string
-        plan?: string
-      }
-}
+export { type TmuxComposerConfig } from '../schemas/config-schema.js'

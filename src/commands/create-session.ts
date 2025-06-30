@@ -13,7 +13,11 @@ import {
   WORKTREES_PATH,
 } from '../core/git-utils.js'
 import { socketExists } from '../core/tmux-utils.js'
-import { TmuxComposerConfig, TERMINAL_SIZES } from '../core/constants.js'
+import { TERMINAL_SIZES } from '../core/constants.js'
+import {
+  parseTmuxComposerConfig,
+  type TmuxComposerConfig,
+} from '../schemas/config-schema.js'
 
 interface CreateSessionOptions extends TmuxSocketOptions {
   mode?: 'act' | 'plan'
@@ -111,9 +115,8 @@ export class SessionCreator {
           tmuxComposerYamlPath,
           'utf-8',
         )
-        tmuxComposerConfig = yaml.load(
-          tmuxComposerYamlContent,
-        ) as TmuxComposerConfig
+        const yamlData = yaml.load(tmuxComposerYamlContent)
+        tmuxComposerConfig = parseTmuxComposerConfig(yamlData)
       } catch {}
 
       windows.push('work')
@@ -147,9 +150,8 @@ export class SessionCreator {
         tmuxComposerYamlPath,
         'utf-8',
       )
-      tmuxComposerConfig = yaml.load(
-        tmuxComposerYamlContent,
-      ) as TmuxComposerConfig
+      const yamlData = yaml.load(tmuxComposerYamlContent)
+      tmuxComposerConfig = parseTmuxComposerConfig(yamlData)
     } catch {}
 
     let firstWindowCreated = false

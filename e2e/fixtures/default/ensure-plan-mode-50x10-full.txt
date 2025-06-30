@@ -2,8 +2,8 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/tmux-composer-test-q │
-│ u0b8S-worktree-001                             │
+│ /home/mike/code/worktrees/tmux-composer-test-5 │
+│ KgXYK-worktree-001                             │
 │                                                │
 │ Claude Code may read files in this folder.     │
 │ Reading untrusted files may lead Claude Code   │
@@ -29,7 +29,7 @@
    /help for help, /status for your current setup
 
    cwd: /home/mike/code/worktrees/tmux-composer-te
-st-qu0b8S-worktree-001
+st-5KgXYK-worktree-001
 
  Tips for getting started:
 
@@ -44,7 +44,7 @@ eer for the best results
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "refactor <filepath>"                    │
+│ > Try "edit <filepath> to..."                  │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

@@ -6,7 +6,7 @@
 │                                                                          │
 │   /help for help, /status for your current setup                         │
 │                                                                          │
-│   cwd: /home/mike/code/worktrees/tmux-composer-test-e8LyfA-worktree-001  │
+│   cwd: /home/mike/code/worktrees/tmux-composer-test-MQbhxX-worktree-001  │
 ╰──────────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
@@ -16,7 +16,7 @@
  3. Be as specific as you would with another engineer for the best results
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "how does <filepath> work?"                                            │
+│ > Try "refactor <filepath>"                                                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ? for shortcuts
 

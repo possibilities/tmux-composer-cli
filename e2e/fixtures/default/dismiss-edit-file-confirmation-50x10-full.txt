@@ -3,7 +3,7 @@
    /help for help, /status for your current setup
 
    cwd: /home/mike/code/worktrees/tmux-composer-te
-st-297Wxk-worktree-001
+st-M8MH7T-worktree-001
 
  Tips for getting started:
 
@@ -26,11 +26,11 @@ eer for the best results
 
 ● Write(funny.txt)
   ⎿  Wrote 5 lines to funny.txt
+     flibbertigibbet
      kerfuffle
      brouhaha
-     flibbertigibbet
-     shenanigans
-     cattywampus
+     gobbledygook
+     nincompoop
 
 ● Update(funny.txt)
 
@@ -39,12 +39,12 @@ eer for the best results
 │ ╭────────────────────────────────────────────╮ │
 │ │ funny.txt                                  │ │
 │ │                                            │ │
-│ │   2    brouhaha                            │ │
-│ │   3    flibbertigibbet                     │ │
-│ │   4    shenanigans                         │ │
-│ │   5 -  cattywampus                         │ │
+│ │   2    kerfuffle                           │ │
+│ │   3    brouhaha                            │ │
+│ │   4    gobbledygook                        │ │
+│ │   5 -  nincompoop                          │ │
 │ │   5   \ No newline at end of file          │ │
-│ │   6 +  cattywampus                         │ │
+│ │   6 +  nincompoop                          │ │
 │ │   7 +  bamboozle                           │ │
 │ │   8   \ No newline at end of file          │ │
 │ ╰────────────────────────────────────────────╯ │

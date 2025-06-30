@@ -4,12 +4,12 @@
 │ ╭──────────────────────────────────────────────────────────────────────────╮ │
 │ │ funny.txt                                                                │ │
 │ │                                                                          │ │
-│ │   2    flibbertigibbet                                                   │ │
-│ │   3    kerfuffle                                                         │ │
-│ │   4    brouhaha                                                          │ │
-│ │   5 -  nincompoop                                                        │ │
+│ │   2    wobble                                                            │ │
+│ │   3    noodle                                                            │ │
+│ │   4    boing                                                             │ │
+│ │   5 -  kerfuffle                                                         │ │
 │ │   5   \ No newline at end of file                                        │ │
-│ │   6 +  nincompoop                                                        │ │
+│ │   6 +  kerfuffle                                                         │ │
 │ │   7 +  bamboozle                                                         │ │
 │ │   8   \ No newline at end of file                                        │ │
 │ ╰──────────────────────────────────────────────────────────────────────────╯ │

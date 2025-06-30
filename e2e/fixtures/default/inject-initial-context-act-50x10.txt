@@ -2,7 +2,7 @@
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "write a test for <filepath>"            │
+│ > Try "how does <filepath> work?"              │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 
