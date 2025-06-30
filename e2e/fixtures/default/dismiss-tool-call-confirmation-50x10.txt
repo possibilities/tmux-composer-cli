@@ -1,6 +1,6 @@
 │  everything:echo commands in                   │
 │  /home/mike/code/worktrees/tmux-composer-test- │
-│  bsVP4G-worktree-001                           │
+│  d15emY-worktree-001                           │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 │                                                │

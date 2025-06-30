@@ -3,7 +3,7 @@
 │ Do you trust the files in this folder?         │
 │                                                │
 │ /home/mike/code/worktrees/tmux-composer-test-q │
-│ MCvQk-worktree-001                             │
+│ JuEfa-worktree-001                             │
 │                                                │
 │ Claude Code may read files in this folder.     │
 │ Reading untrusted files may lead Claude Code   │

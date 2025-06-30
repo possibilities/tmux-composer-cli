@@ -3,7 +3,7 @@
    /help for help, /status for your current setup
 
    cwd: /home/mike/code/worktrees/tmux-composer-te
-st-bsVP4G-worktree-001
+st-d15emY-worktree-001
 
  Tips for getting started:
 
@@ -24,16 +24,16 @@ eer for the best results
   echo a message.
 
 ● everything:echo (MCP)(message: "Hello! This
-                        is an echo message
-                       from the MCP
-                       Everything tool.")
+                        is an echo test
+                       message from the MCP
+                       Everything server.")
 
 ╭────────────────────────────────────────────────╮
 │ Tool use                                       │
 │                                                │
 │   everything:echo(message: "Hello! This is     │
-│   an echo message from the MCP Everything      │
-│   tool.") (MCP)                                │
+│   an echo test message from the MCP            │
+│   Everything server.") (MCP)                   │
 │   Echoes back the input                        │
 │                                                │
 │ Do you want to proceed?                        │
@@ -41,7 +41,7 @@ eer for the best results
 │  2. Yes, and don't ask again for               │
 │  everything:echo commands in                   │
 │  /home/mike/code/worktrees/tmux-composer-test- │
-│  bsVP4G-worktree-001                           │
+│  d15emY-worktree-001                           │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 │                                                │
