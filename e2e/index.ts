@@ -103,7 +103,7 @@ const TEST_RUNS = [
     mode: 'act' as const,
     fixtureFileName: 'dismiss-read-file-confirmation.txt',
     configFile: dedent`
-      context: echo "Read the file '/tmp/control-e2e-basic-date1.txt' and show he content"
+      context: echo "Read the file '/tmp/tmux-composer-e2e-basic-date1.txt' and show he content"
     `,
   },
   {
@@ -259,7 +259,7 @@ function createTempProject(configContent: string): string {
     console.error('Failed to reset MCP project choices:', error)
   }
 
-  execSync('date > /tmp/control-e2e-basic-date1.txt')
+  execSync('date > /tmp/tmux-composer-e2e-basic-date1.txt')
   console.error('Created temp files with timestamps in /tmp')
 
   return tempDir
@@ -723,7 +723,9 @@ function cleanupTempTestDirectories(excludeFixtureDir?: string) {
       console.error(`Cleaned up ${testDirs.length} temp test directories`)
     }
 
-    const testFiles = tmpDirs.filter(file => file.startsWith('control-e2e-'))
+    const testFiles = tmpDirs.filter(file =>
+      file.startsWith('tmux-composer-e2e-'),
+    )
 
     for (const file of testFiles) {
       const filePath = join(tmpdir(), file)

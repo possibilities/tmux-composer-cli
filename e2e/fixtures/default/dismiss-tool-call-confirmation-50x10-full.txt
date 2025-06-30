@@ -3,7 +3,7 @@
    /help for help, /status for your current setup
 
    cwd: /home/mike/code/worktrees/tmux-composer-te
-st-scARGR-worktree-001
+st-pUwHSd-worktree-001
 
  Tips for getting started:
 
@@ -20,18 +20,20 @@ eer for the best results
 > Echo any message using the mcp everything
   echo tool
 
-● I'll use the MCP Everything echo tool to
+● I'll use the mcp__everything__echo tool to
   echo a message.
 
 ● everything:echo (MCP)(message: "Hello! This
-                        is an echo test
-                       message.")
+                        is an echo message
+                       from the MCP
+                       Everything server.")
 
 ╭────────────────────────────────────────────────╮
 │ Tool use                                       │
 │                                                │
 │   everything:echo(message: "Hello! This is     │
-│   an echo test message.") (MCP)                │
+│   an echo message from the MCP Everything      │
+│   server.") (MCP)                              │
 │   Echoes back the input                        │
 │                                                │
 │ Do you want to proceed?                        │
@@ -39,7 +41,7 @@ eer for the best results
 │  2. Yes, and don't ask again for               │
 │  everything:echo commands in                   │
 │  /home/mike/code/worktrees/tmux-composer-test- │
-│  scARGR-worktree-001                           │
+│  pUwHSd-worktree-001                           │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 │                                                │

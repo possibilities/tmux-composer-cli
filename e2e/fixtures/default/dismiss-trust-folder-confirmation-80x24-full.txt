@@ -1,14 +1,14 @@
 claude
 
-┌─╼[12:16:19]
-└─╼[~/code/worktrees/tmux-composer-test-Yi6JB6-worktree-001]
- ╰╼[worktree-001]╾─╼[8ed8288]
+┌─╼[12:24:06]
+└─╼[~/code/worktrees/tmux-composer-test-yFyakl-worktree-001]
+ ╰╼[worktree-001]╾─╼[a9dc132]
 ▶ claude
 ╭──────────────────────────────────────────────────────────────────────────────╮
 │                                                                              │
 │ Do you trust the files in this folder?                                       │
 │                                                                              │
-│ /home/mike/code/worktrees/tmux-composer-test-Yi6JB6-worktree-001             │
+│ /home/mike/code/worktrees/tmux-composer-test-yFyakl-worktree-001             │
 │                                                                              │
 │ Claude Code may read files in this folder. Reading untrusted files may lead  │
 │ Claude Code to behave in unexpected ways.                                    │

@@ -2,7 +2,7 @@
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "fix typecheck errors"                   │
+│ > Try "refactor <filepath>"                    │
 ╰────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

@@ -3,7 +3,7 @@
    /help for help, /status for your current setup
 
    cwd: /home/mike/code/worktrees/tmux-composer-te
-st-GtNZp6-worktree-001
+st-6lSKYS-worktree-001
 
  Tips for getting started:
 
@@ -18,20 +18,20 @@ eer for the best results
 
 
 > Read the file
-  '/tmp/control-e2e-basic-date1.txt' and show
-   he content
+  '/tmp/tmux-composer-e2e-basic-date1.txt'
+  and show he content
 
 ● I'll read the file and show you its
   content.
 
-● Read(../../../../../tmp/control-e2e-basic-d
-      ate1.txt)
+● Read(../../../../../tmp/tmux-composer-e2e-b
+      asic-date1.txt)
 
 ╭────────────────────────────────────────────────╮
 │ Read files                                     │
 │                                                │
-│   Read(../../../../../tmp/control-e2e-basic-   │
-│   date1.txt)                                   │
+│   Read(../../../../../tmp/tmux-composer-e2e-   │
+│   basic-date1.txt)                             │
 │                                                │
 │ Do you want to proceed?                        │
 │ ❯ 1. Yes                                       │

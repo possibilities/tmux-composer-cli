@@ -1,7 +1,7 @@
 │ ❯ 1. Yes                                       │
 │  2. Yes, and don't ask again for ls commands   │
 │  in /home/mike/code/worktrees/tmux-composer-te │
-│  st-4dC2RO-worktree-001                        │
+│  st-6FtOA5-worktree-001                        │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 ╰────────────────────────────────────────────────╯

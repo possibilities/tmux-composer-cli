@@ -2,8 +2,8 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/tmux-composer-test-h │
-│ YrKVb-worktree-001                             │
+│ /home/mike/code/worktrees/tmux-composer-test-6 │
+│ 44jXI-worktree-001                             │
 │                                                │
 │ Claude Code may read files in this folder.     │
 │ Reading untrusted files may lead Claude Code   │
@@ -29,7 +29,7 @@
    /help for help, /status for your current setup
 
    cwd: /home/mike/code/worktrees/tmux-composer-te
-st-hYrKVb-worktree-001
+st-644jXI-worktree-001
 
  Tips for getting started:
 
