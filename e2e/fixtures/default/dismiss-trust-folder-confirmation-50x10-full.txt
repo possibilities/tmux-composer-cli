@@ -2,7 +2,7 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/control-test-Fgu8hp- │
+│ /home/mike/code/worktrees/control-test-tGKvNn- │
 │ worktree-001                                   │
 │                                                │
 │ Claude Code may read files in this folder.     │

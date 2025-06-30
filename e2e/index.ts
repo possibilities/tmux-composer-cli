@@ -21,13 +21,7 @@ import prompts from 'prompts'
 import { TERMINAL_SIZES, MAX_SCROLLBACK_LINES } from '../src/core/constants.js'
 
 const DEFAULT_CONFIG = dedent`
-  name: default-test-project
-  agents:
-    act: claude
-    plan: claude
-  context:
-    act: echo "Do nothing but wait for my feature description to make a plan"
-    plan: echo "Do nothing but wait for my feature description to make a plan"
+  context: echo "Do nothing but wait for my feature description to make a plan"
 `
 
 const TEST_TERMINAL_SIZES = Object.values(TERMINAL_SIZES)
@@ -82,13 +76,7 @@ const TEST_RUNS = [
     mode: 'act' as const,
     fixtureFileName: 'dismiss-create-file-confirmation.txt',
     configFile: dedent`
-      name: create-file-test-project
-      agents:
-        act: claude
-        plan: claude
-      context:
-        act: echo "Create a file called funny.txt with 5 funny words in it, one on each line"
-        plan: echo "Create a file called funny.txt with 5 funny words in it, one on each line"
+      context: echo "Create a file called funny.txt with 5 funny words in it, one on each line"
     `,
   },
   {
@@ -97,13 +85,7 @@ const TEST_RUNS = [
     mode: 'act' as const,
     fixtureFileName: 'dismiss-edit-file-confirmation.txt',
     configFile: dedent`
-      name: edit-file-test-project
-      agents:
-        act: claude
-        plan: claude
-      context:
-        act: echo "Create a file called funny.txt with 5 funny words in it, one on each line. Then, after saving, add 1 more funny word to it."
-        plan: echo "Create a file called funny.txt with 5 funny words in it, one on each line. Then, after saving, add 1 more funny word to it."
+      context: echo "Create a file called funny.txt with 5 funny words in it, one on each line. Then, after saving, add 1 more funny word to it."
     `,
   },
   {
@@ -112,13 +94,7 @@ const TEST_RUNS = [
     mode: 'act' as const,
     fixtureFileName: 'dismiss-run-command-confirmation.txt',
     configFile: dedent`
-      name: run-command-test-project
-      agents:
-        act: claude
-        plan: claude
-      context:
-        act: echo "Run 'ls -lsa /tmp' in the current directory"
-        plan: echo "Run 'ls -lsa /tmp' in the current directory"
+      context: echo "Run 'ls -lsa /tmp' in the current directory"
     `,
   },
   {
@@ -127,13 +103,17 @@ const TEST_RUNS = [
     mode: 'act' as const,
     fixtureFileName: 'dismiss-read-file-confirmation.txt',
     configFile: dedent`
-      name: read-file-test-project
-      agents:
-        act: claude
-        plan: claude
-      context:
-        act: echo "Read the file '/tmp/control-e2e-basic-date1.txt' and show he content"
-        plan: echo "Read the file '/tmp/control-e2e-basic-date1.txt' and show he content"
+      context: echo "Read the file '/tmp/control-e2e-basic-date1.txt' and show he content"
+    `,
+  },
+  {
+    automateClaudeArguments: ['--skip-dismiss-tool-call-confirmation'],
+    createSessionArguments: [],
+    mode: 'act' as const,
+    fixtureFileName: 'dismiss-tool-call-confirmation.txt',
+    configFile: dedent`
+      agents: claude --disallowedTools Write --disallowedTools Read --disallowedTools Bash --disallowedTools Task --disallowedTools Glob --disallowedTools Grep --disallowedTools LS --disallowedTools Edit --disallowedTools MultiEdit --disallowedTools NotebookRead --disallowedTools NotebookEdit --disallowedTools WebFetch --disallowedTools TodoRead --disallowedTools TodoWrite --disallowedTools WebSearch
+      context: echo "Echo any message using the mcp everything echo tool"
     `,
   },
 ]
@@ -157,9 +137,13 @@ let actualSessionName = ''
 let workWindowIndex = ''
 let automateClaudeProcess: ChildProcess | null = null
 let createSessionProcess: ChildProcess | null = null
+let testProjectPaths: string[] = []
 
 function cleanupPreviousTestRuns() {
   console.error('Cleaning up previous test runs...')
+
+  // Clean up temp test directories first (pass fixture dir to exclude if saving fixtures)
+  cleanupTempTestDirectories(SAVE_FIXTURES ? TEMP_FIXTURES_DIR : undefined)
 
   // Clean up test sockets
   try {
@@ -252,18 +236,35 @@ function createTempProject(configContent: string): string {
 
   writeFileSync(join(tempDir, 'control.yaml'), configContent)
 
-  writeFileSync(join(tempDir, 'readme.md'), '')
+  writeFileSync(join(tempDir, 'readme.md'), '# Example project')
 
-  const mcpJsonPath = join(__dirname, '..', '.mcp.json')
-  if (existsSync(mcpJsonPath)) {
-    copyFileSync(mcpJsonPath, join(tempDir, '.mcp.json'))
-    console.error('Copied .mcp.json to test repository')
+  const mcpJson = {
+    mcpServers: {
+      everything: {
+        command: 'npx',
+        args: ['-y', '@modelcontextprotocol/server-everything'],
+      },
+    },
   }
+
+  writeFileSync(join(tempDir, '.mcp.json'), JSON.stringify(mcpJson, null, 2))
+  console.error('Created .mcp.json in test repository')
 
   execSync('git add .', { cwd: tempDir })
   execSync('git commit -m "Initial commit"', { cwd: tempDir })
 
   console.error('Git repository initialized and committed')
+
+  // Change to the test directory and reset MCP project choices
+  try {
+    execSync('claude mcp reset-project-choices', {
+      cwd: tempDir,
+      stdio: 'inherit',
+    })
+    console.error('Reset MCP project choices in test repository')
+  } catch (error) {
+    console.error('Failed to reset MCP project choices:', error)
+  }
 
   execSync('date > /tmp/control-e2e-basic-date1.txt')
   console.error('Created temp files with timestamps in /tmp')
@@ -490,9 +491,32 @@ async function runIteration(
   )
   console.log(`${'='.repeat(60)}\n`)
 
+  // Perform full cleanup before each test
+  console.error('Performing pre-test cleanup...')
+
+  // Clean up temp test directories (pass fixture dir to exclude if saving fixtures)
+  cleanupTempTestDirectories(SAVE_FIXTURES ? TEMP_FIXTURES_DIR : undefined)
+
+  // Clean up processes
+  cleanupProcesses()
+
+  // Kill any existing tmux sessions
   killExistingSession()
 
+  // Reset session variables
+  actualSessionName = ''
+  workWindowIndex = ''
+
+  // Clean up test project entries from ~/.claude.json
+  cleanupTestProjectWorktrees()
+
+  // Small delay to ensure clean state
+  await new Promise(resolve => setTimeout(resolve, 500))
+
+  console.error('Pre-test cleanup complete')
+
   const projectPath = createTempProject(testRun.configFile)
+  testProjectPaths.push(projectPath)
 
   await startAutomateClaude(additionalArgs)
 
@@ -624,15 +648,19 @@ function cleanupTestProjectWorktrees() {
         const filteredProjects: Record<string, any> = {}
 
         for (const [key, value] of Object.entries(claudeJson.projects)) {
+          // Remove test worktrees and temporary test directories
           if (
-            !key.match(
-              /\/home\/mike\/code\/worktrees\/test-project-worktree-\d+$/,
-            )
+            key.match(
+              /\/home\/mike\/code\/worktrees\/control-test-[^/]+-worktree-\d+$/,
+            ) ||
+            key.match(/\/tmp\/control-test-[^/]+$/) ||
+            key.match(/\/control-test-[^/]+$/) ||
+            key.includes('control-test-')
           ) {
-            filteredProjects[key] = value
-          } else {
-            console.error(`Removing test worktree entry: ${key}`)
+            console.error(`Removing test project entry: ${key}`)
             removedCount++
+          } else {
+            filteredProjects[key] = value
           }
         }
 
@@ -669,8 +697,10 @@ function cleanupTestProjectWorktrees() {
   // Clean up worktree directories
   try {
     const dirs = readdirSync(WORKTREES_PATH)
-    const testWorktrees = dirs.filter(dir =>
-      dir.startsWith('test-project-worktree-'),
+    const testWorktrees = dirs.filter(
+      dir =>
+        dir.startsWith('test-project-worktree-') ||
+        dir.match(/^control-test-[^/]+-worktree-\d+$/),
     )
 
     for (const dir of testWorktrees) {
@@ -692,6 +722,77 @@ function cleanupTestProjectWorktrees() {
     }
   } catch (error) {
     console.error('Error accessing worktrees directory:', error)
+  }
+}
+
+function cleanupTempTestDirectories(excludeFixtureDir?: string) {
+  console.error('Cleaning up temp test directories...')
+
+  try {
+    // Clean up control-test-* directories
+    const tmpDirs = readdirSync(tmpdir())
+    const testDirs = tmpDirs.filter(dir => dir.startsWith('control-test-'))
+
+    for (const dir of testDirs) {
+      const dirPath = join(tmpdir(), dir)
+      try {
+        rmSync(dirPath, { recursive: true, force: true })
+        console.error(`Deleted temp test directory: ${dir}`)
+      } catch (error) {
+        console.error(`Failed to delete temp directory ${dir}:`, error)
+      }
+    }
+
+    if (testDirs.length === 0) {
+      console.error('No control-test-* directories found in /tmp')
+    } else {
+      console.error(`Cleaned up ${testDirs.length} temp test directories`)
+    }
+
+    // Clean up control-e2e-* files
+    const testFiles = tmpDirs.filter(file => file.startsWith('control-e2e-'))
+
+    for (const file of testFiles) {
+      const filePath = join(tmpdir(), file)
+      try {
+        rmSync(filePath, { force: true })
+        console.error(`Deleted temp test file: ${file}`)
+      } catch (error) {
+        console.error(`Failed to delete temp file ${file}:`, error)
+      }
+    }
+
+    if (testFiles.length > 0) {
+      console.error(`Cleaned up ${testFiles.length} temp test files`)
+    }
+
+    // Also clean up any control-cli-fixtures-temp-* directories
+    // But exclude the current test run's fixture directory if specified
+    const fixturesDirs = tmpDirs.filter(dir => {
+      if (!dir.startsWith('control-cli-fixtures-temp-')) return false
+      // Don't delete the excluded fixture directory
+      if (excludeFixtureDir && join(tmpdir(), dir) === excludeFixtureDir)
+        return false
+      return true
+    })
+
+    for (const dir of fixturesDirs) {
+      const dirPath = join(tmpdir(), dir)
+      try {
+        rmSync(dirPath, { recursive: true, force: true })
+        console.error(`Deleted temp fixtures directory: ${dir}`)
+      } catch (error) {
+        console.error(`Failed to delete temp fixtures directory ${dir}:`, error)
+      }
+    }
+
+    if (fixturesDirs.length > 0) {
+      console.error(
+        `Cleaned up ${fixturesDirs.length} temp fixtures directories`,
+      )
+    }
+  } catch (error) {
+    console.error('Error cleaning up temp test directories:', error)
   }
 }
 
@@ -810,6 +911,7 @@ async function main() {
     }
     cleanupProcesses()
     killExistingSession()
+    testProjectPaths = []
     if (SAVE_FIXTURES) {
       try {
         rmSync(TEMP_FIXTURES_DIR, { recursive: true, force: true })
@@ -844,12 +946,44 @@ async function main() {
   try {
     let iterationNumber = 1
     for (const terminalSize of TEST_TERMINAL_SIZES) {
+      console.error(`\n${'='.repeat(60)}`)
+      console.error(
+        `Starting tests for terminal size: ${terminalSize.width}x${terminalSize.height}`,
+      )
+      console.error(`${'='.repeat(60)}\n`)
+
       for (let i = 0; i < TEST_RUNS.length; i++) {
         await runIteration(iterationNumber++, TEST_RUNS[i], terminalSize)
       }
+
+      // Clean up between terminal sizes to ensure blank slate
+      console.error(
+        `\nCleaning up after ${terminalSize.width}x${terminalSize.height} tests...`,
+      )
+      cleanupProcesses()
+      killExistingSession()
+      actualSessionName = ''
+      workWindowIndex = ''
+
+      // Clean up any test worktrees that might have been created
+      cleanupTestProjectWorktrees()
+
+      // Small delay to ensure clean state
+      await new Promise(resolve => setTimeout(resolve, 1000))
     }
 
     console.error('All iterations complete!')
+
+    // Display test directories
+    if (testProjectPaths.length > 0) {
+      console.error('\n' + '='.repeat(60))
+      console.error('Test directories created:')
+      console.error('='.repeat(60))
+      testProjectPaths.forEach((path, index) => {
+        console.error(`  ${index + 1}. ${path}`)
+      })
+      console.error('='.repeat(60) + '\n')
+    }
 
     if (SAVE_FIXTURES) {
       copyFixturesToFinalLocation()
@@ -875,6 +1009,14 @@ async function main() {
           console.error(`  - ${join(WORKTREES_PATH, w)}`)
         })
       }
+
+      if (testProjectPaths.length > 0) {
+        console.error(`\nTest directories:`)
+        testProjectPaths.forEach((path, index) => {
+          console.error(`  ${index + 1}. ${path}`)
+        })
+      }
+
       console.error('\n' + '='.repeat(60))
 
       // In no-cleanup mode, we need to exit explicitly since processes are still running

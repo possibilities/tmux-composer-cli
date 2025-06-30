@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-7jr
-r5H-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-eBg
+cN8-worktree-001
 
  Tips for getting started:
 
@@ -17,25 +17,31 @@ eer for the best
     results
 
 
-> Read the file
-  '/tmp/control-e2e-basic-date1.txt' and show
-   he content
+> Echo any message using the mcp everything
+  echo tool
 
-● I'll read the file and show its content.
+● I'll echo a message using the MCP
+  everything echo tool.
 
-● Read(../../../../../tmp/control-e2e-basic-d
-      ate1.txt)
+● everything:echo (MCP)(message: "Hello! This
+                        is an echoed message
+                       from the MCP
+                       everything echo
+                       tool.")
 
 ╭────────────────────────────────────────────────╮
-│ Read files                                     │
+│ Tool use                                       │
 │                                                │
-│   Read(../../../../../tmp/control-e2e-basic-   │
-│   date1.txt)                                   │
+│   everything:echo(message: "Hello! This is     │
+│   an echoed message from the MCP everything    │
+│   echo tool.") (MCP)                           │
+│   Echoes back the input                        │
 │                                                │
 │ Do you want to proceed?                        │
 │ ❯ 1. Yes                                       │
-│   2. Yes, and add /tmp as a working directory  │
-│   for this session                             │
+│  2. Yes, and don't ask again for               │
+│  everything:echo commands in /home/mike/code/w │
+│  orktrees/control-test-eBgcN8-worktree-001     │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 │                                                │

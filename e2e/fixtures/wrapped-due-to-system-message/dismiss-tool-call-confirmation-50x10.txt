@@ -1,9 +1,9 @@
-│ ❯ 1. Yes                                       │
-│  2. Yes, and don't ask again for ls commands   │
-│  in /home/mike/code/worktrees/control-test-dq0 │
-│  Gjp-worktree-001                              │
+│  2. Yes, and don't ask again for               │
+│  everything:echo commands in /home/mike/code/w │
+│  orktrees/control-test-eBgcN8-worktree-001     │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
+│                                                │
 ╰────────────────────────────────────────────────╯
 
 

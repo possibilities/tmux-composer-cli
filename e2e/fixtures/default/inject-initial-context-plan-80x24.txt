@@ -1,9 +1,10 @@
+   Enter to confirm · Esc to exit
 ╭────────────────────────────────────────────────────────────────────╮
 │ ✻ Welcome to Claude Code!                                          │
 │                                                                    │
 │   /help for help, /status for your current setup                   │
 │                                                                    │
-│   cwd: /home/mike/code/worktrees/control-test-jNpYJ2-worktree-001  │
+│   cwd: /home/mike/code/worktrees/control-test-zuMSRY-worktree-001  │
 ╰────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
@@ -12,11 +13,10 @@
  2. Use Claude to help with file analysis, editing, bash commands and git
  3. Be as specific as you would with another engineer for the best results
 
- ※ Tip: Create custom slash commands by adding .md files to .claude/commands/ in
-  your project or ~/.claude/commands/ for commands that work in any project
+ ※ Tip: Send messages to Claude while it works to steer Claude in real-time
 
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "how does <filepath> work?"                                            │
+│ > Try "edit <filepath> to..."                                                │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

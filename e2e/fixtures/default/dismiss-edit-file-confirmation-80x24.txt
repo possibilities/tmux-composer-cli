@@ -4,13 +4,13 @@
 │ ╭──────────────────────────────────────────────────────────────────────────╮ │
 │ │ funny.txt                                                                │ │
 │ │                                                                          │ │
-│ │   2    brouhaha                                                          │ │
-│ │   3    kerfuffle                                                         │ │
-│ │   4    nincompoop                                                        │ │
-│ │   5 -  flibbertigibbet                                                   │ │
+│ │   2    wobble                                                            │ │
+│ │   3    bamboozle                                                         │ │
+│ │   4    kerfuffle                                                         │ │
+│ │   5 -  shenanigans                                                       │ │
 │ │   5   \ No newline at end of file                                        │ │
-│ │   6 +  flibbertigibbet                                                   │ │
-│ │   7 +  bamboozle                                                         │ │
+│ │   6 +  shenanigans                                                       │ │
+│ │   7 +  brouhaha                                                          │ │
 │ │   8   \ No newline at end of file                                        │ │
 │ ╰──────────────────────────────────────────────────────────────────────────╯ │
 │ Do you want to make this edit to funny.txt?                                  │

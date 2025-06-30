@@ -29,7 +29,7 @@ export const MATCHERS: Matcher[] = [
   {
     name: 'inject-initial-context-plan',
     trigger: ['⏸ plan mode on'],
-    response: '{paste-buffer}<Enter>',
+    response: '{pause|500}{paste-buffer}<Enter>',
     runOnce: true,
     mode: 'plan',
   },
@@ -37,7 +37,7 @@ export const MATCHERS: Matcher[] = [
     name: 'inject-initial-context-act',
     trigger: ['? for shortcuts'],
     wrappedTrigger: ['? for', 'shortcuts'],
-    response: '{paste-buffer}<Enter>',
+    response: '{pause|500}{paste-buffer}<Enter>',
     runOnce: true,
     mode: 'act',
   },
@@ -65,6 +65,18 @@ export const MATCHERS: Matcher[] = [
   {
     name: 'dismiss-read-file-confirmation',
     trigger: ['Read files', 'Do you want to proceed', '1. Yes'],
+    response: '1',
+    runOnce: false,
+    mode: 'all',
+  },
+  {
+    name: 'dismiss-tool-call-confirmation',
+    trigger: [
+      'Tool use',
+      'Do you want to proceed',
+      '1. Yes',
+      '3. No, and tell Claude',
+    ],
     response: '1',
     runOnce: false,
     mode: 'all',

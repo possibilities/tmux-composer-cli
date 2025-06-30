@@ -539,9 +539,21 @@ export class TmuxAutomator {
             })
           }
         } else if (part.type === 'command') {
-          if (part.value === 'paste-buffer') {
+          // Handle commands with parameters (e.g., {pause|500})
+          const [command, ...params] = part.value.split('|')
+
+          if (command === 'paste-buffer') {
             pasteBuffer(sessionName, windowName, this.socketOptions)
+          } else if (command === 'pause' && params.length > 0) {
+            const ms = parseInt(params[0], 10)
+            if (!isNaN(ms) && ms > 0) {
+              execSync(`sleep ${ms / 1000}`, {
+                encoding: 'utf-8',
+                stdio: ['pipe', 'pipe', 'ignore'],
+              })
+            }
           }
+
           if (index < parts.length - 1) {
             execSync(`sleep ${AUTOMATION_PAUSE_MS / 1000}`, {
               encoding: 'utf-8',
