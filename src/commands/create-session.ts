@@ -103,9 +103,14 @@ export class SessionCreator {
 
       let tmuxComposerConfig: TmuxComposerConfig | null = null
       try {
-        const controlYamlPath = path.join(worktreePath, 'control.yaml')
-        const controlYamlContent = fs.readFileSync(controlYamlPath, 'utf-8')
-        tmuxComposerConfig = yaml.load(controlYamlContent) as TmuxComposerConfig
+        const tmuxComposerYamlPath = path.join(worktreePath, 'control.yaml')
+        const tmuxComposerYamlContent = fs.readFileSync(
+          tmuxComposerYamlPath,
+          'utf-8',
+        )
+        tmuxComposerConfig = yaml.load(
+          tmuxComposerYamlContent,
+        ) as TmuxComposerConfig
       } catch {}
 
       windows.push('work')
@@ -134,9 +139,14 @@ export class SessionCreator {
 
     let tmuxComposerConfig: TmuxComposerConfig | null = null
     try {
-      const controlYamlPath = path.join(worktreePath, 'control.yaml')
-      const controlYamlContent = fs.readFileSync(controlYamlPath, 'utf-8')
-      tmuxComposerConfig = yaml.load(controlYamlContent) as TmuxComposerConfig
+      const tmuxComposerYamlPath = path.join(worktreePath, 'control.yaml')
+      const tmuxComposerYamlContent = fs.readFileSync(
+        tmuxComposerYamlPath,
+        'utf-8',
+      )
+      tmuxComposerConfig = yaml.load(
+        tmuxComposerYamlContent,
+      ) as TmuxComposerConfig
     } catch {}
 
     let firstWindowCreated = false

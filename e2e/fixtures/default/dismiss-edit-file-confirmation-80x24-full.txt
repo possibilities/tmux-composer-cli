@@ -3,7 +3,7 @@
 │                                                                    │
 │   /help for help, /status for your current setup                   │
 │                                                                    │
-│   cwd: /home/mike/code/worktrees/control-test-tqAyex-worktree-001  │
+│   cwd: /home/mike/code/worktrees/control-test-Mk2y5X-worktree-001  │
 ╰────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
@@ -19,13 +19,11 @@
 
 ● Write(funny.txt)
   ⎿  Wrote 5 lines to funny.txt
-     bamboozle
+     brouhaha
      kerfuffle
-     hullabaloo
-     shenanigans
+     nincompoop
+     bamboozle
      flibbertigibbet
-
-● Now I'll add one more funny word to the file.
 
 ● Update(funny.txt)
 
@@ -35,8 +33,8 @@
 │ │ funny.txt                                                                │ │
 │ │                                                                          │ │
 │ │   2    kerfuffle                                                         │ │
-│ │   3    hullabaloo                                                        │ │
-│ │   4    shenanigans                                                       │ │
+│ │   3    nincompoop                                                        │ │
+│ │   4    bamboozle                                                         │ │
 │ │   5 -  flibbertigibbet                                                   │ │
 │ │   5   \ No newline at end of file                                        │ │
 │ │   6 +  flibbertigibbet                                                   │ │

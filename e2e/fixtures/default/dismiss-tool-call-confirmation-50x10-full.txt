@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-qZp
-mn8-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-CcP
+x6o-worktree-001
 
  Tips for getting started:
 
@@ -23,8 +23,8 @@ eer for the best
 ● I'll use the mcp everything echo tool to
   echo a message.
 
-● everything:echo (MCP)(message: "Hello!
-                       This is an echo test
+● everything:echo (MCP)(message: "Hello! This
+                        is an echo message
                        using the MCP
                        everything echo
                        tool.")
@@ -33,15 +33,15 @@ eer for the best
 │ Tool use                                       │
 │                                                │
 │   everything:echo(message: "Hello! This is     │
-│   an echo test using the MCP everything echo   │
-│    tool.") (MCP)                               │
+│   an echo message using the MCP everything     │
+│   echo tool.") (MCP)                           │
 │   Echoes back the input                        │
 │                                                │
 │ Do you want to proceed?                        │
 │ ❯ 1. Yes                                       │
 │  2. Yes, and don't ask again for               │
 │  everything:echo commands in /home/mike/code/w │
-│  orktrees/control-test-qZpmn8-worktree-001     │
+│  orktrees/control-test-CcPx6o-worktree-001     │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 │                                                │
