@@ -2,7 +2,7 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/control-test-q2QGOm- │
+│ /home/mike/code/worktrees/control-test-lCLLRF- │
 │ worktree-001                                   │
 │                                                │
 │ Claude Code may read files in this folder.     │
@@ -10,14 +10,17 @@
 │ to behave in unexpected ways.                  │
 │                                                │
 │ With your permission Claude Code may execute   │
-│ files in this folder. Executing untrusted code │
-│  is unsafe.                                    │
+│ files in this folder. This project also        │
+│ contains MCP servers defined in .mcp.json that │
+│  can execute code on your machine if enabled.  │
+│ Executing untrusted code is unsafe.            │
 │                                                │
 │ https://docs.anthropic.com/s/claude-code-secur │
 │ ity                                            │
 │                                                │
-│ ❯ 1. Yes, proceed                              │
-│   2. No, exit                                  │
+│ ❯ 1. Yes, proceed with MCP servers enabled     │
+│   2. Yes, proceed with MCP servers disabled    │
+│   3. No, exit                                  │
 │                                                │
 ╰────────────────────────────────────────────────╯
    Enter to confirm · Esc to exit
@@ -25,8 +28,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-q2Q
-GOm-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-lCL
+LRF-worktree-001
 
  Tips for getting started:
 
@@ -41,7 +44,7 @@ eer for the best
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "fix typecheck errors"                   │
+│ > Try "how do I log an error?"                 │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

@@ -1,7 +1,7 @@
 │ ❯ 1. Yes                                       │
 │  2. Yes, and don't ask again for ls commands   │
-│  in /home/mike/code/worktrees/control-test-cwa │
-│  9jw-worktree-001                              │
+│  in /home/mike/code/worktrees/control-test-s47 │
+│  I8e-worktree-001                              │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 ╰────────────────────────────────────────────────╯

@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-cwa
-9jw-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-s47
+I8e-worktree-001
 
  Tips for getting started:
 
@@ -16,18 +16,18 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Use /permissions to pre-approve and pre-de
-ny bash, edit, and
- MCP tools
+ ※ Tip: Did you know you can drag and drop image f
+iles into your
+ terminal?
 
 
 > Run 'ls -lsa /tmp' in the current directory
 
-● I'll run the ls -lsa command on the /tmp
-  directory to show all files including
-  hidden ones with detailed information.
+● I'll run the ls -lsa /tmp command to show
+  you a detailed listing of the /tmp
+  directory.
 
-● Bash(ls -lsa /tmp)
+  Bash(ls -lsa /tmp)
   ⎿  Running…
 
 ╭────────────────────────────────────────────────╮
@@ -39,8 +39,8 @@ ny bash, edit, and
 │ Do you want to proceed?                        │
 │ ❯ 1. Yes                                       │
 │  2. Yes, and don't ask again for ls commands   │
-│  in /home/mike/code/worktrees/control-test-cwa │
-│  9jw-worktree-001                              │
+│  in /home/mike/code/worktrees/control-test-s47 │
+│  I8e-worktree-001                              │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 ╰────────────────────────────────────────────────╯

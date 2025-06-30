@@ -254,6 +254,12 @@ function createTempProject(configContent: string): string {
 
   writeFileSync(join(tempDir, 'readme.md'), '')
 
+  const mcpJsonPath = join(__dirname, '..', '.mcp.json')
+  if (existsSync(mcpJsonPath)) {
+    copyFileSync(mcpJsonPath, join(tempDir, '.mcp.json'))
+    console.error('Copied .mcp.json to test repository')
+  }
+
   execSync('git add .', { cwd: tempDir })
   execSync('git commit -m "Initial commit"', { cwd: tempDir })
 

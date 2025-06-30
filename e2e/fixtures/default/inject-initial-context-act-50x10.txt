@@ -1,8 +1,8 @@
-    results
+
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "write a test for <filepath>"            │
+│ > Try "fix typecheck errors"                   │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

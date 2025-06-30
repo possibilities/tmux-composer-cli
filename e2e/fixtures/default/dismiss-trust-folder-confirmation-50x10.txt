@@ -1,9 +1,9 @@
-│                                                │
 │ https://docs.anthropic.com/s/claude-code-secur │
 │ ity                                            │
 │                                                │
-│ ❯ 1. Yes, proceed                              │
-│   2. No, exit                                  │
+│ ❯ 1. Yes, proceed with MCP servers enabled     │
+│   2. Yes, proceed with MCP servers disabled    │
+│   3. No, exit                                  │
 │                                                │
 ╰────────────────────────────────────────────────╯
    Enter to confirm · Esc to exit

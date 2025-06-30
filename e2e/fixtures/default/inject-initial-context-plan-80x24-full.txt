@@ -1,25 +1,27 @@
 claude
 
-┌─╼[21:00:38]
-└─╼[~/code/worktrees/control-test-QIkqvV-worktree-001]
- ╰╼[worktree-001]╾─╼[24072c0]
+┌─╼[22:38:48]
+└─╼[~/code/worktrees/control-test-jNpYJ2-worktree-001]
+ ╰╼[worktree-001]╾─╼[54fbd9f]
 ▶ claude
 ╭──────────────────────────────────────────────────────────────────────────────╮
 │                                                                              │
 │ Do you trust the files in this folder?                                       │
 │                                                                              │
-│ /home/mike/code/worktrees/control-test-QIkqvV-worktree-001                   │
+│ /home/mike/code/worktrees/control-test-jNpYJ2-worktree-001                   │
 │                                                                              │
 │ Claude Code may read files in this folder. Reading untrusted files may lead  │
 │ Claude Code to behave in unexpected ways.                                    │
 │                                                                              │
-│ With your permission Claude Code may execute files in this folder. Executing │
-│  untrusted code is unsafe.                                                   │
+│ With your permission Claude Code may execute files in this folder. This      │
+│ project also contains MCP servers defined in .mcp.json that can execute code │
+│  on your machine if enabled. Executing untrusted code is unsafe.             │
 │                                                                              │
 │ https://docs.anthropic.com/s/claude-code-security                            │
 │                                                                              │
-│ ❯ 1. Yes, proceed                                                            │
-│   2. No, exit                                                                │
+│ ❯ 1. Yes, proceed with MCP servers enabled                                   │
+│   2. Yes, proceed with MCP servers disabled                                  │
+│   3. No, exit                                                                │
 │                                                                              │
 ╰──────────────────────────────────────────────────────────────────────────────╯
    Enter to confirm · Esc to exit
@@ -28,7 +30,7 @@ claude
 │                                                                    │
 │   /help for help, /status for your current setup                   │
 │                                                                    │
-│   cwd: /home/mike/code/worktrees/control-test-QIkqvV-worktree-001  │
+│   cwd: /home/mike/code/worktrees/control-test-jNpYJ2-worktree-001  │
 ╰────────────────────────────────────────────────────────────────────╯
 
  Tips for getting started:
@@ -37,8 +39,11 @@ claude
  2. Use Claude to help with file analysis, editing, bash commands and git
  3. Be as specific as you would with another engineer for the best results
 
+ ※ Tip: Create custom slash commands by adding .md files to .claude/commands/ in
+  your project or ~/.claude/commands/ for commands that work in any project
+
 ╭──────────────────────────────────────────────────────────────────────────────╮
-│ > Try "edit <filepath> to..."                                                │
+│ > Try "how does <filepath> work?"                                            │
 ╰──────────────────────────────────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

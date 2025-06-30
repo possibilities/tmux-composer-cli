@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-bxx
-Mlo-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-37W
+RI0-worktree-001
 
  Tips for getting started:
 
@@ -15,10 +15,6 @@ ructions for Claude
  3. Be as specific as you would with another engin
 eer for the best
     results
-
- ※ Tip: Run claude --continue or claude --resume t
-o resume a
- conversation
 
 
 > Read the file
