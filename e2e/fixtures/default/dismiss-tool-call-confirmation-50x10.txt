@@ -1,6 +1,6 @@
 │  2. Yes, and don't ask again for               │
 │  everything:echo commands in /home/mike/code/w │
-│  orktrees/control-test-daOvHq-worktree-001     │
+│  orktrees/control-test-5PH2Ga-worktree-001     │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 │                                                │

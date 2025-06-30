@@ -1,8 +1,8 @@
- MCP tools
+    results
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "how do I log an error?"                 │
+│ > Try "create a util logging.py that..."       │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

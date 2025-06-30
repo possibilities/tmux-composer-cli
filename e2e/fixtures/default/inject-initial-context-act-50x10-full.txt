@@ -2,7 +2,7 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/control-test-6lRfvb- │
+│ /home/mike/code/worktrees/control-test-HUKQec- │
 │ worktree-001                                   │
 │                                                │
 │ Claude Code may read files in this folder.     │
@@ -28,8 +28,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-6lR
-fvb-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-HUK
+Qec-worktree-001
 
  Tips for getting started:
 
@@ -42,13 +42,9 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Use /permissions to pre-approve and pre-de
-ny bash, edit, and
- MCP tools
-
 
 ╭────────────────────────────────────────────────╮
-│ > Try "how do I log an error?"                 │
+│ > Try "create a util logging.py that..."       │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

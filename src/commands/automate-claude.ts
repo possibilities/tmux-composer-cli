@@ -297,7 +297,7 @@ export class TmuxAutomator {
 
         const sessionMode = getSessionEnvironment(
           sessionName,
-          'CONTROL_MODE',
+          'TMUX_COMPOSER_MODE',
           this.socketOptions,
         )
 

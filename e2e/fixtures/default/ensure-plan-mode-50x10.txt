@@ -1,8 +1,8 @@
- terminal?
+    results
 
 
 ╭────────────────────────────────────────────────╮
-│ > Try "how do I log an error?"                 │
+│ > Try "fix typecheck errors"                   │
 ╰────────────────────────────────────────────────╯
   ? for shortcuts
 

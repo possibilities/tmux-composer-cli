@@ -2,7 +2,7 @@
 │                                                │
 │ Do you trust the files in this folder?         │
 │                                                │
-│ /home/mike/code/worktrees/control-test-hH7QSx- │
+│ /home/mike/code/worktrees/control-test-WoYUIn- │
 │ worktree-001                                   │
 │                                                │
 │ Claude Code may read files in this folder.     │
@@ -28,8 +28,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-hH7
-QSx-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-WoY
+UIn-worktree-001
 
  Tips for getting started:
 
@@ -42,13 +42,9 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Press Esc twice to edit your previous mess
-ages
-
-
 
 ╭────────────────────────────────────────────────╮
-│ > Try "fix lint errors"                        │
+│ > Try "edit <filepath> to..."                  │
 ╰────────────────────────────────────────────────╯
   ⏸ plan mode on (shift+tab to cycle)
 

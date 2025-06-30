@@ -1,10 +1,10 @@
-
- ※ Tip: Want Claude to remember something? Hit # to add preferences, tools, and
- instructions to Claude's memory
+ 1. Run /init to create a CLAUDE.md file with instructions for Claude
+ 2. Use Claude to help with file analysis, editing, bash commands and git
+ 3. Be as specific as you would with another engineer for the best results
 
 > Read the file '/tmp/control-e2e-basic-date1.txt' and show he content
 
-● I'll read the file and show you its content.
+● I'll read the file and show its content.
 
 ● Read(../../../../../tmp/control-e2e-basic-date1.txt)
 

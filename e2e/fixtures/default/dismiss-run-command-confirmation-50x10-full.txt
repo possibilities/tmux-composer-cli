@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-nu5
-WGt-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-cZH
+760-worktree-001
 
  Tips for getting started:
 
@@ -16,16 +16,12 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Hit shift+tab to cycle between default mod
-e, auto-accept edit
- mode, and plan mode
-
 
 > Run 'ls -lsa /tmp' in the current directory
 
-● I'll run the ls -lsa /tmp command to show
-  you a detailed listing of the /tmp
-  directory.
+● I'll run the ls command to list the
+  contents of the /tmp directory with
+  detailed information.
 
   Bash(ls -lsa /tmp)
   ⎿  Running…
@@ -34,13 +30,13 @@ e, auto-accept edit
 │ Bash command                                   │
 │                                                │
 │   ls -lsa /tmp                                 │
-│   List all files in /tmp with details          │
+│   List /tmp directory contents with details    │
 │                                                │
 │ Do you want to proceed?                        │
 │ ❯ 1. Yes                                       │
 │  2. Yes, and don't ask again for ls commands   │
-│  in /home/mike/code/worktrees/control-test-nu5 │
-│  WGt-worktree-001                              │
+│  in /home/mike/code/worktrees/control-test-cZH │
+│  760-worktree-001                              │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 ╰────────────────────────────────────────────────╯

@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-uFb
-lXr-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-W9w
+P2G-worktree-001
 
  Tips for getting started:
 

@@ -2,8 +2,8 @@
 
    /help for help, /status for your current setup
 
-   cwd: /home/mike/code/worktrees/control-test-daO
-vHq-worktree-001
+   cwd: /home/mike/code/worktrees/control-test-5PH
+2Ga-worktree-001
 
  Tips for getting started:
 
@@ -16,36 +16,33 @@ ructions for Claude
 eer for the best
     results
 
- ※ Tip: Hit Enter to queue up additional messages
-while Claude is
- working.
-
 
 > Echo any message using the mcp everything
   echo tool
 
-● I'll use the MCP everything echo tool to
-  echo a message.
+● I'll echo a message using the
+  mcp__everything__echo tool.
 
-● everything:echo (MCP)(message: "Hello! This
-                        is an echoed message
-                       using the MCP
-                       everything echo
+● everything:echo (MCP)(message: "Hello!
+                       This is a test
+                       message being echoed
+                       through the MCP
+                       Everything echo
                        tool.")
 
 ╭────────────────────────────────────────────────╮
 │ Tool use                                       │
 │                                                │
-│   everything:echo(message: "Hello! This is     │
-│   an echoed message using the MCP everything   │
-│    echo tool.") (MCP)                          │
+│   everything:echo(message: "Hello! This is a   │
+│    test message being echoed through the MCP   │
+│    Everything echo tool.") (MCP)               │
 │   Echoes back the input                        │
 │                                                │
 │ Do you want to proceed?                        │
 │ ❯ 1. Yes                                       │
 │  2. Yes, and don't ask again for               │
 │  everything:echo commands in /home/mike/code/w │
-│  orktrees/control-test-daOvHq-worktree-001     │
+│  orktrees/control-test-5PH2Ga-worktree-001     │
 │  3. No, and tell Claude what to do differently │
 │   (esc)                                        │
 │                                                │

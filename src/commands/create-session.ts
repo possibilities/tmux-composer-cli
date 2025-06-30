@@ -181,7 +181,7 @@ export class SessionCreator {
       setTimeout(() => {
         const socketArgsStr = getTmuxSocketArgs(this.socketOptions).join(' ')
         execSync(
-          `tmux ${socketArgsStr} setenv -t ${sessionName} CONTROL_MODE ${mode}`,
+          `tmux ${socketArgsStr} setenv -t ${sessionName} TMUX_COMPOSER_MODE ${mode}`,
         )
       }, 50)
 
