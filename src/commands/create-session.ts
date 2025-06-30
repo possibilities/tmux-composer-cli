@@ -299,7 +299,7 @@ export class SessionCreator {
         }
 
         const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
-        const tempFile = `/tmp/control-context-${Date.now()}.txt`
+        const tempFile = `/tmp/tmux-composer-context-${Date.now()}.txt`
         fs.writeFileSync(tempFile, contextOutput)
         try {
           execSync(`tmux ${socketArgs} load-buffer ${tempFile}`)
