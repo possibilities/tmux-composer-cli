@@ -12,7 +12,7 @@ import {
   CODE_PATH,
   WORKTREES_PATH,
 } from '../core/git-utils.js'
-import { socketExists } from '../core/tmux-utils.js'
+import { socketExists, listWindows } from '../core/tmux-utils.js'
 import { TERMINAL_SIZES } from '../core/constants.js'
 import {
   parseTmuxComposerConfig,
@@ -81,13 +81,12 @@ export class SessionCreator {
       const socketArgs = socketArgsArr.join(' ')
       console.log(`\nTo attach: tmux ${socketArgs} attach -t ${sessionName}`)
 
-      // Attach after all windows have been created
+      // Wait for all windows to be created before attaching
       if (options.attach) {
-        setTimeout(() => {
-          spawnSync('tmux', [...socketArgsArr, 'attach', '-t', sessionName], {
-            stdio: 'inherit',
-          })
-        }, 300) // Wait for all windows to be created
+        await this.waitForWindows(sessionName, windows)
+        spawnSync('tmux', [...socketArgsArr, 'attach', '-t', sessionName], {
+          stdio: 'inherit',
+        })
       }
     } catch (error) {
       throw error
@@ -402,5 +401,34 @@ export class SessionCreator {
       throw new Error('Could not find an available port')
     }
     return port
+  }
+
+  private async waitForWindows(sessionName: string, expectedWindows: string[]) {
+    const maxAttempts = 30
+    let attempts = 0
+
+    while (attempts < maxAttempts) {
+      const actualWindows = await listWindows(sessionName, this.socketOptions)
+
+      // Check if all expected windows exist
+      const allWindowsCreated = expectedWindows.every(window =>
+        actualWindows.includes(window),
+      )
+
+      if (allWindowsCreated) {
+        // Give a tiny bit more time for windows to fully initialize
+        await new Promise(resolve => setTimeout(resolve, 50))
+        return
+      }
+
+      // Wait 100ms before checking again
+      await new Promise(resolve => setTimeout(resolve, 100))
+      attempts++
+    }
+
+    // If we get here, not all windows were created in time
+    console.warn(
+      'Warning: Not all expected windows were created within 3 seconds',
+    )
   }
 }
