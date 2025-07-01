@@ -4,6 +4,7 @@ import { TmuxAutomator } from './commands/automate-claude-old.js'
 import { TmuxSessionWatcher } from './commands/watch-session.js'
 import { TmuxPaneWatcher } from './commands/watch-panes.js'
 import { SessionCreator } from './commands/create-session.js'
+import { EventObserver } from './commands/observe-watchers.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
 import { MATCHERS } from './matchers.js'
 
@@ -66,7 +67,7 @@ async function main() {
 
   program
     .command('watch-session')
-    .description('Monitor tmux control mode events for current session')
+    .description('Watch for session changes')
     .action(async () => {
       const watcher = new TmuxSessionWatcher()
 
@@ -75,7 +76,7 @@ async function main() {
 
   program
     .command('watch-panes')
-    .description('Monitor pane change events in current tmux session')
+    .description('Watch for pane changes')
     .action(async () => {
       const watcher = new TmuxPaneWatcher()
 
@@ -84,7 +85,7 @@ async function main() {
 
   program
     .command('create-session <project-path>')
-    .description('Create a new tmux session with git worktree')
+    .description('Create worktree and session for project')
     .option('--mode <mode>', 'Session mode (act or plan)', 'act')
     .option('-L <socket-name>', 'Tmux socket name')
     .option('-S <socket-path>', 'Tmux socket path')
@@ -108,9 +109,16 @@ async function main() {
           ...socketOptions,
         })
       } catch (error) {
-        // Commands handle their own output via events
         process.exit(1)
       }
+    })
+
+  program
+    .command('observe-watchers')
+    .description('Observe all watchers')
+    .action(async () => {
+      const observer = new EventObserver()
+      await observer.start()
     })
 
   try {

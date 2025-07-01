@@ -2,6 +2,7 @@ import { spawn, ChildProcess } from 'child_process'
 import { promisify } from 'util'
 import { EventEmitter } from 'events'
 import { throttle } from '../core/throttle'
+import { enableZmqPublishing } from '../core/zmq-publisher.js'
 
 const sleep = promisify(setTimeout)
 
@@ -118,6 +119,8 @@ export class TmuxSessionWatcher extends EventEmitter {
   }
 
   async start() {
+    await enableZmqPublishing(this)
+
     try {
       const sessionName = await this.runCommand(
         'tmux display-message -p "#{session_name}"',

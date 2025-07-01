@@ -19,6 +19,7 @@ import {
   parseTmuxComposerConfig,
   type TmuxComposerConfig,
 } from '../schemas/config-schema.js'
+import { enableZmqPublishing } from '../core/zmq-publisher.js'
 
 interface CreateSessionOptions extends TmuxSocketOptions {
   mode?: 'act' | 'plan'
@@ -64,8 +65,10 @@ export class SessionCreator extends EventEmitter {
   async create(projectPath: string, options: CreateSessionOptions = {}) {
     const startTime = Date.now()
 
+    await enableZmqPublishing(this)
+
     // Emit initial event with all options
-    this.emitEvent('initialize-session-creation', {
+    this.emitEvent('initialize-session-creation:start', {
       projectPath,
       options: {
         mode: options.mode || 'act',
@@ -77,6 +80,11 @@ export class SessionCreator extends EventEmitter {
       },
     })
 
+    this.emitEvent('initialize-session-creation:end', {
+      duration: Date.now() - startTime,
+    })
+
+    const metadataStartTime = Date.now()
     this.emitEvent('analyze-project-metadata:start')
     const projectName = path.basename(projectPath)
     const worktreeNum = getNextWorktreeNumber(projectName)
@@ -86,7 +94,7 @@ export class SessionCreator extends EventEmitter {
       projectName,
       worktreeNumber: worktreeNum,
       sessionName,
-      duration: Date.now() - startTime,
+      duration: Date.now() - metadataStartTime,
     })
 
     const mode = options.mode || 'act'

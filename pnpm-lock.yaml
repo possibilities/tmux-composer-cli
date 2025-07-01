@@ -16,6 +16,9 @@ importers:
       lru-cache:
         specifier: ^11.1.0
         version: 11.1.0
+      zeromq:
+        specifier: ^6.1.2
+        version: 6.4.2
       zod:
         specifier: ^3.25.67
         version: 3.25.67
@@ -711,6 +714,13 @@ packages:
       }
     engines: { node: '>= 14.16.0' }
 
+  cmake-ts@0.6.1:
+    resolution:
+      {
+        integrity: sha512-uUn2qGhf20j8W/sQ7+UnvvqO1zNccqgbLgwRJi7S23FsjMWJqxvKK80Vc+tvLNKfpJzwH0rgoQD1l24SMnX0yg==,
+      }
+    hasBin: true
+
   color-convert@2.0.1:
     resolution:
       {
@@ -1081,6 +1091,13 @@ packages:
       }
     engines: { node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1 }
     hasBin: true
+
+  node-addon-api@8.4.0:
+    resolution:
+      {
+        integrity: sha512-D9DI/gXHvVmjHS08SVch0Em8G5S1P+QWtU31appcKT/8wFSPRcdHadIFSAntdMMVM5zz+/DL+bL/gz3UDppqtg==,
+      }
+    engines: { node: ^18 || ^20 || >= 21 }
 
   nodemon@3.1.10:
     resolution:
@@ -1650,6 +1667,13 @@ packages:
       }
     engines: { node: '>=12' }
 
+  zeromq@6.4.2:
+    resolution:
+      {
+        integrity: sha512-FnQlI4lEAewE4JexJ6kqQuBVzRf0Mg1n/qE3uXilfosf+X5lqJPiaYfdL/w4SzgAEVBTyqbMt9NbjwI5H89Yaw==,
+      }
+    engines: { node: '>= 12' }
+
   zod@3.25.67:
     resolution:
       {
@@ -1952,6 +1976,8 @@ snapshots:
     dependencies:
       readdirp: 4.1.2
 
+  cmake-ts@0.6.1: {}
+
   color-convert@2.0.1:
     dependencies:
       color-name: 1.1.4
@@ -2145,6 +2171,8 @@ snapshots:
       thenify-all: 1.6.0
 
   nanoid@3.3.11: {}
+
+  node-addon-api@8.4.0: {}
 
   nodemon@3.1.10:
     dependencies:
@@ -2499,5 +2527,10 @@ snapshots:
       ansi-styles: 6.2.1
       string-width: 5.1.2
       strip-ansi: 7.1.0
+
+  zeromq@6.4.2:
+    dependencies:
+      cmake-ts: 0.6.1
+      node-addon-api: 8.4.0
 
   zod@3.25.67: {}

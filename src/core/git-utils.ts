@@ -19,31 +19,45 @@ export function isGitRepositoryClean(projectPath: string): boolean {
 }
 
 export function getNextWorktreeNumber(projectName: string): string {
-  let i = 1
-  while (i < 1000) {
-    const num = i.toString().padStart(3, '0')
-    const worktreePath = path.join(
-      WORKTREES_PATH,
-      `${projectName}-worktree-${num}`,
-    )
+  const usedNumbers = new Set<number>()
 
-    try {
-      const branchExists = execSync(`git branch --list "worktree-${num}"`, {
-        cwd: path.join(CODE_PATH, projectName),
-        encoding: 'utf-8',
-      }).trim()
+  try {
+    const branches = execSync('git branch --list "worktree-*"', {
+      cwd: path.join(CODE_PATH, projectName),
+      encoding: 'utf-8',
+    }).trim()
 
-      if (!branchExists && !fs.existsSync(worktreePath)) {
-        return num
-      }
-    } catch {
-      if (!fs.existsSync(worktreePath)) {
-        return num
-      }
+    if (branches) {
+      const branchNumbers = branches
+        .split('\n')
+        .map(branch => branch.trim().replace(/^\*?\s*/, ''))
+        .filter(branch => /^worktree-\d{3}$/.test(branch))
+        .map(branch => parseInt(branch.substring(9), 10))
+
+      branchNumbers.forEach(num => usedNumbers.add(num))
     }
+  } catch {}
 
-    i++
+  if (fs.existsSync(WORKTREES_PATH)) {
+    try {
+      const dirs = fs.readdirSync(WORKTREES_PATH)
+      const pattern = new RegExp(`^${projectName}-worktree-(\\d{3})$`)
+
+      dirs.forEach(dir => {
+        const match = dir.match(pattern)
+        if (match) {
+          usedNumbers.add(parseInt(match[1], 10))
+        }
+      })
+    } catch {}
   }
+
+  for (let i = 1; i < 1000; i++) {
+    if (!usedNumbers.has(i)) {
+      return i.toString().padStart(3, '0')
+    }
+  }
+
   throw new Error('No available worktree numbers')
 }
 

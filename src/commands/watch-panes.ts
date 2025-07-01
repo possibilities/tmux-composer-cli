@@ -1,6 +1,7 @@
 import { spawn, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
 import { throttle } from '../core/throttle'
+import { enableZmqPublishing } from '../core/zmq-publisher.js'
 
 interface TmuxEvent {
   event: string
@@ -55,6 +56,8 @@ export class TmuxPaneWatcher extends EventEmitter {
   }
 
   async start() {
+    await enableZmqPublishing(this)
+
     try {
       const sessionName = await this.runCommand(
         'tmux display-message -p "#{session_name}"',
