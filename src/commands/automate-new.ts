@@ -37,7 +37,6 @@ export class TmuxAutomatorNew extends EventEmitter {
   constructor() {
     super()
 
-    // Set up default console logger
     this.on('event', event => {
       console.log(JSON.stringify(event))
     })
@@ -51,9 +50,6 @@ export class TmuxAutomatorNew extends EventEmitter {
   }
 
   async start() {
-    console.log('Starting tmux control mode monitor for current session...')
-
-    // Get current session ID (which is what control mode returns)
     try {
       const sessionName = await this.runCommand(
         'tmux display-message -p "#{session_name}"',
@@ -61,7 +57,6 @@ export class TmuxAutomatorNew extends EventEmitter {
       const sessionId = await this.runCommand(
         'tmux display-message -p "#{session_id}"',
       )
-      // Store both session name and ID
       this.currentSessionId = sessionId.trim()
       this.currentSessionName = sessionName.trim()
     } catch (error) {
@@ -113,9 +108,7 @@ export class TmuxAutomatorNew extends EventEmitter {
         this.controlModeProcess = null
       }
 
-      // Use control mode within current session
       const args = ['-C']
-      // Connecting to tmux control mode
 
       this.controlModeProcess = spawn('tmux', args, {
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -152,7 +145,6 @@ export class TmuxAutomatorNew extends EventEmitter {
     }
 
     const closeHandler = (code: number) => {
-      // Control mode process exited with code ${code}
       this.cleanupControlMode()
     }
 
@@ -179,7 +171,6 @@ export class TmuxAutomatorNew extends EventEmitter {
     await sleep(100)
 
     try {
-      // List all panes (we'll filter by session later)
       await this.writeToControlMode(
         `list-panes -a -F "PANE %#{pane_id} #{session_id}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n`,
       )
@@ -265,7 +256,6 @@ export class TmuxAutomatorNew extends EventEmitter {
           if (!this.hasDisplayedInitialList) {
             this.hasDisplayedInitialList = true
           }
-          // Emit if the pane list has changed or if forced after refresh
           const currentHash = this.computePaneListHash()
           if (
             currentHash !== this.lastPaneListHash ||
@@ -280,13 +270,11 @@ export class TmuxAutomatorNew extends EventEmitter {
 
       if (parts[0] === '%window-add') {
         const windowId = parts[1]
-        // Only process if it's from current session
         const info = this.windowIdMap.get(windowId)
         if (
           this.hasDisplayedInitialList &&
           (!info || info.session === this.currentSessionId)
         ) {
-          // Window added, refresh pane list
           setTimeout(() => {
             this.refreshPaneList().catch(error => {
               console.error('Failed to refresh pane list:', error)
@@ -313,7 +301,6 @@ export class TmuxAutomatorNew extends EventEmitter {
           }
 
           this.windowIdMap.delete(windowId)
-          // Window closed, panes removed
         }
       } else if (parts[0] === '%window-renamed') {
         const windowId = parts[1]
@@ -330,7 +317,6 @@ export class TmuxAutomatorNew extends EventEmitter {
               updatedCount++
             }
           }
-          // Window renamed
           this.emitPanesChanged()
         }
       } else if (parts[0] === '%layout-change') {
@@ -363,12 +349,10 @@ export class TmuxAutomatorNew extends EventEmitter {
             }
 
             if (hasChanges) {
-              // Window resized
               this.displayPaneList()
             }
           }
         }
-        // Layout changed
         setTimeout(() => {
           this.refreshPaneList().catch(error => {
             console.error('Failed to refresh pane list:', error)
@@ -377,15 +361,12 @@ export class TmuxAutomatorNew extends EventEmitter {
       } else if (parts[0] === '%session-window-changed') {
         const sessionId = parts[1]
         const windowId = parts[2]
-        // Active window changed
       } else if (parts[0] === '%session-changed') {
-        // Session focus changed - only log if it's our session
         const sessionId = parts[1]
         if (
           sessionId === this.currentSessionId ||
           sessionId === '$' + this.currentSessionId.replace('$', '')
         ) {
-          // Session focus changed
         }
       } else if (parts[0] === '%sessions-changed') {
         this.refreshPaneList().catch(error => {
@@ -423,8 +404,6 @@ export class TmuxAutomatorNew extends EventEmitter {
             const existingPane = this.panes.get(paneId)
             const hasClaude = command === 'claude'
 
-            // Only track panes from current session
-            // Compare both with and without $ prefix
             const sessionMatches =
               sessionName === this.currentSessionId ||
               sessionName === this.currentSessionId.replace('$', '') ||
@@ -457,7 +436,6 @@ export class TmuxAutomatorNew extends EventEmitter {
         setTimeout(() => this.emitPanesChanged(), 100)
       }
 
-      // Handle window-pane-changed (fired when panes are split/changed)
       if (parts[0] === '%window-pane-changed') {
         setTimeout(() => {
           this.refreshPaneList().catch(error => {
@@ -466,7 +444,6 @@ export class TmuxAutomatorNew extends EventEmitter {
         }, 100)
       }
 
-      // Handle unlinked-window-add (fired when new window is created)
       if (parts[0] === '%unlinked-window-add') {
         setTimeout(() => {
           this.refreshPaneList().catch(error => {
@@ -475,7 +452,6 @@ export class TmuxAutomatorNew extends EventEmitter {
         }, 100)
       }
 
-      // Log any unhandled events starting with %
       if (
         parts[0].startsWith('%') &&
         ![
@@ -496,7 +472,6 @@ export class TmuxAutomatorNew extends EventEmitter {
           '%unlinked-window-add',
         ].includes(parts[0])
       ) {
-        // Unhandled event: ${line}
       }
     } catch (error) {
       console.error('Error processing control mode output:', error)
@@ -505,7 +480,6 @@ export class TmuxAutomatorNew extends EventEmitter {
   }
 
   private computePaneListHash(): string {
-    // Create a deterministic string representation of the current pane state
     const paneData: string[] = []
     for (const [paneId, pane] of this.panes.entries()) {
       paneData.push(
@@ -517,10 +491,8 @@ export class TmuxAutomatorNew extends EventEmitter {
 
   private emitPanesChanged() {
     try {
-      // Update the hash since we've already checked it before calling this method
       this.lastPaneListHash = this.computePaneListHash()
 
-      // Build windows structure
       const windowsMap = new Map<string, any>()
 
       for (const [paneId, pane] of this.panes.entries()) {
@@ -552,7 +524,6 @@ export class TmuxAutomatorNew extends EventEmitter {
         })
       }
 
-      // Sort windows and panes
       const windows = Array.from(windowsMap.values()).sort(
         (a, b) => parseInt(a.windowIndex) - parseInt(b.windowIndex),
       )
@@ -563,7 +534,6 @@ export class TmuxAutomatorNew extends EventEmitter {
         )
       }
 
-      // Emit the event
       this.emitEvent('panes-changed', {
         sessionId: this.currentSessionId,
         sessionName: this.currentSessionName,
@@ -585,7 +555,7 @@ export class TmuxAutomatorNew extends EventEmitter {
         this.windowIdMap.clear()
         this.paneToKeyMap.clear()
         this.lastPaneListHash = ''
-        this.forceEmitAfterRefresh = true // Force emit after refresh completes
+        this.forceEmitAfterRefresh = true
         await this.writeToControlMode(
           `list-panes -a -F "PANE %#{pane_id} #{session_id}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n`,
         )
