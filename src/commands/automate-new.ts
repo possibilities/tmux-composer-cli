@@ -126,7 +126,7 @@ export class TmuxAutomatorNew extends EventEmitter {
         this.controlModeProcess = null
       }
 
-      const args = ['-C']
+      const args = ['-C', 'attach-session', '-t', this.currentSessionId]
 
       this.controlModeProcess = spawn('tmux', args, {
         stdio: ['pipe', 'pipe', 'pipe'],
