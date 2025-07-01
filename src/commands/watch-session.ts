@@ -27,6 +27,7 @@ interface WindowInfo {
 interface TmuxEvent {
   event: string
   data: any
+  timestamp: string
 }
 
 interface SessionChangedData {
@@ -111,6 +112,7 @@ export class TmuxSessionWatcher extends EventEmitter {
     const event: TmuxEvent = {
       event: eventName,
       data,
+      timestamp: new Date().toISOString(),
     }
     this.emit('event', event)
   }

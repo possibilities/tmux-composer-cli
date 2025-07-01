@@ -5,6 +5,7 @@ import { throttle } from '../core/throttle'
 interface TmuxEvent {
   event: string
   data: any
+  timestamp: string
 }
 
 interface PaneOutputData {
@@ -48,6 +49,7 @@ export class TmuxPaneWatcher extends EventEmitter {
     const event: TmuxEvent = {
       event: eventName,
       data,
+      timestamp: new Date().toISOString(),
     }
     this.emit('event', event)
   }
