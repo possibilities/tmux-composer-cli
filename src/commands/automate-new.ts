@@ -375,7 +375,7 @@ export class TmuxAutomatorNew extends EventEmitter {
             }
 
             if (hasChanges) {
-              this.displayPaneList()
+              this.emitPanesChanged()
             }
           }
         }
