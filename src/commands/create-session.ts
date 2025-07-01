@@ -68,7 +68,6 @@ export class SessionCreator extends EventEmitter {
 
     const socketPath = getTmuxSocketPath(this.socketOptions)
 
-    // We don't have session info yet, so we'll update it later
     await enableZmqPublishing(this, {
       zeromq: options.zeromq,
       source: {
@@ -77,7 +76,6 @@ export class SessionCreator extends EventEmitter {
       },
     })
 
-    // Emit initial event with all options
     this.emitEvent('initialize-session-creation:start', {
       projectPath,
       options: {
@@ -117,7 +115,6 @@ export class SessionCreator extends EventEmitter {
       throw new Error('Invalid mode. Must be either "act" or "plan".')
     }
 
-    // Start the main session creation process
     const sessionStartTime = Date.now()
     this.emitEvent('create-worktree-session:start')
 
@@ -144,7 +141,6 @@ export class SessionCreator extends EventEmitter {
         )
       }
 
-      // Get additional repo info for the event
       const branch = execSync('git branch --show-current', {
         cwd: projectPath,
         encoding: 'utf-8',
@@ -294,18 +290,15 @@ export class SessionCreator extends EventEmitter {
         totalDuration: Date.now() - startTime,
       })
 
-      // Wait for all windows to be created before attaching
       if (options.attach) {
         const attachStart = Date.now()
         this.emitEvent('attach-tmux-session:start')
 
         await this.waitForWindows(sessionName, windows)
 
-        // Ensure the work window is selected before attaching
         try {
           execSync(`tmux ${socketArgs} select-window -t ${sessionName}:work`)
         } catch (error) {
-          // Window might not exist or tmux might have issues, but we'll continue
           this.emitEvent('select-window:fail', {
             sessionName,
             window: 'work',
@@ -410,7 +403,6 @@ export class SessionCreator extends EventEmitter {
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
       const scripts = packageJson.scripts || {}
 
-      // Collect available scripts
       if (scripts) {
         availableScripts.push(...Object.keys(scripts))
       }
@@ -444,7 +436,6 @@ export class SessionCreator extends EventEmitter {
         const yamlData = yaml.load(tmuxComposerYamlContent)
         tmuxComposerConfig = parseTmuxComposerConfig(yamlData)
 
-        // Extract agent and context commands
         if (tmuxComposerConfig?.agents) {
           if (typeof tmuxComposerConfig.agents === 'string') {
             agentCommand = {
@@ -469,7 +460,7 @@ export class SessionCreator extends EventEmitter {
       } catch {}
 
       windows.push('work')
-      windows.push('control') // Control window is always created
+      windows.push('control')
 
       this.emitEvent('analyze-project-scripts:end', {
         availableScripts,
@@ -578,14 +569,12 @@ export class SessionCreator extends EventEmitter {
         throw new Error('Tmux server failed to start')
       }
 
-      // Get session ID after creation
       const sessionId = execSync(
         `tmux ${socketArgs.join(' ')} display-message -t ${sessionName} -p '#{session_id}'`,
         { encoding: 'utf-8' },
       ).trim()
 
       if (windowName === 'work') {
-        // Emit the session created event after first window
         this.emitEvent('create-tmux-session:end', {
           sessionName,
           sessionId,
@@ -600,7 +589,6 @@ export class SessionCreator extends EventEmitter {
         })
       }
 
-      // Wait for the pane to be ready before sending commands
       const paneReady = await this.waitForPaneReady(sessionName, windowName)
 
       if (!paneReady) {
@@ -625,8 +613,6 @@ export class SessionCreator extends EventEmitter {
       )
 
       firstWindowCreated = true
-
-      // Don't emit the end event yet for work window - it will be emitted after context loading
     }
 
     const createWindow = async (
@@ -644,7 +630,6 @@ export class SessionCreator extends EventEmitter {
         `tmux ${socketArgs} new-window -t ${sessionName} -n '${windowName}' -c ${worktreePath}`,
       )
 
-      // Wait for the pane to be ready before sending commands
       const paneReady = await this.waitForPaneReady(sessionName, windowName)
 
       if (!paneReady) {
@@ -665,13 +650,11 @@ export class SessionCreator extends EventEmitter {
 
       createdWindows.push(windowName)
 
-      // Get window ID
       const windowId = execSync(
         `tmux ${socketArgs} display-message -t ${sessionName}:${windowName} -p '#{window_id}'`,
         { encoding: 'utf-8' },
       ).trim()
 
-      // Emit success event
       const eventData: any = {
         windowName,
         windowIndex,
@@ -748,7 +731,6 @@ export class SessionCreator extends EventEmitter {
           execSync(`tmux ${socketArgs} load-buffer ${tempFile}`)
           contextLoaded = true
 
-          // Emit success event after buffer is loaded
           this.emitEvent('invoking-context-command:end', {
             command: contextCommand,
             mode,
@@ -774,7 +756,6 @@ export class SessionCreator extends EventEmitter {
         }
       }
 
-      // Now emit the work window end event with context info
       if (!firstWindowCreated) {
         const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
         const windowId = execSync(
@@ -870,7 +851,6 @@ export class SessionCreator extends EventEmitter {
       windowIndex++
     }
 
-    // Create control window
     if (expectedWindows.includes('control')) {
       const controlStart = Date.now()
       this.emitEvent('create-tmux-window:control:start')
@@ -881,7 +861,6 @@ export class SessionCreator extends EventEmitter {
           `tmux ${socketArgs} new-window -t ${sessionName} -n 'control' -c ${worktreePath}`,
         )
 
-        // Wait for control window to be created
         let controlWindowCreated = false
         let attempts = 0
         const maxAttempts = 30
@@ -899,9 +878,7 @@ export class SessionCreator extends EventEmitter {
               controlWindowCreated = true
               break
             }
-          } catch {
-            // Window might not exist yet
-          }
+          } catch {}
 
           execSync('sleep 0.1')
           attempts++
@@ -911,7 +888,6 @@ export class SessionCreator extends EventEmitter {
           throw new Error('Control window failed to create within timeout')
         }
 
-        // Now send commands to the control window
         execSync(
           `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer watch-session | jq .' Enter`,
         )
@@ -922,7 +898,6 @@ export class SessionCreator extends EventEmitter {
           `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer watch-panes | jq .' Enter`,
         )
 
-        // Get window ID
         const windowId = execSync(
           `tmux ${socketArgs} display-message -t ${sessionName}:control -p '#{window_id}'`,
           { encoding: 'utf-8' },
@@ -995,7 +970,6 @@ export class SessionCreator extends EventEmitter {
       )
 
       if (allWindowsCreated) {
-        // Give a tiny bit more time for windows to fully initialize
         await new Promise(resolve => setTimeout(resolve, 50))
         return
       }
@@ -1005,7 +979,6 @@ export class SessionCreator extends EventEmitter {
       attempts++
     }
 
-    // If we get here, not all windows were created in time
     this.emitEvent('attach-tmux-session:end', {
       sessionName,
       windowsReady: false,
@@ -1021,11 +994,10 @@ export class SessionCreator extends EventEmitter {
   ): Promise<boolean> {
     const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
     const startTime = Date.now()
-    const checkInterval = 100 // Check every 100ms
+    const checkInterval = 100
 
     while (Date.now() - startTime < maxWaitMs) {
       try {
-        // Check if the pane exists and get its current command
         const paneInfo = execSync(
           `tmux ${socketArgs} list-panes -t ${sessionName}:${windowName} -F '#{pane_pid} #{pane_current_command}'`,
           { encoding: 'utf-8' },
@@ -1034,7 +1006,6 @@ export class SessionCreator extends EventEmitter {
         if (paneInfo) {
           const [pid, currentCommand] = paneInfo.split(' ')
 
-          // Check if the pane has a shell ready (bash, zsh, sh, etc.)
           const shellCommands = [
             'bash',
             'zsh',
@@ -1049,14 +1020,11 @@ export class SessionCreator extends EventEmitter {
           )
 
           if (pid && isShellReady) {
-            // Additional small delay to ensure shell is fully initialized
             await new Promise(resolve => setTimeout(resolve, 50))
             return true
           }
         }
-      } catch (error) {
-        // Pane might not exist yet, continue waiting
-      }
+      } catch (error) {}
 
       await new Promise(resolve => setTimeout(resolve, checkInterval))
     }

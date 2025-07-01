@@ -68,9 +68,6 @@ interface NodeError extends Error {
   code?: string
 }
 
-/**
- * Normalizes a tmux session ID by ensuring it has a '$' prefix
- */
 function normalizeSessionId(id: string): string {
   return id.startsWith('$') ? id : `$${id}`
 }
@@ -102,7 +99,6 @@ export class TmuxSessionWatcher extends EventEmitter {
       console.log(JSON.stringify(event))
     })
 
-    // Create throttled version of refreshPaneList with 150ms delay
     this.throttledRefreshPaneList = throttle(() => {
       this.refreshPaneList().catch(error => {
         console.error('Failed to refresh pane list:', error)
@@ -462,7 +458,6 @@ export class TmuxSessionWatcher extends EventEmitter {
       } else if (parts[0] === '%session-changed') {
         const sessionId = normalizeSessionId(parts[1])
         if (sessionId === this.currentSessionId) {
-          // Session changed to our current session
         }
       } else if (parts[0] === '%sessions-changed') {
         this.refreshPaneList().catch(error => {
@@ -528,7 +523,6 @@ export class TmuxSessionWatcher extends EventEmitter {
       }
 
       if (parts[0] === '%window-close') {
-        // Emit immediately for critical event
         this.emitSessionChanged()
       }
 

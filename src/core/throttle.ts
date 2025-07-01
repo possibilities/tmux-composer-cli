@@ -1,9 +1,3 @@
-/**
- * Creates a throttled function that fires on both leading and trailing edges
- * @param func The function to throttle
- * @param wait The number of milliseconds to throttle
- * @returns A throttled version of the function
- */
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
   wait: number,
@@ -21,10 +15,8 @@ export function throttle<T extends (...args: any[]) => any>(
     const now = Date.now()
     const timeSinceLastCall = now - lastCallTime
 
-    // Store latest args for potential trailing call
     lastArgs = args
 
-    // Leading edge
     if (timeSinceLastCall >= wait) {
       if (timeout) {
         clearTimeout(timeout)
@@ -33,7 +25,6 @@ export function throttle<T extends (...args: any[]) => any>(
       invokeFunc(args)
     }
 
-    // Set up trailing edge
     if (!timeout) {
       const remainingTime = wait - timeSinceLastCall
       timeout = setTimeout(

@@ -39,7 +39,6 @@ export class TmuxPaneWatcher extends EventEmitter {
   constructor() {
     super()
 
-    // Get our own pane ID from environment
     this.ownPaneId = process.env.TMUX_PANE || null
 
     this.on('event', (event: TmuxEvent) => {
@@ -150,7 +149,6 @@ export class TmuxPaneWatcher extends EventEmitter {
       try {
         const output = data.toString()
 
-        // Handle both LF and CRLF line endings
         const lines = output.split(/\r?\n/).filter(line => line.trim())
 
         for (const line of lines) {
@@ -198,7 +196,6 @@ export class TmuxPaneWatcher extends EventEmitter {
 
     this.isConnected = true
 
-    // Wait a bit for control mode to initialize
     await new Promise(resolve => setTimeout(resolve, 100))
 
     return true
@@ -231,7 +228,6 @@ export class TmuxPaneWatcher extends EventEmitter {
     sessionId: string
   } | null> {
     try {
-      // Use display-message to get pane info directly
       const result = await this.runCommand(
         `tmux display-message -t ${paneId} -p "#{session_id} #{window_index} #{window_name} #{window_id}"`,
       )
@@ -267,23 +263,18 @@ export class TmuxPaneWatcher extends EventEmitter {
 
   private async processControlModeOutput(line: string) {
     try {
-      // Use limited split to avoid parsing huge payloads
       const parts = line.split(' ', 3)
 
       if (parts[0] === '%output') {
-        // Handle pane output event - parts[1] is paneId, parts[2] onwards is payload (ignored)
         const paneId = parts[1]
 
-        // Skip output from our own pane
         if (paneId === this.ownPaneId) {
           return
         }
 
-        // Query pane info on demand
         try {
           const paneInfo = await this.getPaneInfo(paneId)
 
-          // Skip panes not in our session
           if (
             !paneInfo ||
             normalizeSessionId(paneInfo.sessionId) !== this.currentSessionId
@@ -291,7 +282,6 @@ export class TmuxPaneWatcher extends EventEmitter {
             return
           }
 
-          // Skip panes in the same window as this watcher
           if (paneInfo.windowId === this.ownWindowId) {
             return
           }
@@ -303,7 +293,6 @@ export class TmuxPaneWatcher extends EventEmitter {
             windowIndex: paneInfo.windowIndex,
           }
 
-          // Get or create throttled emitter for this pane
           let throttledEmitter = this.paneThrottlers.get(paneId)
           if (!throttledEmitter) {
             throttledEmitter = throttle((data: any) => {
@@ -312,7 +301,6 @@ export class TmuxPaneWatcher extends EventEmitter {
             this.paneThrottlers.set(paneId, throttledEmitter)
           }
 
-          // Call throttled emitter with latest data
           throttledEmitter(data)
         } catch (error) {
           console.error(`[DEBUG] Failed to get pane info for ${paneId}:`, error)
@@ -327,7 +315,6 @@ export class TmuxPaneWatcher extends EventEmitter {
   private shutdown() {
     this.isShuttingDown = true
 
-    // Clear throttlers
     this.paneThrottlers.clear()
 
     if (this.controlModeProcess) {

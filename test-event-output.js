@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 
-// Simple test to verify event output format
 import { SessionCreator } from './dist/cli.js'
 
 const creator = new SessionCreator()
 
-// Override the create method to emit test events
 creator.emitEvent('initialize-session-creation', {
   projectPath: '/test/path',
   options: {
