@@ -67,16 +67,9 @@ async function main() {
 
   claudeCommand
     .command('automate-new')
-    .description('New automation approach (does nothing for now)')
-    .option('-L <socket-name>', 'Tmux socket name')
-    .option('-S <socket-path>', 'Tmux socket path')
-    .action(async options => {
-      const socketOptions: TmuxSocketOptions = {
-        socketName: options.L,
-        socketPath: options.S,
-      }
-
-      const automator = new TmuxAutomatorNew(socketOptions)
+    .description('Monitor tmux control mode events for current session')
+    .action(async () => {
+      const automator = new TmuxAutomatorNew()
 
       await automator.start()
     })

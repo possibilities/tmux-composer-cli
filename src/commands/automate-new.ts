@@ -1,17 +1,11 @@
-import type { TmuxSocketOptions } from '../core/tmux-socket.js'
-import { getTmuxSocketString } from '../core/tmux-socket.js'
-import { socketExists } from '../core/tmux-utils.js'
-import { PANE_OUTPUT_THROTTLE_MS } from '../core/constants.js'
 import { spawn } from 'child_process'
 import { promisify } from 'util'
 
 const sleep = promisify(setTimeout)
 
-interface AutomateNewOptions extends TmuxSocketOptions {}
-
 export class TmuxAutomatorNew {
-  private socketOptions: TmuxSocketOptions
   private controlModeProcess: any = null
+  private currentSessionName: string | null = null
   private isConnected = false
   private isShuttingDown = false
   private panes = new Map<
@@ -35,105 +29,55 @@ export class TmuxAutomatorNew {
   private claudeCheckInterval: NodeJS.Timeout | null = null
   private isCheckingClaude = false
   private claudeCheckResults = new Map<string, boolean>()
-  private reconnectAttempts = 0
-  private maxReconnectAttempts = 10
-  private baseReconnectDelay = 1000
-  private maxReconnectDelay = 30000
   private lastPaneListHash = ''
 
-  constructor(options: AutomateNewOptions = {}) {
-    this.socketOptions = {
-      socketName: options.socketName,
-      socketPath: options.socketPath,
-    }
-  }
+  constructor() {}
 
   async start() {
-    console.log('Starting tmux control mode monitor...')
+    console.log('Starting tmux control mode monitor for current session...')
+
+    // Get current session ID (which is what control mode returns)
+    try {
+      const sessionName = await this.runCommand(
+        'tmux display-message -p "#{session_name}"',
+      )
+      const sessionId = await this.runCommand(
+        'tmux display-message -p "#{session_id}"',
+      )
+      // Store both formats - with and without $ prefix
+      this.currentSessionName = sessionId.trim()
+      console.log(
+        `Monitoring session: ${sessionName.trim()} (ID: ${this.currentSessionName})`,
+      )
+    } catch (error) {
+      console.error(
+        'Failed to get current session. Are you running inside tmux?',
+      )
+      process.exit(1)
+    }
 
     this.setupSignalHandlers()
-    await this.monitorAndConnect()
+    await this.connectControlMode()
+  }
+
+  private async runCommand(command: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const child = spawn('sh', ['-c', command])
+      let output = ''
+      child.stdout.on('data', data => {
+        output += data.toString()
+      })
+      child.on('close', code => {
+        if (code === 0) resolve(output)
+        else reject(new Error(`Command failed with code ${code}`))
+      })
+    })
   }
 
   private setupSignalHandlers() {
     const signalHandler = () => this.shutdown()
     process.on('SIGINT', signalHandler)
     process.on('SIGTERM', signalHandler)
-  }
-
-  private async monitorAndConnect() {
-    let waitingMessageShown = false
-    while (!this.isShuttingDown) {
-      try {
-        if (!socketExists(this.socketOptions)) {
-          if (this.isConnected) {
-            console.log('Tmux server disconnected. Waiting for reconnection...')
-            this.isConnected = false
-            waitingMessageShown = true
-            this.reconnectAttempts = 0
-            this.panes.clear()
-            this.windowIdMap.clear()
-            this.paneToKeyMap.clear()
-            this.hasDisplayedInitialList = false
-            this.lastPaneListHash = ''
-            if (this.claudeCheckInterval) {
-              clearInterval(this.claudeCheckInterval)
-              this.claudeCheckInterval = null
-            }
-          } else if (!waitingMessageShown) {
-            console.log('Waiting for tmux server...')
-            waitingMessageShown = true
-          }
-          await sleep(1000)
-          continue
-        }
-
-        if (!this.isConnected) {
-          const delay = this.getReconnectDelay()
-          if (this.reconnectAttempts > 0) {
-            console.log(
-              `Reconnection attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} (waiting ${delay}ms)...`,
-            )
-          } else {
-            console.log('Tmux server detected. Connecting in control mode...')
-          }
-          waitingMessageShown = false
-
-          this.panes.clear()
-          this.windowIdMap.clear()
-          this.paneToKeyMap.clear()
-          this.hasDisplayedInitialList = false
-          this.lastPaneListHash = ''
-
-          const connected = await this.connectControlMode()
-          if (!connected) {
-            this.reconnectAttempts++
-            if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-              console.error('Max reconnection attempts reached. Exiting...')
-              this.shutdown()
-            }
-            await sleep(delay)
-            continue
-          }
-
-          this.reconnectAttempts = 0
-        }
-
-        await sleep(1000)
-      } catch (error) {
-        console.error('Error in monitor loop:', error)
-        await sleep(5000)
-      }
-    }
-  }
-
-  private getReconnectDelay(): number {
-    const exponentialDelay = Math.min(
-      this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts),
-      this.maxReconnectDelay,
-    )
-    const jitter = exponentialDelay * 0.25 * (Math.random() * 2 - 1)
-    return Math.floor(exponentialDelay + jitter)
   }
 
   private async connectControlMode(): Promise<boolean> {
@@ -154,10 +98,9 @@ export class TmuxAutomatorNew {
         this.controlModeProcess = null
       }
 
-      const socketArgs = getTmuxSocketString(this.socketOptions)
-      const args = socketArgs.split(' ').concat(['-C', 'attach'])
-
-      console.log(`Connecting with args: tmux ${args.join(' ')}`)
+      // Use control mode within current session
+      const args = ['-C']
+      console.log('Connecting to tmux control mode...')
 
       this.controlModeProcess = spawn('tmux', args, {
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -221,8 +164,9 @@ export class TmuxAutomatorNew {
     await sleep(100)
 
     try {
+      // List all panes (we'll filter by session later)
       await this.writeToControlMode(
-        'list-panes -a -F "PANE %#{pane_id} #{session_name}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n',
+        `list-panes -a -F "PANE %#{pane_id} #{session_id}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n`,
       )
 
       this.startClaudeChecking()
@@ -317,7 +261,12 @@ export class TmuxAutomatorNew {
 
       if (parts[0] === '%window-add') {
         const windowId = parts[1]
-        if (this.hasDisplayedInitialList) {
+        // Only process if it's from current session
+        const info = this.windowIdMap.get(windowId)
+        if (
+          this.hasDisplayedInitialList &&
+          (!info || info.session === this.currentSessionName)
+        ) {
           console.log(`Window added: ${windowId}`)
           setTimeout(() => {
             console.log('Checking for claude in new window...')
@@ -329,7 +278,7 @@ export class TmuxAutomatorNew {
       } else if (parts[0] === '%window-close') {
         const windowId = parts[1]
         const info = this.windowIdMap.get(windowId)
-        if (info) {
+        if (info && info.session === this.currentSessionName) {
           const panesToRemove: string[] = []
           for (const [paneId, pane] of this.panes) {
             if (
@@ -354,7 +303,7 @@ export class TmuxAutomatorNew {
         const windowId = parts[1]
         const newName = parts.slice(2).join(' ')
         const info = this.windowIdMap.get(windowId)
-        if (info) {
+        if (info && info.session === this.currentSessionName) {
           let updatedCount = 0
           for (const [paneId, pane] of this.panes) {
             if (
@@ -377,7 +326,7 @@ export class TmuxAutomatorNew {
         if (layoutMatch) {
           const [_, width, height] = layoutMatch
           const info = this.windowIdMap.get(windowId)
-          if (info) {
+          if (info && info.session === this.currentSessionName) {
             const key = `${info.session}:${info.index}`
             const widthNum = parseInt(width, 10)
             const heightNum = parseInt(height, 10)
@@ -453,30 +402,64 @@ export class TmuxAutomatorNew {
             const existingPane = this.panes.get(paneId)
             const hasClaude = command === 'claude'
 
-            this.panes.set(paneId, {
-              sessionName,
-              windowIndex,
-              paneIndex,
-              windowName: windowName.trim(),
-              command,
-              hasClaude,
-              firstSeen: existingPane?.firstSeen ?? Date.now(),
-              width: parseInt(width, 10),
-              height: parseInt(height, 10),
-            })
+            // Only track panes from current session
+            // Compare both with and without $ prefix
+            const sessionMatches =
+              sessionName === this.currentSessionName ||
+              sessionName === this.currentSessionName.replace('$', '') ||
+              '$' + sessionName === this.currentSessionName
+            if (sessionMatches) {
+              this.panes.set(paneId, {
+                sessionName,
+                windowIndex,
+                paneIndex,
+                windowName: windowName.trim(),
+                command,
+                hasClaude,
+                firstSeen: existingPane?.firstSeen ?? Date.now(),
+                width: parseInt(width, 10),
+                height: parseInt(height, 10),
+              })
 
-            this.paneToKeyMap.set(paneId, displayKey)
+              this.paneToKeyMap.set(paneId, displayKey)
 
-            this.windowIdMap.set(windowId, {
-              session: sessionName,
-              index: windowIndex,
-            })
+              this.windowIdMap.set(windowId, {
+                session: sessionName,
+                index: windowIndex,
+              })
+            }
           }
         }
       }
 
       if (parts[0] === '%window-close') {
         setTimeout(() => this.displayPaneList(), 100)
+      }
+
+      // Log any unhandled events starting with %
+      if (
+        parts[0].startsWith('%') &&
+        ![
+          '%begin',
+          '%end',
+          '%window-add',
+          '%window-close',
+          '%window-renamed',
+          '%layout-change',
+          '%session-window-changed',
+          '%sessions-changed',
+          '%output',
+          '%exit',
+          '%error',
+        ].includes(parts[0])
+      ) {
+        console.log(`[DEBUG] Unhandled event: ${line}`)
+        // For any unhandled event, refresh the pane list
+        setTimeout(() => {
+          this.refreshPaneList().catch(error => {
+            console.error('Failed to refresh pane list:', error)
+          })
+        }, 100)
       }
     } catch (error) {
       console.error('Error processing control mode output:', error)
@@ -500,7 +483,7 @@ export class TmuxAutomatorNew {
       // Update the hash since we've already checked it before calling this method
       this.lastPaneListHash = this.computePaneListHash()
 
-      console.log('\nCurrent panes:')
+      console.log('\nCurrent panes in this session:')
       const panesByWindow = new Map<string, Array<[string, any]>>()
 
       for (const [paneId, pane] of this.panes.entries()) {
@@ -544,7 +527,7 @@ export class TmuxAutomatorNew {
         this.paneToKeyMap.clear()
         this.lastPaneListHash = ''
         await this.writeToControlMode(
-          'list-panes -a -F "PANE %#{pane_id} #{session_name}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n',
+          `list-panes -a -F "PANE %#{pane_id} #{session_id}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n`,
         )
       } catch (error) {
         console.error('Failed to refresh pane list:', error)
@@ -622,7 +605,7 @@ export class TmuxAutomatorNew {
       this.claudeCheckResults.clear()
       this.isCheckingClaude = true
       await this.writeToControlMode(
-        'list-panes -a -F "CHECK %#{pane_id} #{pane_current_command}"\n',
+        `list-panes -a -F "CHECK %#{pane_id} #{pane_current_command}"\n`,
       )
     } catch (error) {
       console.error('Failed to check for Claude updates:', error)
