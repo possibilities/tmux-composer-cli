@@ -63,9 +63,7 @@ export class TmuxPaneWatcher extends EventEmitter {
       console.error(
         `[INFO] Monitoring panes in session ${this.currentSessionName}`,
       )
-      console.error(
-        `[INFO] Ignoring output from control windows (control-1, control-2)`,
-      )
+      console.error(`[INFO] Ignoring output from control window (control)`)
     } catch (error) {
       console.error(
         'Failed to get current session. Are you running inside tmux?',
@@ -256,12 +254,8 @@ export class TmuxPaneWatcher extends EventEmitter {
         try {
           const paneInfo = await this.getPaneInfo(paneId)
 
-          // Skip control windows
-          if (
-            paneInfo &&
-            (paneInfo.windowName === 'control-1' ||
-              paneInfo.windowName === 'control-2')
-          ) {
+          // Skip control window
+          if (paneInfo && paneInfo.windowName === 'control') {
             return
           }
 

@@ -330,18 +330,20 @@ export class SessionCreator {
       try {
         const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
         execSync(
-          `tmux ${socketArgs} new-window -t ${sessionName} -n 'control-1' -c ${worktreePath}`,
+          `tmux ${socketArgs} new-window -t ${sessionName} -n 'control' -c ${worktreePath}`,
         )
         execSync(
-          `tmux ${socketArgs} send-keys -t ${sessionName}:control-1 'tmux-composer watch-session | jq .' Enter`,
+          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer watch-session | jq .' Enter`,
         )
         execSync(
-          `tmux ${socketArgs} new-window -t ${sessionName} -n 'control-2' -c ${worktreePath}`,
+          `tmux ${socketArgs} split-window -t ${sessionName}:control -h -c ${worktreePath}`,
         )
         execSync(
-          `tmux ${socketArgs} send-keys -t ${sessionName}:control-2 'tmux-composer watch-panes | jq .' Enter`,
+          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer watch-panes | jq .' Enter`,
         )
-      } catch {}
+      } catch (error) {
+        console.error('Error creating control window:', error)
+      }
     }, 100)
 
     setTimeout(() => {
