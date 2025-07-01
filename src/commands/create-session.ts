@@ -330,7 +330,16 @@ export class SessionCreator {
       try {
         const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
         execSync(
-          `tmux ${socketArgs} new-window -t ${sessionName} -n 'control' -c ${worktreePath} 'tmux-composer claude automate-new | jq .'`,
+          `tmux ${socketArgs} new-window -t ${sessionName} -n 'control-1' -c ${worktreePath}`,
+        )
+        execSync(
+          `tmux ${socketArgs} send-keys -t ${sessionName}:control-1 'tmux-composer watch-session | jq .' Enter`,
+        )
+        execSync(
+          `tmux ${socketArgs} new-window -t ${sessionName} -n 'control-2' -c ${worktreePath}`,
+        )
+        execSync(
+          `tmux ${socketArgs} send-keys -t ${sessionName}:control-2 'tmux-composer watch-panes | jq .' Enter`,
         )
       } catch {}
     }, 100)

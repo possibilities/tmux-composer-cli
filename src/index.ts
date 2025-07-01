@@ -2,6 +2,7 @@ import { Command, Option } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
 import { TmuxAutomator } from './commands/automate-claude-old.js'
 import { TmuxSessionWatcher } from './commands/watch-session.js'
+import { TmuxPaneWatcher } from './commands/watch-panes.js'
 import { SessionCreator } from './commands/create-session.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
 import { MATCHERS } from './matchers.js'
@@ -68,6 +69,15 @@ async function main() {
     .description('Monitor tmux control mode events for current session')
     .action(async () => {
       const watcher = new TmuxSessionWatcher()
+
+      await watcher.start()
+    })
+
+  program
+    .command('watch-panes')
+    .description('Monitor pane output events in current tmux session')
+    .action(async () => {
+      const watcher = new TmuxPaneWatcher()
 
       await watcher.start()
     })
