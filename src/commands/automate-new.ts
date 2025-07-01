@@ -58,6 +58,13 @@ interface NodeError extends Error {
   code?: string
 }
 
+/**
+ * Normalizes a tmux session ID by ensuring it has a '$' prefix
+ */
+function normalizeSessionId(id: string): string {
+  return id.startsWith('$') ? id : `$${id}`
+}
+
 export class TmuxAutomatorNew extends EventEmitter {
   private controlModeProcess: ChildProcess | null = null
   private currentSessionName: string | null = null
@@ -100,7 +107,7 @@ export class TmuxAutomatorNew extends EventEmitter {
       const sessionId = await this.runCommand(
         'tmux display-message -p "#{session_id}"',
       )
-      this.currentSessionId = sessionId.trim()
+      this.currentSessionId = normalizeSessionId(sessionId.trim())
       this.currentSessionName = sessionName.trim()
     } catch (error) {
       console.error(
@@ -431,11 +438,9 @@ export class TmuxAutomatorNew extends EventEmitter {
         const sessionId = parts[1]
         const windowId = parts[2]
       } else if (parts[0] === '%session-changed') {
-        const sessionId = parts[1]
-        if (
-          sessionId === this.currentSessionId ||
-          sessionId === '$' + this.currentSessionId.replace('$', '')
-        ) {
+        const sessionId = normalizeSessionId(parts[1])
+        if (sessionId === this.currentSessionId) {
+          // Session changed to our current session
         }
       } else if (parts[0] === '%sessions-changed') {
         this.refreshPaneList().catch(error => {
@@ -459,7 +464,7 @@ export class TmuxAutomatorNew extends EventEmitter {
             const [
               _,
               paneId,
-              sessionName,
+              sessionIdStr,
               windowIndex,
               paneIndex,
               windowName,
@@ -468,18 +473,16 @@ export class TmuxAutomatorNew extends EventEmitter {
               height,
               windowId,
             ] = match
-            const displayKey = `${sessionName}:${windowIndex}.${paneIndex}`
+            const displayKey = `${sessionIdStr}:${windowIndex}.${paneIndex}`
 
             const existingPane = this.panes.get(paneId)
             const hasClaude = command === 'claude'
 
-            const sessionMatches =
-              sessionName === this.currentSessionId ||
-              sessionName === this.currentSessionId!.replace('$', '') ||
-              '$' + sessionName === this.currentSessionId
+            const capturedSessionId = normalizeSessionId(sessionIdStr)
+            const sessionMatches = capturedSessionId === this.currentSessionId
             if (sessionMatches) {
               this.panes.set(paneId, {
-                sessionName,
+                sessionName: capturedSessionId,
                 windowIndex,
                 paneIndex,
                 windowName: windowName.trim(),
@@ -493,7 +496,7 @@ export class TmuxAutomatorNew extends EventEmitter {
               this.paneToKeyMap.set(paneId, displayKey)
 
               this.windowIdMap.set(windowId, {
-                session: sessionName,
+                session: capturedSessionId,
                 index: windowIndex,
               })
             }
