@@ -75,7 +75,7 @@ async function main() {
 
   program
     .command('watch-panes')
-    .description('Monitor pane output events in current tmux session')
+    .description('Monitor pane change events in current tmux session')
     .action(async () => {
       const watcher = new TmuxPaneWatcher()
 

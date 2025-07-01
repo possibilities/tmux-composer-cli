@@ -283,7 +283,7 @@ export class TmuxPaneWatcher extends EventEmitter {
           let throttledEmitter = this.paneThrottlers.get(paneId)
           if (!throttledEmitter) {
             throttledEmitter = throttle((data: any) => {
-              this.emitEvent('pane-output', data)
+              this.emitEvent('pane-changed', data)
             }, 100)
             this.paneThrottlers.set(paneId, throttledEmitter)
           }
