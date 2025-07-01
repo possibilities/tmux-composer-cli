@@ -127,7 +127,7 @@ export class TmuxAutomatorNew extends EventEmitter {
   private hasDisplayedInitialList = false
   private claudeCheckInterval: NodeJS.Timeout | null = null
   private isCheckingClaude = false
-  private claudeCheckResults = new Map<string, boolean>()
+  private claudeCheckResults = new Map<string, string>()
   private lastPaneListHash = ''
   private forceEmitAfterRefresh = false
   private resizeHandler: (() => void) | null = null
@@ -498,10 +498,7 @@ export class TmuxAutomatorNew extends EventEmitter {
           const checkMatch = line.match(/^CHECK (%%\d+) (.+)$/)
           if (checkMatch) {
             const [_, paneId, command] = checkMatch
-
-            if (command === 'claude') {
-              this.claudeCheckResults.set(paneId, true)
-            }
+            this.claudeCheckResults.set(paneId, command)
           }
         } else if (line.startsWith('PANE ')) {
           const match = line.match(
@@ -686,12 +683,20 @@ export class TmuxAutomatorNew extends EventEmitter {
     let hasChanges = false
 
     for (const [paneId, pane] of this.panes) {
-      const hadClaude = pane.hasClaude
-      const hasClaude = this.claudeCheckResults.has(paneId)
+      const newCommand = this.claudeCheckResults.get(paneId)
 
-      if (hasClaude !== hadClaude) {
-        this.panes.set(paneId, { ...pane, hasClaude })
-        hasChanges = true
+      if (newCommand !== undefined) {
+        const hadClaude = pane.hasClaude
+        const hasClaude = newCommand === 'claude'
+
+        if (pane.command !== newCommand || hasClaude !== hadClaude) {
+          this.panes.set(paneId, {
+            ...pane,
+            command: newCommand,
+            hasClaude,
+          })
+          hasChanges = true
+        }
       }
     }
 
