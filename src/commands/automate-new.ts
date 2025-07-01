@@ -28,7 +28,7 @@ interface TmuxEvent {
   data: any
 }
 
-interface PanesChangedData {
+interface SessionChangedData {
   sessionId: string | null
   sessionName: string | null
   focusedWindowId: string | null
@@ -398,7 +398,7 @@ export class TmuxAutomatorNew extends EventEmitter {
             currentHash !== this.lastPaneListHash ||
             this.forceEmitAfterRefresh
           ) {
-            this.emitPanesChanged()
+            this.emitSessionChanged()
             this.forceEmitAfterRefresh = false
           }
         }
@@ -450,7 +450,7 @@ export class TmuxAutomatorNew extends EventEmitter {
               updatedCount++
             }
           }
-          this.emitPanesChanged()
+          this.emitSessionChanged()
         }
       } else if (parts[0] === '%layout-change') {
         const windowId = parts[1]
@@ -482,7 +482,7 @@ export class TmuxAutomatorNew extends EventEmitter {
             }
 
             if (hasChanges) {
-              this.emitPanesChanged()
+              this.emitSessionChanged()
             }
           }
         }
@@ -560,7 +560,7 @@ export class TmuxAutomatorNew extends EventEmitter {
 
       if (parts[0] === '%window-close') {
         // Emit immediately for critical event
-        this.emitPanesChanged()
+        this.emitSessionChanged()
       }
 
       if (parts[0] === '%window-pane-changed') {
@@ -608,7 +608,7 @@ export class TmuxAutomatorNew extends EventEmitter {
     return paneData.sort().join('|')
   }
 
-  private emitPanesChanged() {
+  private emitSessionChanged() {
     try {
       this.lastPaneListHash = this.computePaneListHash()
 
@@ -665,16 +665,16 @@ export class TmuxAutomatorNew extends EventEmitter {
         )
       }
 
-      const data: PanesChangedData = {
+      const data: SessionChangedData = {
         sessionId: this.currentSessionId,
         sessionName: this.currentSessionName,
         focusedWindowId,
         focusedPaneId,
         windows,
       }
-      this.emitEvent('panes-changed', data)
+      this.emitEvent('session-changed', data)
     } catch (error) {
-      console.error('Error emitting panes changed:', error)
+      console.error('Error emitting session changed:', error)
     }
   }
 
@@ -725,7 +725,7 @@ export class TmuxAutomatorNew extends EventEmitter {
     }
 
     if (hasChanges) {
-      this.emitPanesChanged()
+      this.emitSessionChanged()
     }
   }
 
