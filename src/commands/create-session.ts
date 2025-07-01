@@ -830,25 +830,27 @@ export class SessionCreator extends EventEmitter {
     if (expectedWindows.includes('control')) {
       const controlStart = Date.now()
       this.emitEvent('create-tmux-window:control:start')
-      
+
       try {
         const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
         execSync(
           `tmux ${socketArgs} new-window -t ${sessionName} -n 'control' -c ${worktreePath}`,
         )
-        
+
         // Wait for control window to be created
         let controlWindowCreated = false
         let attempts = 0
         const maxAttempts = 30
-        
+
         while (!controlWindowCreated && attempts < maxAttempts) {
           try {
             const windows = execSync(
               `tmux ${socketArgs} list-windows -t ${sessionName} -F '#{window_name}'`,
-              { encoding: 'utf-8' }
-            ).trim().split('\n')
-            
+              { encoding: 'utf-8' },
+            )
+              .trim()
+              .split('\n')
+
             if (windows.includes('control')) {
               controlWindowCreated = true
               break
@@ -856,15 +858,15 @@ export class SessionCreator extends EventEmitter {
           } catch {
             // Window might not exist yet
           }
-          
+
           execSync('sleep 0.1')
           attempts++
         }
-        
+
         if (!controlWindowCreated) {
           throw new Error('Control window failed to create within timeout')
         }
-        
+
         // Now send commands to the control window
         execSync(
           `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer watch-session | jq .' Enter`,
@@ -875,21 +877,24 @@ export class SessionCreator extends EventEmitter {
         execSync(
           `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer watch-panes | jq .' Enter`,
         )
-        
+
         // Get window ID
         const windowId = execSync(
           `tmux ${socketArgs} display-message -t ${sessionName}:control -p '#{window_id}'`,
           { encoding: 'utf-8' },
         ).trim()
-        
+
         this.emitEvent('create-tmux-window:control:end', {
           windowName: 'control',
           windowIndex,
           windowId,
-          commands: ['tmux-composer watch-session | jq .', 'tmux-composer watch-panes | jq .'],
+          commands: [
+            'tmux-composer watch-session | jq .',
+            'tmux-composer watch-panes | jq .',
+          ],
           duration: Date.now() - controlStart,
         })
-        
+
         createdWindows.push('control')
       } catch (error) {
         this.emitEvent('create-tmux-window:control:fail', {

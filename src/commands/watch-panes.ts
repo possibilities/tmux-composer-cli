@@ -284,7 +284,10 @@ export class TmuxPaneWatcher extends EventEmitter {
           const paneInfo = await this.getPaneInfo(paneId)
 
           // Skip panes not in our session
-          if (!paneInfo || normalizeSessionId(paneInfo.sessionId) !== this.currentSessionId) {
+          if (
+            !paneInfo ||
+            normalizeSessionId(paneInfo.sessionId) !== this.currentSessionId
+          ) {
             return
           }
 
