@@ -33,7 +33,7 @@ export class ZmqEventPublisher {
     try {
       this.publisher = new Publisher()
       this.publisher.linger = 1000
-      await this.publisher.bind(ZMQ_SOCKET_PATH)
+      await this.publisher.connect(ZMQ_SOCKET_PATH)
 
       await new Promise(resolve => setTimeout(resolve, 100))
 
@@ -74,7 +74,6 @@ export class ZmqEventPublisher {
   async disconnect(): Promise<void> {
     if (this.publisher) {
       try {
-        await this.publisher.unbind(ZMQ_SOCKET_PATH)
         await this.publisher.close()
       } catch (error) {
         console.error('[ZMQ] Error during disconnect:', error)

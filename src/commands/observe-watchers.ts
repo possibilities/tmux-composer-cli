@@ -9,7 +9,7 @@ export class EventObserver {
   async start(): Promise<void> {
     try {
       this.subscriber = new Subscriber()
-      await this.subscriber.connect(ZMQ_SOCKET_PATH)
+      await this.subscriber.bind(ZMQ_SOCKET_PATH)
       await this.subscriber.subscribe()
 
       this.isRunning = true
