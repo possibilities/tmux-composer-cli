@@ -27,6 +27,7 @@ export class TmuxPaneWatcher extends EventEmitter {
   private currentSessionId: string | null = null
   private currentSessionName: string | null = null
   private ownPaneId: string | null = null
+  private ownWindowId: string | null = null
   private isConnected = false
   private isShuttingDown = false
 
@@ -57,13 +58,17 @@ export class TmuxPaneWatcher extends EventEmitter {
       const sessionId = await this.runCommand(
         'tmux display-message -p "#{session_id}"',
       )
+      const windowId = await this.runCommand(
+        'tmux display-message -p "#{window_id}"',
+      )
       this.currentSessionId = normalizeSessionId(sessionId.trim())
       this.currentSessionName = sessionName.trim()
+      this.ownWindowId = windowId.trim()
 
       console.error(
         `[INFO] Monitoring panes in session ${this.currentSessionName}`,
       )
-      console.error(`[INFO] Ignoring output from control window (control)`)
+      console.error(`[INFO] Ignoring output from panes in the same window`)
     } catch (error) {
       console.error(
         'Failed to get current session. Are you running inside tmux?',
@@ -203,15 +208,21 @@ export class TmuxPaneWatcher extends EventEmitter {
 
   private async getPaneInfo(
     paneId: string,
-  ): Promise<{ windowIndex: string; windowName: string } | null> {
+  ): Promise<{
+    windowIndex: string
+    windowName: string
+    windowId: string
+  } | null> {
     try {
       // Use display-message to get pane info directly
       const result = await this.runCommand(
-        `tmux display-message -t ${paneId} -p "#{window_index} #{window_name}"`,
+        `tmux display-message -t ${paneId} -p "#{window_index} #{window_name} #{window_id}"`,
       )
-      const [windowIndex, ...nameParts] = result.trim().split(' ')
-      const windowName = nameParts.join(' ')
-      return { windowIndex, windowName }
+      const parts = result.trim().split(' ')
+      const windowIndex = parts[0]
+      const windowId = parts[parts.length - 1]
+      const windowName = parts.slice(1, -1).join(' ')
+      return { windowIndex, windowName, windowId }
     } catch (error) {
       return null
     }
@@ -254,8 +265,8 @@ export class TmuxPaneWatcher extends EventEmitter {
         try {
           const paneInfo = await this.getPaneInfo(paneId)
 
-          // Skip control window
-          if (paneInfo && paneInfo.windowName === 'control') {
+          // Skip panes in the same window as this watcher
+          if (paneInfo && paneInfo.windowId === this.ownWindowId) {
             return
           }
 
