@@ -40,14 +40,6 @@ export class TmuxAutomatorNew {
   private baseReconnectDelay = 1000
   private maxReconnectDelay = 30000
   private lastPaneListHash = ''
-  private paneOutputThrottles = new Map<
-    string,
-    {
-      timer: NodeJS.Timeout | null
-      lastOutput: number
-      pending: boolean
-    }
-  >()
 
   constructor(options: AutomateNewOptions = {}) {
     this.socketOptions = {
@@ -290,14 +282,6 @@ export class TmuxAutomatorNew {
     this.hasDisplayedInitialList = false
     this.lastPaneListHash = ''
 
-    // Clear throttle timers
-    for (const throttle of this.paneOutputThrottles.values()) {
-      if (throttle.timer) {
-        clearTimeout(throttle.timer)
-      }
-    }
-    this.paneOutputThrottles.clear()
-
     if (this.claudeCheckInterval) {
       clearInterval(this.claudeCheckInterval)
       this.claudeCheckInterval = null
@@ -359,12 +343,6 @@ export class TmuxAutomatorNew {
           for (const paneId of panesToRemove) {
             this.panes.delete(paneId)
             this.paneToKeyMap.delete(paneId)
-            // Clean up throttle for removed pane
-            const throttle = this.paneOutputThrottles.get(paneId)
-            if (throttle && throttle.timer) {
-              clearTimeout(throttle.timer)
-            }
-            this.paneOutputThrottles.delete(paneId)
           }
 
           this.windowIdMap.delete(windowId)
@@ -443,31 +421,6 @@ export class TmuxAutomatorNew {
         this.refreshPaneList().catch(error => {
           console.error('Failed to refresh pane list:', error)
         })
-      } else if (parts[0] === '%output') {
-        if (parts.length >= 2) {
-          const paneId = parts[1]
-          // Normalize pane ID format: %output uses %3, but list-panes uses %%3
-          const normalizedPaneId = paneId.startsWith('%')
-            ? '%' + paneId
-            : paneId
-          const displayKey = this.paneToKeyMap.get(normalizedPaneId)
-          const pane = this.panes.get(normalizedPaneId)
-
-          if (displayKey) {
-            // We have the pane mapped, throttle the change notification
-            this.throttlePaneOutput(normalizedPaneId, displayKey)
-          } else {
-            // Pane not mapped yet, trigger a refresh to catch new panes
-            console.log(`Pane changed: ${paneId} (unmapped, refreshing...)`)
-            this.refreshPaneList().catch(error => {
-              console.error(
-                'Failed to refresh pane list after unmapped output:',
-                error,
-              )
-            })
-          }
-        }
-        return
       } else if (this.inCommandOutput && !parts[0].startsWith('%')) {
         if (line.startsWith('CHECK ')) {
           const checkMatch = line.match(/^CHECK (%%\d+) (.+)$/)
@@ -528,64 +481,6 @@ export class TmuxAutomatorNew {
     } catch (error) {
       console.error('Error processing control mode output:', error)
       console.error('Line that caused error:', line)
-    }
-  }
-
-  private throttlePaneOutput(paneId: string, displayKey: string) {
-    const now = Date.now()
-    let throttle = this.paneOutputThrottles.get(paneId)
-
-    if (!throttle) {
-      // First output for this pane - fire immediately (leading edge)
-      console.log(`Pane changed: ${displayKey}`)
-      throttle = {
-        timer: null,
-        lastOutput: now,
-        pending: false,
-      }
-      this.paneOutputThrottles.set(paneId, throttle)
-
-      // Set up trailing edge timer
-      throttle.timer = setTimeout(() => {
-        const t = this.paneOutputThrottles.get(paneId)
-        if (t && t.pending) {
-          console.log(`Pane changed: ${displayKey}`)
-          t.pending = false
-          t.lastOutput = Date.now()
-        }
-        if (t) {
-          t.timer = null
-        }
-      }, PANE_OUTPUT_THROTTLE_MS)
-    } else {
-      // Subsequent output
-      const timeSinceLastOutput = now - throttle.lastOutput
-
-      if (timeSinceLastOutput >= PANE_OUTPUT_THROTTLE_MS) {
-        // Enough time has passed, fire immediately
-        console.log(`Pane changed: ${displayKey}`)
-        throttle.lastOutput = now
-        throttle.pending = false
-
-        // Reset timer for trailing edge
-        if (throttle.timer) {
-          clearTimeout(throttle.timer)
-        }
-        throttle.timer = setTimeout(() => {
-          const t = this.paneOutputThrottles.get(paneId)
-          if (t && t.pending) {
-            console.log(`Pane changed: ${displayKey}`)
-            t.pending = false
-            t.lastOutput = Date.now()
-          }
-          if (t) {
-            t.timer = null
-          }
-        }, PANE_OUTPUT_THROTTLE_MS)
-      } else {
-        // Too soon, mark as pending for trailing edge
-        throttle.pending = true
-      }
     }
   }
 
