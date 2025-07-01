@@ -2,6 +2,7 @@ import { execSync, spawn, spawnSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import yaml from 'js-yaml'
+import { EventEmitter } from 'events'
 import { getTmuxSocketArgs } from '../core/tmux-socket.js'
 import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 import {
@@ -26,75 +27,291 @@ interface CreateSessionOptions extends TmuxSocketOptions {
   attach?: boolean
 }
 
-export class SessionCreator {
+interface TmuxEvent {
+  event: string
+  data?: any
+  timestamp: string
+}
+
+export class SessionCreator extends EventEmitter {
   private socketOptions: TmuxSocketOptions
+  private lastEvent: TmuxEvent | null = null
+
   constructor(options: CreateSessionOptions = {}) {
+    super()
     this.socketOptions = {
       socketName: options.socketName,
       socketPath: options.socketPath,
     }
+
+    this.on('event', (event: TmuxEvent) => {
+      console.log(JSON.stringify(event))
+      this.lastEvent = event
+    })
+  }
+
+  private emitEvent(eventName: string, data?: any): void {
+    const event: TmuxEvent = {
+      event: eventName,
+      timestamp: new Date().toISOString(),
+    }
+    if (data !== undefined) {
+      event.data = data
+    }
+    this.emit('event', event)
   }
 
   async create(projectPath: string, options: CreateSessionOptions = {}) {
+    const startTime = Date.now()
+
+    // Emit initial event with all options
+    this.emitEvent('initialize-session-creation', {
+      projectPath,
+      options: {
+        mode: options.mode || 'act',
+        socketName: options.socketName,
+        socketPath: options.socketPath,
+        terminalWidth: options.terminalWidth,
+        terminalHeight: options.terminalHeight,
+        attach: options.attach,
+      },
+    })
+
+    this.emitEvent('analyze-project-metadata:start')
     const projectName = path.basename(projectPath)
     const worktreeNum = getNextWorktreeNumber(projectName)
     const sessionName = `${projectName}-worktree-${worktreeNum}`
+    this.emitEvent('analyze-project-metadata:end', {
+      projectPath,
+      projectName,
+      worktreeNumber: worktreeNum,
+      sessionName,
+      duration: Date.now() - startTime,
+    })
 
     const mode = options.mode || 'act'
     if (mode !== 'act' && mode !== 'plan') {
+      this.emitEvent('create-worktree-session:fail', {
+        error: 'Invalid mode. Must be either "act" or "plan".',
+        errorCode: 'INVALID_MODE',
+        duration: Date.now() - startTime,
+      })
       throw new Error('Invalid mode. Must be either "act" or "plan".')
     }
 
+    // Start the main session creation process
+    const sessionStartTime = Date.now()
+    this.emitEvent('create-worktree-session:start')
+
     try {
-      if (!isGitRepositoryClean(projectPath)) {
+      const repoCheckStart = Date.now()
+      this.emitEvent('ensure-clean-repository:start')
+      const isClean = isGitRepositoryClean(projectPath)
+
+      if (!isClean) {
+        this.emitEvent('ensure-clean-repository:fail', {
+          isClean: false,
+          error: 'Repository has uncommitted changes',
+          errorCode: 'DIRTY_REPOSITORY',
+          duration: Date.now() - repoCheckStart,
+        })
+        this.emitEvent('create-worktree-session:fail', {
+          error:
+            'Repository has uncommitted changes. Please commit or stash them first.',
+          errorCode: 'DIRTY_REPOSITORY',
+          duration: Date.now() - sessionStartTime,
+        })
         throw new Error(
           'Repository has uncommitted changes. Please commit or stash them first.',
         )
       }
 
+      // Get additional repo info for the event
+      const branch = execSync('git branch --show-current', {
+        cwd: projectPath,
+        encoding: 'utf-8',
+      }).trim()
+      const commitHash = execSync('git rev-parse HEAD', {
+        cwd: projectPath,
+        encoding: 'utf-8',
+      }).trim()
+
+      this.emitEvent('ensure-clean-repository:end', {
+        isClean: true,
+        branch,
+        commitHash,
+        uncommittedFiles: [],
+        stagedFiles: [],
+        duration: Date.now() - repoCheckStart,
+      })
+
       await fs.promises.mkdir(WORKTREES_PATH, { recursive: true })
-      const worktreePath = createWorktree(projectPath, projectName, worktreeNum)
 
-      installDependencies(worktreePath)
-
-      const expectedWindows = await this.getExpectedWindows(worktreePath)
-
-      const windows = await this.createTmuxSession(
-        sessionName,
-        worktreePath,
-        expectedWindows,
-        mode,
-        options.terminalWidth,
-        options.terminalHeight,
-      )
-
-      console.log(`\n✓ Session created successfully!`)
-      console.log(`\nSession name: ${sessionName}`)
-      console.log(`Worktree path: ${worktreePath}`)
-      if (windows.length) {
-        console.log('\nWindows:')
-        for (const w of windows) {
-          console.log(`  - ${w}`)
-        }
+      const worktreeStart = Date.now()
+      this.emitEvent('create-project-worktree:start')
+      let worktreePath: string
+      try {
+        worktreePath = createWorktree(projectPath, projectName, worktreeNum)
+        this.emitEvent('create-project-worktree:end', {
+          sourcePath: projectPath,
+          worktreePath,
+          branch,
+          worktreeNumber: worktreeNum,
+          duration: Date.now() - worktreeStart,
+        })
+      } catch (error) {
+        this.emitEvent('create-project-worktree:fail', {
+          error: error instanceof Error ? error.message : String(error),
+          sourcePath: projectPath,
+          worktreeNumber: worktreeNum,
+          duration: Date.now() - worktreeStart,
+        })
+        this.emitEvent('create-worktree-session:fail', {
+          error: `Failed to create worktree: ${error instanceof Error ? error.message : String(error)}`,
+          duration: Date.now() - sessionStartTime,
+        })
+        throw error
       }
+
+      const depsStart = Date.now()
+      this.emitEvent('install-project-dependencies:start')
+      try {
+        installDependencies(worktreePath)
+        this.emitEvent('install-project-dependencies:end', {
+          packageManager: 'pnpm',
+          worktreePath,
+          hasPackageJson: fs.existsSync(
+            path.join(worktreePath, 'package.json'),
+          ),
+          hasLockfile: fs.existsSync(path.join(worktreePath, 'pnpm-lock.yaml')),
+          duration: Date.now() - depsStart,
+        })
+      } catch (error) {
+        this.emitEvent('install-project-dependencies:fail', {
+          error: error instanceof Error ? error.message : String(error),
+          packageManager: 'pnpm',
+          worktreePath,
+          duration: Date.now() - depsStart,
+        })
+        this.emitEvent('create-worktree-session:fail', {
+          error: `Failed to install dependencies: ${error instanceof Error ? error.message : String(error)}`,
+          duration: Date.now() - sessionStartTime,
+        })
+        throw error
+      }
+
+      const structureStart = Date.now()
+      this.emitEvent('analyze-project-structure:start')
+      const hasPackageJson = fs.existsSync(
+        path.join(worktreePath, 'package.json'),
+      )
+      const hasTmuxComposerConfig = fs.existsSync(
+        path.join(worktreePath, 'tmux-composer.yaml'),
+      )
+      this.emitEvent('analyze-project-structure:end', {
+        hasPackageJson,
+        hasTmuxComposerConfig,
+        configPath: hasTmuxComposerConfig
+          ? path.join(worktreePath, 'tmux-composer.yaml')
+          : null,
+        packageJsonPath: hasPackageJson
+          ? path.join(worktreePath, 'package.json')
+          : null,
+        duration: Date.now() - structureStart,
+      })
+
+      let expectedWindows: string[]
+      try {
+        expectedWindows = await this.getExpectedWindows(worktreePath)
+      } catch (error) {
+        this.emitEvent('analyze-project-scripts:fail', {
+          error: error instanceof Error ? error.message : String(error),
+          duration: 0,
+        })
+        this.emitEvent('create-worktree-session:fail', {
+          error: `Failed to analyze project: ${error instanceof Error ? error.message : String(error)}`,
+          duration: Date.now() - sessionStartTime,
+        })
+        throw error
+      }
+
+      let windows: string[]
+      try {
+        windows = await this.createTmuxSession(
+          sessionName,
+          worktreePath,
+          expectedWindows,
+          mode,
+          options.terminalWidth,
+          options.terminalHeight,
+        )
+      } catch (error) {
+        this.emitEvent('create-worktree-session:fail', {
+          error: `Failed to create tmux session: ${error instanceof Error ? error.message : String(error)}`,
+          duration: Date.now() - sessionStartTime,
+        })
+        throw error
+      }
+
       const socketArgsArr = getTmuxSocketArgs(this.socketOptions)
       const socketArgs = socketArgsArr.join(' ')
-      console.log(`\nTo attach: tmux ${socketArgs} attach -t ${sessionName}`)
+
+      const finalizeStart = Date.now()
+      this.emitEvent('finalize-tmux-session:start')
+      this.emitEvent('finalize-tmux-session:end', {
+        sessionName,
+        selectedWindow: 'work',
+        totalWindows: windows.length,
+        worktreePath,
+        duration: Date.now() - finalizeStart,
+        totalDuration: Date.now() - startTime,
+      })
+
+      // Emit the overall success event
+      this.emitEvent('create-worktree-session:end', {
+        sessionName,
+        worktreePath,
+        windows,
+        duration: Date.now() - sessionStartTime,
+        totalDuration: Date.now() - startTime,
+      })
 
       // Wait for all windows to be created before attaching
       if (options.attach) {
+        const attachStart = Date.now()
+        this.emitEvent('attach-tmux-session:start')
         await this.waitForWindows(sessionName, windows)
+        const attachCommand = `tmux ${socketArgs} attach -t ${sessionName}`
+        this.emitEvent('attach-tmux-session:end', {
+          sessionName,
+          windowsReady: true,
+          waitDuration: Date.now() - attachStart,
+          attachCommand,
+          duration: Date.now() - attachStart,
+        })
         spawnSync('tmux', [...socketArgsArr, 'attach', '-t', sessionName], {
           stdio: 'inherit',
         })
       }
     } catch (error) {
+      // Emit failure event if we haven't already
+      if (!error?.message?.includes('Repository has uncommitted changes')) {
+        this.emitEvent('create-worktree-session:fail', {
+          error: error instanceof Error ? error.message : String(error),
+          duration: Date.now() - sessionStartTime,
+        })
+      }
       throw error
     }
   }
 
   private async getExpectedWindows(worktreePath: string): Promise<string[]> {
+    const scriptsStart = Date.now()
+    this.emitEvent('analyze-project-scripts:start')
     const windows: string[] = []
+    const availableScripts: string[] = []
+    let agentCommand: any = { act: 'claude', plan: 'claude' }
+    let contextCommand: any = {}
 
     try {
       const packageJsonPath = path.join(worktreePath, 'package.json')
@@ -104,6 +321,11 @@ export class SessionCreator {
 
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
       const scripts = packageJson.scripts || {}
+
+      // Collect available scripts
+      if (scripts) {
+        availableScripts.push(...Object.keys(scripts))
+      }
 
       if (scripts.dev) {
         windows.push('server')
@@ -133,12 +355,52 @@ export class SessionCreator {
         )
         const yamlData = yaml.load(tmuxComposerYamlContent)
         tmuxComposerConfig = parseTmuxComposerConfig(yamlData)
+
+        // Extract agent and context commands
+        if (tmuxComposerConfig?.agents) {
+          if (typeof tmuxComposerConfig.agents === 'string') {
+            agentCommand = {
+              act: tmuxComposerConfig.agents,
+              plan: tmuxComposerConfig.agents,
+            }
+          } else {
+            agentCommand = tmuxComposerConfig.agents
+          }
+        }
+
+        if (tmuxComposerConfig?.context) {
+          if (typeof tmuxComposerConfig.context === 'string') {
+            contextCommand = {
+              act: tmuxComposerConfig.context,
+              plan: tmuxComposerConfig.context,
+            }
+          } else {
+            contextCommand = tmuxComposerConfig.context
+          }
+        }
       } catch {}
 
       windows.push('work')
+      windows.push('control') // Control window is always created
+
+      this.emitEvent('analyze-project-scripts:end', {
+        availableScripts,
+        plannedWindows: windows,
+        agentCommand,
+        contextCommand,
+        duration: Date.now() - scriptsStart,
+      })
 
       return windows
     } catch {
+      this.emitEvent('analyze-project-scripts:end', {
+        availableScripts,
+        plannedWindows: windows,
+        agentCommand,
+        contextCommand,
+        error: 'Failed to analyze project scripts',
+        duration: Date.now() - scriptsStart,
+      })
       return windows
     }
   }
@@ -151,8 +413,15 @@ export class SessionCreator {
     terminalWidth?: number,
     terminalHeight?: number,
   ): Promise<string[]> {
+    const sessionStart = Date.now()
+    this.emitEvent('create-tmux-session:start')
     const packageJsonPath = path.join(worktreePath, 'package.json')
     if (!fs.existsSync(packageJsonPath)) {
+      this.emitEvent('create-tmux-session:fail', {
+        error: 'package.json not found in worktree',
+        errorCode: 'MISSING_PACKAGE_JSON',
+        duration: Date.now() - sessionStart,
+      })
       throw new Error('package.json not found in worktree')
     }
 
@@ -175,6 +444,9 @@ export class SessionCreator {
     const createdWindows: string[] = []
 
     const createSession = (windowName: string, command: string) => {
+      const windowStart = Date.now()
+      this.emitEvent(`create-tmux-window:${windowName}:start`)
+
       const socketArgs = getTmuxSocketArgs(this.socketOptions)
       const tmuxProcess = spawn(
         'tmux',
@@ -209,7 +481,35 @@ export class SessionCreator {
       }
 
       if (!socketExists(this.socketOptions)) {
+        this.emitEvent(`create-tmux-window:${windowName}:fail`, {
+          windowName,
+          error: 'Tmux server failed to start',
+          errorCode: 'TMUX_SERVER_FAILED',
+          duration: Date.now() - windowStart,
+        })
         throw new Error('Tmux server failed to start')
+      }
+
+      // Get session ID after creation
+      const sessionId = execSync(
+        `tmux ${socketArgs.join(' ')} display-message -t ${sessionName} -p '#{session_id}'`,
+        { encoding: 'utf-8' },
+      ).trim()
+
+      if (windowName === 'work') {
+        // Emit the session created event after first window
+        this.emitEvent('create-tmux-session:end', {
+          sessionName,
+          sessionId,
+          socketPath: this.socketOptions.socketPath || '/tmp/tmux-1000/default',
+          firstWindow: windowName,
+          terminalSize: {
+            width: terminalWidth || TERMINAL_SIZES.big.width,
+            height: terminalHeight || TERMINAL_SIZES.big.height,
+          },
+          mode,
+          duration: Date.now() - sessionStart,
+        })
       }
 
       setTimeout(() => {
@@ -227,9 +527,20 @@ export class SessionCreator {
       }, 50)
 
       firstWindowCreated = true
+
+      // Don't emit the end event yet for work window - it will be emitted after context loading
     }
 
-    const createWindow = (windowName: string, command: string) => {
+    const createWindow = (
+      windowName: string,
+      command: string,
+      windowIndex: number,
+      port?: number,
+      script?: string,
+    ) => {
+      const windowStart = Date.now()
+      this.emitEvent(`create-tmux-window:${windowName}:start`)
+
       const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
       execSync(
         `tmux ${socketArgs} new-window -t ${sessionName} -n '${windowName}' -c ${worktreePath}`,
@@ -239,9 +550,30 @@ export class SessionCreator {
       )
 
       createdWindows.push(windowName)
+
+      // Get window ID
+      const windowId = execSync(
+        `tmux ${socketArgs} display-message -t ${sessionName}:${windowName} -p '#{window_id}'`,
+        { encoding: 'utf-8' },
+      ).trim()
+
+      // Emit success event
+      const eventData: any = {
+        windowName,
+        windowIndex,
+        windowId,
+        command,
+        duration: Date.now() - windowStart,
+      }
+
+      if (port) eventData.port = port
+      if (script) eventData.script = script
+
+      this.emitEvent(`create-tmux-window:${windowName}:end`, eventData)
     }
 
     if (expectedWindows.includes('work')) {
+      const workWindowStart = Date.now()
       let command = 'claude'
 
       if (tmuxComposerConfig?.agents) {
@@ -255,12 +587,14 @@ export class SessionCreator {
       if (!firstWindowCreated) {
         createSession('work', command)
       } else {
-        createWindow('work', command)
+        createWindow('work', command, windowIndex)
       }
 
       windowIndex++
 
       let contextCommand: string | undefined
+      let contextLoaded = false
+      let contextSize = 0
 
       if (tmuxComposerConfig?.context) {
         if (typeof tmuxComposerConfig.context === 'string') {
@@ -271,7 +605,9 @@ export class SessionCreator {
       }
 
       if (contextCommand) {
-        console.log('  Preparing context...')
+        const contextStart = Date.now()
+        this.emitEvent('invoking-context-command:start')
+
         let contextOutput: string
         try {
           contextOutput = execSync(contextCommand, {
@@ -279,7 +615,13 @@ export class SessionCreator {
             cwd: worktreePath,
             stdio: ['pipe', 'pipe', 'pipe'],
           }).trim()
+          contextSize = contextOutput.length
         } catch (error) {
+          this.emitEvent('invoking-context-command:fail', {
+            error: error instanceof Error ? error.message : String(error),
+            command: contextCommand,
+            duration: Date.now() - contextStart,
+          })
           throw new Error(
             `Failed to execute context command: ${error instanceof Error ? error.message : String(error)}`,
           )
@@ -290,22 +632,71 @@ export class SessionCreator {
         fs.writeFileSync(tempFile, contextOutput)
         try {
           execSync(`tmux ${socketArgs} load-buffer ${tempFile}`)
+          contextLoaded = true
+
+          // Emit success event after buffer is loaded
+          this.emitEvent('invoking-context-command:end', {
+            command: contextCommand,
+            mode,
+            workingDirectory: worktreePath,
+            outputSize: contextSize,
+            contextLength: contextOutput.split('\n').length,
+            bufferSize: contextSize,
+            truncated: false,
+            duration: Date.now() - contextStart,
+          })
+        } catch (error) {
+          this.emitEvent('invoking-context-command:fail', {
+            error: error instanceof Error ? error.message : String(error),
+            command: contextCommand,
+            phase: 'buffer-load',
+            duration: Date.now() - contextStart,
+          })
+          throw error
         } finally {
           try {
             fs.unlinkSync(tempFile)
           } catch {}
         }
       }
+
+      // Now emit the work window end event with context info
+      if (!firstWindowCreated) {
+        const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
+        const windowId = execSync(
+          `tmux ${socketArgs} display-message -t ${sessionName}:work -p '#{window_id}'`,
+          { encoding: 'utf-8' },
+        ).trim()
+
+        this.emitEvent('create-tmux-window:work:end', {
+          windowName: 'work',
+          windowIndex: 0,
+          windowId,
+          command,
+          isFirstWindow: true,
+          contextLoaded,
+          contextSize,
+          duration: Date.now() - workWindowStart,
+        })
+      }
     }
 
     if (scripts.dev && expectedWindows.includes('server')) {
+      const portStart = Date.now()
+      this.emitEvent('find-open-port:start')
       const port = this.findAvailablePort()
+      this.emitEvent('find-open-port:end', {
+        port,
+        windowName: 'server',
+        duration: Date.now() - portStart,
+      })
+
       const command = `PORT=${port} pnpm run dev`
 
       if (!firstWindowCreated) {
         createSession('server', command)
       } else {
-        createWindow('server', command)
+        createWindow('server', command, windowIndex, port, 'dev')
       }
 
       windowIndex++
@@ -317,7 +708,7 @@ export class SessionCreator {
       if (!firstWindowCreated) {
         createSession('lint', command)
       } else {
-        createWindow('lint', command)
+        createWindow('lint', command, windowIndex, undefined, 'lint:watch')
       }
 
       windowIndex++
@@ -329,7 +720,7 @@ export class SessionCreator {
       if (!firstWindowCreated) {
         createSession('types', command)
       } else {
-        createWindow('types', command)
+        createWindow('types', command, windowIndex, undefined, 'types:watch')
       }
 
       windowIndex++
@@ -341,7 +732,7 @@ export class SessionCreator {
       if (!firstWindowCreated) {
         createSession('test', command)
       } else {
-        createWindow('test', command)
+        createWindow('test', command, windowIndex, undefined, 'test:watch')
       }
 
       windowIndex++
@@ -363,7 +754,11 @@ export class SessionCreator {
           `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer watch-panes | jq .' Enter`,
         )
       } catch (error) {
-        console.error('Error creating control window:', error)
+        this.emitEvent('create-tmux-window:control:fail', {
+          windowName: 'control',
+          error: error instanceof Error ? error.message : String(error),
+          duration: 0,
+        })
       }
     }, 100)
 
@@ -398,6 +793,11 @@ export class SessionCreator {
       attempts++
     }
     if (attempts >= 100) {
+      this.emitEvent('find-open-port:fail', {
+        attemptedPorts: 100,
+        error: 'Could not find an available port',
+        duration: 0,
+      })
       throw new Error('Could not find an available port')
     }
     return port
@@ -427,8 +827,11 @@ export class SessionCreator {
     }
 
     // If we get here, not all windows were created in time
-    console.warn(
-      'Warning: Not all expected windows were created within 3 seconds',
-    )
+    this.emitEvent('attach-tmux-session:end', {
+      sessionName,
+      windowsReady: false,
+      warning: 'Not all expected windows were created within 3 seconds',
+      duration: maxAttempts * 100,
+    })
   }
 }

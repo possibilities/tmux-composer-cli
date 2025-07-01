@@ -49,17 +49,17 @@ async function main() {
       skipMatchers,
     })
 
-    console.log('Monitoring tmux sessions... Press Ctrl+C to stop')
+    // Commands handle their own output
 
     await automator.start()
 
     process.on('SIGINT', () => {
-      console.log('\nShutting down...')
+      // Commands handle their own output
       process.exit(0)
     })
 
     process.on('SIGTERM', () => {
-      console.log('\nShutting down...')
+      // Commands handle their own output
       process.exit(0)
     })
   })
@@ -108,9 +108,7 @@ async function main() {
           ...socketOptions,
         })
       } catch (error) {
-        console.error(
-          `\nFailed to create session: ${error instanceof Error ? error.message : String(error)}`,
-        )
+        // Commands handle their own output via events
         process.exit(1)
       }
     })
@@ -129,12 +127,12 @@ async function main() {
     ) {
       process.exit(0)
     }
-    console.error('Error:', error.message || error)
+    // Commands handle their own output
     process.exit(1)
   }
 }
 
 main().catch(error => {
-  console.error('Unhandled error:', error)
+  // Commands handle their own output
   process.exit(1)
 })
