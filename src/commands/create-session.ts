@@ -3,7 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import yaml from 'js-yaml'
 import { EventEmitter } from 'events'
-import { getTmuxSocketArgs } from '../core/tmux-socket.js'
+import { getTmuxSocketArgs, getTmuxSocketPath } from '../core/tmux-socket.js'
 import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 import {
   isGitRepositoryClean,
@@ -66,7 +66,16 @@ export class SessionCreator extends EventEmitter {
   async create(projectPath: string, options: CreateSessionOptions = {}) {
     const startTime = Date.now()
 
-    await enableZmqPublishing(this, options)
+    const socketPath = getTmuxSocketPath(this.socketOptions)
+
+    // We don't have session info yet, so we'll update it later
+    await enableZmqPublishing(this, {
+      zeromq: options.zeromq,
+      source: {
+        script: 'create-session',
+        socketPath,
+      },
+    })
 
     // Emit initial event with all options
     this.emitEvent('initialize-session-creation:start', {

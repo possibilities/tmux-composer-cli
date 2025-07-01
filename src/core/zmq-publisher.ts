@@ -1,12 +1,23 @@
 import { Publisher } from 'zeromq'
 import { EventEmitter } from 'events'
+import os from 'os'
 
 const ZMQ_SOCKET_PATH = 'ipc:///tmp/tmux-composer-events.sock'
+
+export interface EventSource {
+  script: string
+  sessionId?: string
+  sessionName?: string
+  socketPath?: string
+  pid: number
+  hostname: string
+}
 
 export interface TmuxEvent {
   event: string
   data?: any
   timestamp: string
+  source?: EventSource
 }
 
 export class ZmqEventPublisher {
@@ -90,9 +101,14 @@ export async function shutdownZmqPublisher(): Promise<void> {
   }
 }
 
+export interface ZmqPublishingOptions {
+  zeromq?: boolean
+  source?: Partial<EventSource>
+}
+
 export async function enableZmqPublishing(
   emitter: EventEmitter,
-  options: { zeromq?: boolean } = {},
+  options: ZmqPublishingOptions = {},
 ): Promise<void> {
   if (options.zeromq === false) {
     return
@@ -106,9 +122,22 @@ export async function enableZmqPublishing(
     console.error('[ZMQ] Failed to initialize publisher:', error)
   }
 
+  const source: EventSource = {
+    script: options.source?.script || 'unknown',
+    sessionId: options.source?.sessionId,
+    sessionName: options.source?.sessionName,
+    socketPath: options.source?.socketPath,
+    pid: process.pid,
+    hostname: os.hostname(),
+  }
+
   emitter.on('event', async (event: TmuxEvent) => {
     try {
-      await publisher.publishEvent(event)
+      const eventWithSource: TmuxEvent = {
+        ...event,
+        source,
+      }
+      await publisher.publishEvent(eventWithSource)
     } catch (error) {
       console.error('[ZMQ] Failed to publish event:', error)
     }

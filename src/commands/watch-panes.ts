@@ -2,6 +2,7 @@ import { spawn, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
 import { throttle } from '../core/throttle'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
+import { getTmuxSocketPath } from '../core/tmux-socket.js'
 
 interface TmuxEvent {
   event: string
@@ -56,8 +57,6 @@ export class TmuxPaneWatcher extends EventEmitter {
   }
 
   async start(options: { zeromq?: boolean } = {}) {
-    await enableZmqPublishing(this, options)
-
     try {
       const sessionName = await this.runCommand(
         'tmux display-message -p "#{session_name}"',
@@ -82,6 +81,18 @@ export class TmuxPaneWatcher extends EventEmitter {
       )
       process.exit(1)
     }
+
+    const socketPath = getTmuxSocketPath({})
+
+    await enableZmqPublishing(this, {
+      zeromq: options.zeromq,
+      source: {
+        script: 'watch-panes',
+        sessionId: this.currentSessionId,
+        sessionName: this.currentSessionName,
+        socketPath,
+      },
+    })
 
     this.setupSignalHandlers()
     await this.connectControlMode()

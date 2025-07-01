@@ -3,6 +3,7 @@ import { promisify } from 'util'
 import { EventEmitter } from 'events'
 import { throttle } from '../core/throttle'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
+import { getTmuxSocketPath } from '../core/tmux-socket.js'
 
 const sleep = promisify(setTimeout)
 
@@ -119,8 +120,6 @@ export class TmuxSessionWatcher extends EventEmitter {
   }
 
   async start(options: { zeromq?: boolean } = {}) {
-    await enableZmqPublishing(this, options)
-
     try {
       const sessionName = await this.runCommand(
         'tmux display-message -p "#{session_name}"',
@@ -136,6 +135,18 @@ export class TmuxSessionWatcher extends EventEmitter {
       )
       process.exit(1)
     }
+
+    const socketPath = getTmuxSocketPath({})
+
+    await enableZmqPublishing(this, {
+      zeromq: options.zeromq,
+      source: {
+        script: 'watch-session',
+        sessionId: this.currentSessionId,
+        sessionName: this.currentSessionName,
+        socketPath,
+      },
+    })
 
     this.setupSignalHandlers()
     this.setupResizeHandler()

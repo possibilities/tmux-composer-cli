@@ -31,3 +31,25 @@ export function getTmuxSocketArgs(options: TmuxSocketOptions): string[] {
 export function getTmuxSocketString(options: TmuxSocketOptions): string {
   return getTmuxSocketArgs(options).join(' ')
 }
+
+export function getTmuxSocketPath(options: TmuxSocketOptions): string {
+  if (options.socketPath) {
+    return options.socketPath
+  }
+
+  if (options.socketName) {
+    const uid = process.getuid ? process.getuid() : 1000
+    return `/tmp/tmux-${uid}/${options.socketName}`
+  }
+
+  const tmuxEnv = process.env.TMUX
+  if (tmuxEnv) {
+    const socketPath = tmuxEnv.split(',')[0]
+    if (socketPath) {
+      return socketPath
+    }
+  }
+
+  const uid = process.getuid ? process.getuid() : 1000
+  return `/tmp/tmux-${uid}/default`
+}
