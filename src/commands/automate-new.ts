@@ -33,6 +33,7 @@ export class TmuxAutomatorNew extends EventEmitter {
   private claudeCheckResults = new Map<string, boolean>()
   private lastPaneListHash = ''
   private forceEmitAfterRefresh = false
+  private resizeHandler: (() => void) | null = null
 
   constructor() {
     super()
@@ -67,6 +68,7 @@ export class TmuxAutomatorNew extends EventEmitter {
     }
 
     this.setupSignalHandlers()
+    this.setupResizeHandler()
     await this.connectControlMode()
   }
 
@@ -88,6 +90,22 @@ export class TmuxAutomatorNew extends EventEmitter {
     const signalHandler = () => this.shutdown()
     process.on('SIGINT', signalHandler)
     process.on('SIGTERM', signalHandler)
+  }
+
+  private setupResizeHandler() {
+    const handler = () => {
+      this.refreshPaneList().catch(error => {
+        console.error('Failed to refresh pane list on resize:', error)
+      })
+    }
+
+    this.resizeHandler = handler
+
+    if (process.stdout && (process.stdout as any).on) {
+      process.stdout.on('resize', handler)
+    }
+
+    process.on('SIGWINCH', handler)
   }
 
   private async connectControlMode(): Promise<boolean> {
@@ -224,6 +242,14 @@ export class TmuxAutomatorNew extends EventEmitter {
       }
 
       this.controlModeProcess = null
+    }
+
+    if (this.resizeHandler) {
+      if (process.stdout && (process.stdout as any).off) {
+        ;(process.stdout as any).off('resize', this.resizeHandler)
+      }
+      process.off('SIGWINCH', this.resizeHandler)
+      this.resizeHandler = null
     }
 
     this.panes.clear()
@@ -667,6 +693,14 @@ export class TmuxAutomatorNew extends EventEmitter {
 
       this.controlModeProcess.kill()
       this.controlModeProcess = null
+    }
+
+    if (this.resizeHandler) {
+      if (process.stdout && (process.stdout as any).off) {
+        ;(process.stdout as any).off('resize', this.resizeHandler)
+      }
+      process.off('SIGWINCH', this.resizeHandler)
+      this.resizeHandler = null
     }
 
     process.removeAllListeners('SIGINT')
