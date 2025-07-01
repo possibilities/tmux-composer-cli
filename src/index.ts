@@ -50,17 +50,13 @@ async function main() {
       skipMatchers,
     })
 
-    // Commands handle their own output
-
     await automator.start()
 
     process.on('SIGINT', () => {
-      // Commands handle their own output
       process.exit(0)
     })
 
     process.on('SIGTERM', () => {
-      // Commands handle their own output
       process.exit(0)
     })
   })
@@ -106,7 +102,7 @@ async function main() {
       const creator = new SessionCreator(socketOptions)
 
       const resolvedProjectPath = projectPath || process.cwd()
-      const shouldAttach = !options.attach
+      const shouldAttach = options.attach !== false
 
       try {
         await creator.create(resolvedProjectPath, {
@@ -117,6 +113,9 @@ async function main() {
           zeromq: options.zeromq,
           ...socketOptions,
         })
+
+        // Ensure clean exit after successful creation
+        process.exit(0)
       } catch (error) {
         process.exit(1)
       }
@@ -144,12 +143,10 @@ async function main() {
     ) {
       process.exit(0)
     }
-    // Commands handle their own output
     process.exit(1)
   }
 }
 
 main().catch(error => {
-  // Commands handle their own output
   process.exit(1)
 })

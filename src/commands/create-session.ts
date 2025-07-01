@@ -298,21 +298,79 @@ export class SessionCreator extends EventEmitter {
       if (options.attach) {
         const attachStart = Date.now()
         this.emitEvent('attach-tmux-session:start')
+
         await this.waitForWindows(sessionName, windows)
-        const attachCommand = `tmux ${socketArgs} attach -t ${sessionName}`
-        this.emitEvent('attach-tmux-session:end', {
-          sessionName,
-          windowsReady: true,
-          waitDuration: Date.now() - attachStart,
-          attachCommand,
-          duration: Date.now() - attachStart,
-        })
-        spawnSync('tmux', [...socketArgsArr, 'attach', '-t', sessionName], {
-          stdio: 'inherit',
-        })
+
+        const insideTmux = !!process.env.TMUX
+
+        try {
+          let result
+          let command: string
+
+          if (insideTmux) {
+            command = 'switch-client'
+            this.emitEvent('switch-tmux-session:start', {
+              sessionName,
+              fromInsideTmux: true,
+            })
+
+            result = spawnSync(
+              'tmux',
+              [...socketArgsArr, 'switch-client', '-t', sessionName],
+              {
+                stdio: 'inherit',
+              },
+            )
+          } else {
+            command = 'attach'
+            result = spawnSync(
+              'tmux',
+              [...socketArgsArr, 'attach', '-t', sessionName],
+              {
+                stdio: 'inherit',
+              },
+            )
+          }
+
+          if (result.error) {
+            throw result.error
+          }
+
+          if (result.status !== 0) {
+            throw new Error(
+              `tmux ${command} exited with status ${result.status}`,
+            )
+          }
+
+          this.emitEvent('attach-tmux-session:end', {
+            sessionName,
+            windowsReady: true,
+            waitDuration: Date.now() - attachStart,
+            attachMethod: insideTmux ? 'switch-client' : 'attach',
+            duration: Date.now() - attachStart,
+          })
+        } catch (error) {
+          const attachCommand = insideTmux
+            ? `tmux ${socketArgs} switch-client -t ${sessionName}`
+            : `tmux ${socketArgs} attach -t ${sessionName}`
+
+          this.emitEvent('attach-tmux-session:fail', {
+            sessionName,
+            error: error instanceof Error ? error.message : String(error),
+            attachCommand,
+            insideTmux,
+            duration: Date.now() - attachStart,
+          })
+          console.error(
+            `\nFailed to ${insideTmux ? 'switch to' : 'attach to'} session: ${error instanceof Error ? error.message : String(error)}`,
+          )
+          console.error(`Session created: ${sessionName}`)
+          console.error(
+            `To ${insideTmux ? 'switch' : 'attach'} manually, use: ${attachCommand}`,
+          )
+        }
       }
     } catch (error) {
-      // Emit failure event if we haven't already
       if (!error?.message?.includes('Repository has uncommitted changes')) {
         this.emitEvent('create-worktree-session:fail', {
           error: error instanceof Error ? error.message : String(error),
