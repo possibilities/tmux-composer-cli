@@ -322,7 +322,11 @@ export class TmuxAutomatorNew {
           if (!this.hasDisplayedInitialList) {
             this.hasDisplayedInitialList = true
           }
-          this.displayPaneList()
+          // Only display if the pane list has actually changed
+          const currentHash = this.computePaneListHash()
+          if (currentHash !== this.lastPaneListHash) {
+            this.displayPaneList()
+          }
         }
         return
       }
@@ -598,12 +602,8 @@ export class TmuxAutomatorNew {
 
   private displayPaneList() {
     try {
-      // Only display if the pane list has actually changed
-      const currentHash = this.computePaneListHash()
-      if (currentHash === this.lastPaneListHash) {
-        return
-      }
-      this.lastPaneListHash = currentHash
+      // Update the hash since we've already checked it before calling this method
+      this.lastPaneListHash = this.computePaneListHash()
 
       console.log('\nCurrent panes:')
       const panesByWindow = new Map<string, Array<[string, any]>>()
