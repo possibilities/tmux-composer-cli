@@ -726,25 +726,6 @@ export class TmuxAutomatorNew extends EventEmitter {
       return
     }
 
-    const now = Date.now()
-    let hasNewPanes = false
-
-    for (const [_, pane] of this.panes) {
-      if (now - pane.firstSeen < 20000) {
-        hasNewPanes = true
-        break
-      }
-    }
-
-    if (!hasNewPanes && this.claudeCheckInterval) {
-      clearInterval(this.claudeCheckInterval)
-      this.claudeCheckInterval = setInterval(() => {
-        this.checkForClaudeUpdates().catch(error => {
-          console.error('Error in Claude check interval:', error)
-        })
-      }, 3000)
-    }
-
     try {
       this.claudeCheckResults.clear()
       this.isCheckingClaude = true
