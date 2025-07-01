@@ -301,6 +301,18 @@ export class SessionCreator extends EventEmitter {
 
         await this.waitForWindows(sessionName, windows)
 
+        // Ensure the work window is selected before attaching
+        try {
+          execSync(`tmux ${socketArgs} select-window -t ${sessionName}:work`)
+        } catch (error) {
+          // Window might not exist or tmux might have issues, but we'll continue
+          this.emitEvent('select-window:fail', {
+            sessionName,
+            window: 'work',
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
+
         const insideTmux = !!process.env.TMUX
 
         try {
@@ -839,13 +851,6 @@ export class SessionCreator extends EventEmitter {
     }, 100)
 
     createdWindows.push('control')
-
-    setTimeout(() => {
-      try {
-        const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
-        execSync(`tmux ${socketArgs} select-window -t ${sessionName}:work`)
-      } catch {}
-    }, 200)
 
     return createdWindows
   }
