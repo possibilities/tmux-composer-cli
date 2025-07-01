@@ -531,7 +531,7 @@ export class SessionCreator extends EventEmitter {
     let windowIndex = 0
     const createdWindows: string[] = []
 
-    const createSession = (windowName: string, command: string) => {
+    const createSession = async (windowName: string, command: string) => {
       const windowStart = Date.now()
       this.emitEvent(`create-tmux-window:${windowName}:start`)
 
@@ -600,26 +600,36 @@ export class SessionCreator extends EventEmitter {
         })
       }
 
-      setTimeout(() => {
-        const socketArgsStr = getTmuxSocketArgs(this.socketOptions).join(' ')
-        execSync(
-          `tmux ${socketArgsStr} setenv -t ${sessionName} TMUX_COMPOSER_MODE ${mode}`,
-        )
-      }, 50)
+      // Wait for the pane to be ready before sending commands
+      const paneReady = await this.waitForPaneReady(sessionName, windowName)
 
-      setTimeout(() => {
-        const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
-        execSync(
-          `tmux ${socketArgs} send-keys -t ${sessionName}:${windowName} '${command}' Enter`,
+      if (!paneReady) {
+        this.emitEvent(`create-tmux-window:${windowName}:fail`, {
+          windowName,
+          error: 'Pane did not become ready within timeout',
+          errorCode: 'PANE_NOT_READY',
+          duration: Date.now() - windowStart,
+        })
+        throw new Error(
+          `Pane for window '${windowName}' did not become ready within timeout`,
         )
-      }, 50)
+      }
+
+      const socketArgsStr = getTmuxSocketArgs(this.socketOptions).join(' ')
+      execSync(
+        `tmux ${socketArgsStr} setenv -t ${sessionName} TMUX_COMPOSER_MODE ${mode}`,
+      )
+
+      execSync(
+        `tmux ${socketArgsStr} send-keys -t ${sessionName}:${windowName} '${command}' Enter`,
+      )
 
       firstWindowCreated = true
 
       // Don't emit the end event yet for work window - it will be emitted after context loading
     }
 
-    const createWindow = (
+    const createWindow = async (
       windowName: string,
       command: string,
       windowIndex: number,
@@ -633,6 +643,22 @@ export class SessionCreator extends EventEmitter {
       execSync(
         `tmux ${socketArgs} new-window -t ${sessionName} -n '${windowName}' -c ${worktreePath}`,
       )
+
+      // Wait for the pane to be ready before sending commands
+      const paneReady = await this.waitForPaneReady(sessionName, windowName)
+
+      if (!paneReady) {
+        this.emitEvent(`create-tmux-window:${windowName}:fail`, {
+          windowName,
+          error: 'Pane did not become ready within timeout',
+          errorCode: 'PANE_NOT_READY',
+          duration: Date.now() - windowStart,
+        })
+        throw new Error(
+          `Pane for window '${windowName}' did not become ready within timeout`,
+        )
+      }
+
       execSync(
         `tmux ${socketArgs} send-keys -t ${sessionName}:${windowName} '${command}' Enter`,
       )
@@ -673,9 +699,9 @@ export class SessionCreator extends EventEmitter {
       }
 
       if (!firstWindowCreated) {
-        createSession('work', command)
+        await createSession('work', command)
       } else {
-        createWindow('work', command, windowIndex)
+        await createWindow('work', command, windowIndex)
       }
 
       windowIndex++
@@ -782,9 +808,9 @@ export class SessionCreator extends EventEmitter {
       const command = `PORT=${port} pnpm run dev`
 
       if (!firstWindowCreated) {
-        createSession('server', command)
+        await createSession('server', command)
       } else {
-        createWindow('server', command, windowIndex, port, 'dev')
+        await createWindow('server', command, windowIndex, port, 'dev')
       }
 
       windowIndex++
@@ -794,9 +820,15 @@ export class SessionCreator extends EventEmitter {
       const command = 'pnpm run lint:watch'
 
       if (!firstWindowCreated) {
-        createSession('lint', command)
+        await createSession('lint', command)
       } else {
-        createWindow('lint', command, windowIndex, undefined, 'lint:watch')
+        await createWindow(
+          'lint',
+          command,
+          windowIndex,
+          undefined,
+          'lint:watch',
+        )
       }
 
       windowIndex++
@@ -806,9 +838,15 @@ export class SessionCreator extends EventEmitter {
       const command = 'pnpm run types:watch'
 
       if (!firstWindowCreated) {
-        createSession('types', command)
+        await createSession('types', command)
       } else {
-        createWindow('types', command, windowIndex, undefined, 'types:watch')
+        await createWindow(
+          'types',
+          command,
+          windowIndex,
+          undefined,
+          'types:watch',
+        )
       }
 
       windowIndex++
@@ -818,9 +856,15 @@ export class SessionCreator extends EventEmitter {
       const command = 'pnpm run test:watch'
 
       if (!firstWindowCreated) {
-        createSession('test', command)
+        await createSession('test', command)
       } else {
-        createWindow('test', command, windowIndex, undefined, 'test:watch')
+        await createWindow(
+          'test',
+          command,
+          windowIndex,
+          undefined,
+          'test:watch',
+        )
       }
 
       windowIndex++
@@ -968,5 +1012,55 @@ export class SessionCreator extends EventEmitter {
       warning: 'Not all expected windows were created within 3 seconds',
       duration: maxAttempts * 100,
     })
+  }
+
+  private async waitForPaneReady(
+    sessionName: string,
+    windowName: string,
+    maxWaitMs: number = 5000,
+  ): Promise<boolean> {
+    const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
+    const startTime = Date.now()
+    const checkInterval = 100 // Check every 100ms
+
+    while (Date.now() - startTime < maxWaitMs) {
+      try {
+        // Check if the pane exists and get its current command
+        const paneInfo = execSync(
+          `tmux ${socketArgs} list-panes -t ${sessionName}:${windowName} -F '#{pane_pid} #{pane_current_command}'`,
+          { encoding: 'utf-8' },
+        ).trim()
+
+        if (paneInfo) {
+          const [pid, currentCommand] = paneInfo.split(' ')
+
+          // Check if the pane has a shell ready (bash, zsh, sh, etc.)
+          const shellCommands = [
+            'bash',
+            'zsh',
+            'sh',
+            'fish',
+            'ksh',
+            'tcsh',
+            'csh',
+          ]
+          const isShellReady = shellCommands.some(shell =>
+            currentCommand.includes(shell),
+          )
+
+          if (pid && isShellReady) {
+            // Additional small delay to ensure shell is fully initialized
+            await new Promise(resolve => setTimeout(resolve, 50))
+            return true
+          }
+        }
+      } catch (error) {
+        // Pane might not exist yet, continue waiting
+      }
+
+      await new Promise(resolve => setTimeout(resolve, checkInterval))
+    }
+
+    return false
   }
 }
