@@ -281,8 +281,7 @@ function createSession(
 
     const args = [
       join(__dirname, '..', 'dist', 'cli.js'),
-      'session',
-      'create',
+      'create-session',
       projectPath,
       '-L',
       SOCKET_NAME,
@@ -421,8 +420,7 @@ async function startAutomateClaude(additionalArgs: string[]) {
       'node',
       [
         join(__dirname, '..', 'dist', 'cli.js'),
-        'claude',
-        'automate',
+        'automate-claude-old',
         '-L',
         SOCKET_NAME,
         ...additionalArgs,
@@ -456,7 +454,7 @@ async function startAutomateClaude(additionalArgs: string[]) {
         }
         console.error('Command was:')
         console.error(
-          `  node ${join(__dirname, '..', 'dist', 'cli.js')} claude automate -L ${SOCKET_NAME} ${additionalArgs.join(' ')}`,
+          `  node ${join(__dirname, '..', 'dist', 'cli.js')} automate-claude-old -L ${SOCKET_NAME} ${additionalArgs.join(' ')}`,
         )
         console.error('='.repeat(60) + '\n')
         cleanupProcesses()

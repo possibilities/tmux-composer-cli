@@ -120,7 +120,7 @@ function throttle<T extends (...args: any[]) => any>(
   }
 }
 
-export class TmuxAutomatorNew extends EventEmitter {
+export class TmuxSessionWatcher extends EventEmitter {
   private controlModeProcess: ChildProcess | null = null
   private currentSessionName: string | null = null
   private currentSessionId: string | null = null

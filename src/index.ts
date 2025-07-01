@@ -1,7 +1,7 @@
 import { Command, Option } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
-import { TmuxAutomator } from './commands/automate-claude.js'
-import { TmuxAutomatorNew } from './commands/automate-new.js'
+import { TmuxAutomator } from './commands/automate-claude-old.js'
+import { TmuxSessionWatcher } from './commands/watch-session.js'
 import { SessionCreator } from './commands/create-session.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
 import { MATCHERS } from './matchers.js'
@@ -14,23 +14,21 @@ async function main() {
     .description('Tmux Composer CLI')
     .version(packageJson.version)
 
-  const claudeCommand = program
-    .command('claude')
-    .description('Claude-related commands')
-
-  const automateCommand = claudeCommand
-    .command('automate')
-    .description('Monitor and automate Claude interactions in tmux sessions')
+  const automateClaudeOldCommand = program
+    .command('automate-claude-old')
+    .description(
+      'Monitor and automate Claude interactions in tmux sessions (legacy)',
+    )
     .option('-L <socket-name>', 'Tmux socket name')
     .option('-S <socket-path>', 'Tmux socket path')
 
   for (const matcher of MATCHERS) {
     const optionName = `--skip-${matcher.name}`
     const description = `Skip the "${matcher.name.replace(/-/g, ' ')}" matcher`
-    automateCommand.option(optionName, description)
+    automateClaudeOldCommand.option(optionName, description)
   }
 
-  automateCommand.action(async options => {
+  automateClaudeOldCommand.action(async options => {
     const socketOptions: TmuxSocketOptions = {
       socketName: options.L,
       socketPath: options.S,
@@ -65,21 +63,17 @@ async function main() {
     })
   })
 
-  claudeCommand
-    .command('automate-new')
+  program
+    .command('watch-session')
     .description('Monitor tmux control mode events for current session')
     .action(async () => {
-      const automator = new TmuxAutomatorNew()
+      const watcher = new TmuxSessionWatcher()
 
-      await automator.start()
+      await watcher.start()
     })
 
-  const sessionCommand = program
-    .command('session')
-    .description('Session management commands')
-
-  sessionCommand
-    .command('create <project-path>')
+  program
+    .command('create-session <project-path>')
     .description('Create a new tmux session with git worktree')
     .option('--mode <mode>', 'Session mode (act or plan)', 'act')
     .option('-L <socket-name>', 'Tmux socket name')
