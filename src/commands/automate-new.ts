@@ -417,10 +417,19 @@ export class TmuxAutomatorNew {
           const paneId = parts[1]
           const displayKey = this.paneToKeyMap.get(paneId)
           const pane = this.panes.get(paneId)
-          if (displayKey && pane) {
-            console.log(
-              `[${displayKey} - ${pane.windowName} - ${pane.command}]`,
-            )
+
+          if (displayKey) {
+            // We have the pane mapped, print the change notification
+            console.log(`Pane changed: ${displayKey}`)
+          } else {
+            // Pane not mapped yet, trigger a refresh to catch new panes
+            console.log(`Pane changed: ${paneId} (unmapped, refreshing...)`)
+            this.refreshPaneList().catch(error => {
+              console.error(
+                'Failed to refresh pane list after unmapped output:',
+                error,
+              )
+            })
           }
         }
         return
