@@ -1,5 +1,6 @@
 import { spawn, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
+import { throttle } from '../core/throttle'
 
 interface TmuxEvent {
   event: string
@@ -30,6 +31,7 @@ export class TmuxPaneWatcher extends EventEmitter {
   private ownWindowId: string | null = null
   private isConnected = false
   private isShuttingDown = false
+  private paneThrottlers = new Map<string, (data: any) => void>()
 
   constructor() {
     super()
@@ -206,9 +208,7 @@ export class TmuxPaneWatcher extends EventEmitter {
     })
   }
 
-  private async getPaneInfo(
-    paneId: string,
-  ): Promise<{
+  private async getPaneInfo(paneId: string): Promise<{
     windowIndex: string
     windowName: string
     windowId: string
@@ -277,7 +277,17 @@ export class TmuxPaneWatcher extends EventEmitter {
             windowIndex: paneInfo?.windowIndex || 'unknown',
           }
 
-          this.emitEvent('pane-output', data)
+          // Get or create throttled emitter for this pane
+          let throttledEmitter = this.paneThrottlers.get(paneId)
+          if (!throttledEmitter) {
+            throttledEmitter = throttle((data: any) => {
+              this.emitEvent('pane-output', data)
+            }, 100)
+            this.paneThrottlers.set(paneId, throttledEmitter)
+          }
+
+          // Call throttled emitter with latest data
+          throttledEmitter(data)
         } catch (error) {
           console.error(`[DEBUG] Failed to get pane info for ${paneId}:`, error)
         }
@@ -290,6 +300,9 @@ export class TmuxPaneWatcher extends EventEmitter {
 
   private shutdown() {
     this.isShuttingDown = true
+
+    // Clear throttlers
+    this.paneThrottlers.clear()
 
     if (this.controlModeProcess) {
       this.controlModeProcess.stdout?.removeAllListeners()
