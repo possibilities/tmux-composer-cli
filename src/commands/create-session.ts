@@ -1,4 +1,4 @@
-import { execSync, spawn } from 'child_process'
+import { execSync, spawn, spawnSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import yaml from 'js-yaml'
@@ -23,6 +23,7 @@ interface CreateSessionOptions extends TmuxSocketOptions {
   mode?: 'act' | 'plan'
   terminalWidth?: number
   terminalHeight?: number
+  attach?: boolean
 }
 
 export class SessionCreator {
@@ -58,7 +59,7 @@ export class SessionCreator {
 
       const expectedWindows = await this.getExpectedWindows(worktreePath)
 
-      await this.createTmuxSession(
+      const windows = await this.createTmuxSession(
         sessionName,
         worktreePath,
         expectedWindows,
@@ -70,8 +71,24 @@ export class SessionCreator {
       console.log(`\n✓ Session created successfully!`)
       console.log(`\nSession name: ${sessionName}`)
       console.log(`Worktree path: ${worktreePath}`)
-      const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
+      if (windows.length) {
+        console.log('\nWindows:')
+        for (const w of windows) {
+          console.log(`  - ${w}`)
+        }
+      }
+      const socketArgsArr = getTmuxSocketArgs(this.socketOptions)
+      const socketArgs = socketArgsArr.join(' ')
       console.log(`\nTo attach: tmux ${socketArgs} attach -t ${sessionName}`)
+
+      // Attach after all windows have been created
+      if (options.attach) {
+        setTimeout(() => {
+          spawnSync('tmux', [...socketArgsArr, 'attach', '-t', sessionName], {
+            stdio: 'inherit',
+          })
+        }, 300) // Wait for all windows to be created
+      }
     } catch (error) {
       throw error
     }
@@ -134,7 +151,7 @@ export class SessionCreator {
     mode: 'act' | 'plan',
     terminalWidth?: number,
     terminalHeight?: number,
-  ) {
+  ): Promise<string[]> {
     const packageJsonPath = path.join(worktreePath, 'package.json')
     if (!fs.existsSync(packageJsonPath)) {
       throw new Error('package.json not found in worktree')
@@ -156,6 +173,7 @@ export class SessionCreator {
 
     let firstWindowCreated = false
     let windowIndex = 0
+    const createdWindows: string[] = []
 
     const createSession = (windowName: string, command: string) => {
       const socketArgs = getTmuxSocketArgs(this.socketOptions)
@@ -182,6 +200,8 @@ export class SessionCreator {
         },
       )
       tmuxProcess.unref()
+
+      createdWindows.push(windowName)
 
       let attempts = 0
       while (!socketExists(this.socketOptions) && attempts < 50) {
@@ -218,6 +238,8 @@ export class SessionCreator {
       execSync(
         `tmux ${socketArgs} send-keys -t ${sessionName}:${windowName} '${command}' Enter`,
       )
+
+      createdWindows.push(windowName)
     }
 
     if (expectedWindows.includes('work')) {
@@ -346,12 +368,16 @@ export class SessionCreator {
       }
     }, 100)
 
+    createdWindows.push('control')
+
     setTimeout(() => {
       try {
         const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
         execSync(`tmux ${socketArgs} select-window -t ${sessionName}:work`)
       } catch {}
     }, 200)
+
+    return createdWindows
   }
 
   private findAvailablePort(): number {

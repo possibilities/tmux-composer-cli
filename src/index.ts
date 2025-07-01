@@ -90,6 +90,7 @@ async function main() {
     .option('-S <socket-path>', 'Tmux socket path')
     .option('--terminal-width <width>', 'Terminal width', parseInt)
     .option('--terminal-height <height>', 'Terminal height', parseInt)
+    .option('--attach', 'Attach to the session after creation')
     .action(async (projectPath, options) => {
       const socketOptions: TmuxSocketOptions = {
         socketName: options.L,
@@ -103,6 +104,7 @@ async function main() {
           mode: options.mode,
           terminalWidth: options.terminalWidth,
           terminalHeight: options.terminalHeight,
+          attach: options.attach,
           ...socketOptions,
         })
       } catch (error) {
