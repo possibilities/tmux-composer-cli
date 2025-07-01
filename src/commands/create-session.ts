@@ -220,55 +220,6 @@ export class SessionCreator {
       )
     }
 
-    if (scripts.dev && expectedWindows.includes('server')) {
-      const port = this.findAvailablePort()
-      const command = `PORT=${port} pnpm run dev`
-
-      if (!firstWindowCreated) {
-        createSession('server', command)
-      } else {
-        createWindow('server', command)
-      }
-
-      windowIndex++
-    }
-
-    if (scripts['lint:watch'] && expectedWindows.includes('lint')) {
-      const command = 'pnpm run lint:watch'
-
-      if (!firstWindowCreated) {
-        createSession('lint', command)
-      } else {
-        createWindow('lint', command)
-      }
-
-      windowIndex++
-    }
-
-    if (scripts['types:watch'] && expectedWindows.includes('types')) {
-      const command = 'pnpm run types:watch'
-
-      if (!firstWindowCreated) {
-        createSession('types', command)
-      } else {
-        createWindow('types', command)
-      }
-
-      windowIndex++
-    }
-
-    if (scripts['test:watch'] && expectedWindows.includes('test')) {
-      const command = 'pnpm run test:watch'
-
-      if (!firstWindowCreated) {
-        createSession('test', command)
-      } else {
-        createWindow('test', command)
-      }
-
-      windowIndex++
-    }
-
     if (expectedWindows.includes('work')) {
       let command = 'claude'
 
@@ -325,6 +276,56 @@ export class SessionCreator {
         }
       }
     }
+
+    if (scripts.dev && expectedWindows.includes('server')) {
+      const port = this.findAvailablePort()
+      const command = `PORT=${port} pnpm run dev`
+
+      if (!firstWindowCreated) {
+        createSession('server', command)
+      } else {
+        createWindow('server', command)
+      }
+
+      windowIndex++
+    }
+
+    if (scripts['lint:watch'] && expectedWindows.includes('lint')) {
+      const command = 'pnpm run lint:watch'
+
+      if (!firstWindowCreated) {
+        createSession('lint', command)
+      } else {
+        createWindow('lint', command)
+      }
+
+      windowIndex++
+    }
+
+    if (scripts['types:watch'] && expectedWindows.includes('types')) {
+      const command = 'pnpm run types:watch'
+
+      if (!firstWindowCreated) {
+        createSession('types', command)
+      } else {
+        createWindow('types', command)
+      }
+
+      windowIndex++
+    }
+
+    if (scripts['test:watch'] && expectedWindows.includes('test')) {
+      const command = 'pnpm run test:watch'
+
+      if (!firstWindowCreated) {
+        createSession('test', command)
+      } else {
+        createWindow('test', command)
+      }
+
+      windowIndex++
+    }
+
     setTimeout(() => {
       try {
         const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
