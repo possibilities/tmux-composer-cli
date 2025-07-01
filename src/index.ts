@@ -68,19 +68,21 @@ async function main() {
   program
     .command('watch-session')
     .description('Watch for session changes')
-    .action(async () => {
+    .option('--no-zeromq', 'Disable ZeroMQ publishing, only console log events')
+    .action(async options => {
       const watcher = new TmuxSessionWatcher()
 
-      await watcher.start()
+      await watcher.start(options)
     })
 
   program
     .command('watch-panes')
     .description('Watch for pane changes')
-    .action(async () => {
+    .option('--no-zeromq', 'Disable ZeroMQ publishing, only console log events')
+    .action(async options => {
       const watcher = new TmuxPaneWatcher()
 
-      await watcher.start()
+      await watcher.start(options)
     })
 
   program
@@ -92,6 +94,7 @@ async function main() {
     .option('--terminal-width <width>', 'Terminal width', parseInt)
     .option('--terminal-height <height>', 'Terminal height', parseInt)
     .option('--attach', 'Attach to the session after creation')
+    .option('--no-zeromq', 'Disable ZeroMQ publishing, only console log events')
     .action(async (projectPath, options) => {
       const socketOptions: TmuxSocketOptions = {
         socketName: options.L,
@@ -106,6 +109,7 @@ async function main() {
           terminalWidth: options.terminalWidth,
           terminalHeight: options.terminalHeight,
           attach: options.attach,
+          zeromq: options.zeromq,
           ...socketOptions,
         })
       } catch (error) {

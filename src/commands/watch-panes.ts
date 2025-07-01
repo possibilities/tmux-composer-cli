@@ -55,8 +55,8 @@ export class TmuxPaneWatcher extends EventEmitter {
     this.emit('event', event)
   }
 
-  async start() {
-    await enableZmqPublishing(this)
+  async start(options: { zeromq?: boolean } = {}) {
+    await enableZmqPublishing(this, options)
 
     try {
       const sessionName = await this.runCommand(

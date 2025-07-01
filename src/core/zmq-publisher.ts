@@ -92,7 +92,12 @@ export async function shutdownZmqPublisher(): Promise<void> {
 
 export async function enableZmqPublishing(
   emitter: EventEmitter,
+  options: { zeromq?: boolean } = {},
 ): Promise<void> {
+  if (options.zeromq === false) {
+    return
+  }
+
   const publisher = getZmqPublisher()
 
   try {

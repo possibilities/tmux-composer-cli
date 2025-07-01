@@ -26,6 +26,7 @@ interface CreateSessionOptions extends TmuxSocketOptions {
   terminalWidth?: number
   terminalHeight?: number
   attach?: boolean
+  zeromq?: boolean
 }
 
 interface TmuxEvent {
@@ -65,7 +66,7 @@ export class SessionCreator extends EventEmitter {
   async create(projectPath: string, options: CreateSessionOptions = {}) {
     const startTime = Date.now()
 
-    await enableZmqPublishing(this)
+    await enableZmqPublishing(this, options)
 
     // Emit initial event with all options
     this.emitEvent('initialize-session-creation:start', {
