@@ -38,6 +38,7 @@ export class TmuxAutomatorNew {
   private maxReconnectAttempts = 10
   private baseReconnectDelay = 1000
   private maxReconnectDelay = 30000
+  private lastPaneListHash = ''
 
   constructor(options: AutomateNewOptions = {}) {
     this.socketOptions = {
@@ -73,6 +74,7 @@ export class TmuxAutomatorNew {
             this.windowIdMap.clear()
             this.paneToKeyMap.clear()
             this.hasDisplayedInitialList = false
+            this.lastPaneListHash = ''
             if (this.claudeCheckInterval) {
               clearInterval(this.claudeCheckInterval)
               this.claudeCheckInterval = null
@@ -100,6 +102,7 @@ export class TmuxAutomatorNew {
           this.windowIdMap.clear()
           this.paneToKeyMap.clear()
           this.hasDisplayedInitialList = false
+          this.lastPaneListHash = ''
 
           const connected = await this.connectControlMode()
           if (!connected) {
@@ -276,6 +279,7 @@ export class TmuxAutomatorNew {
     this.windowIdMap.clear()
     this.paneToKeyMap.clear()
     this.hasDisplayedInitialList = false
+    this.lastPaneListHash = ''
 
     if (this.claudeCheckInterval) {
       clearInterval(this.claudeCheckInterval)
@@ -500,8 +504,26 @@ export class TmuxAutomatorNew {
     }
   }
 
+  private computePaneListHash(): string {
+    // Create a deterministic string representation of the current pane state
+    const paneData: string[] = []
+    for (const [paneId, pane] of this.panes.entries()) {
+      paneData.push(
+        `${paneId}:${pane.sessionName}:${pane.windowIndex}.${pane.paneIndex}:${pane.windowName}:${pane.command}:${pane.width}x${pane.height}:${pane.hasClaude}`,
+      )
+    }
+    return paneData.sort().join('|')
+  }
+
   private displayPaneList() {
     try {
+      // Only display if the pane list has actually changed
+      const currentHash = this.computePaneListHash()
+      if (currentHash === this.lastPaneListHash) {
+        return
+      }
+      this.lastPaneListHash = currentHash
+
       console.log('\nCurrent panes:')
       const panesByWindow = new Map<string, Array<[string, any]>>()
 
@@ -544,6 +566,7 @@ export class TmuxAutomatorNew {
         this.panes.clear()
         this.windowIdMap.clear()
         this.paneToKeyMap.clear()
+        this.lastPaneListHash = ''
         await this.writeToControlMode(
           'list-panes -a -F "PANE %#{pane_id} #{session_name}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n',
         )
