@@ -1,30 +1,71 @@
-import { spawn } from 'child_process'
+import { spawn, ChildProcess } from 'child_process'
 import { promisify } from 'util'
 import { EventEmitter } from 'events'
 
 const sleep = promisify(setTimeout)
 
+interface PaneInfo {
+  sessionName: string
+  windowIndex: string
+  paneIndex: string
+  windowName: string
+  command: string
+  hasClaude: boolean
+  firstSeen: number
+  width: number
+  height: number
+}
+
+interface WindowInfo {
+  session: string
+  index: string
+}
+
+interface TmuxEvent {
+  event: string
+  data: any
+}
+
+interface PanesChangedData {
+  sessionId: string | null
+  sessionName: string | null
+  windows: Array<{
+    windowId: string
+    windowIndex: string
+    windowName: string
+    panes: Array<{
+      paneId: string
+      paneIndex: string
+      command: string
+      width: number
+      height: number
+      hasClaude: boolean
+    }>
+  }>
+}
+
+class TmuxControlModeError extends Error {
+  constructor(
+    message: string,
+    public code?: string,
+  ) {
+    super(message)
+    this.name = 'TmuxControlModeError'
+  }
+}
+
+interface NodeError extends Error {
+  code?: string
+}
+
 export class TmuxAutomatorNew extends EventEmitter {
-  private controlModeProcess: any = null
+  private controlModeProcess: ChildProcess | null = null
   private currentSessionName: string | null = null
   private currentSessionId: string | null = null
   private isConnected = false
   private isShuttingDown = false
-  private panes = new Map<
-    string,
-    {
-      sessionName: string
-      windowIndex: string
-      paneIndex: string
-      windowName: string
-      command: string
-      hasClaude: boolean
-      firstSeen: number
-      width: number
-      height: number
-    }
-  >()
-  private windowIdMap = new Map<string, { session: string; index: string }>()
+  private panes = new Map<string, PaneInfo>()
+  private windowIdMap = new Map<string, WindowInfo>()
   private paneToKeyMap = new Map<string, string>()
   private inCommandOutput = false
   private hasDisplayedInitialList = false
@@ -38,16 +79,17 @@ export class TmuxAutomatorNew extends EventEmitter {
   constructor() {
     super()
 
-    this.on('event', event => {
+    this.on('event', (event: TmuxEvent) => {
       console.log(JSON.stringify(event))
     })
   }
 
-  private emitEvent(eventName: string, data: any) {
-    this.emit('event', {
+  private emitEvent(eventName: string, data: any): void {
+    const event: TmuxEvent = {
       event: eventName,
       data,
-    })
+    }
+    this.emit('event', event)
   }
 
   async start() {
@@ -111,22 +153,22 @@ export class TmuxAutomatorNew extends EventEmitter {
   private async connectControlMode(): Promise<boolean> {
     try {
       if (this.controlModeProcess) {
-        this.controlModeProcess.stdout.removeAllListeners()
-        this.controlModeProcess.stderr.removeAllListeners()
-        this.controlModeProcess.removeAllListeners()
+        this.controlModeProcess!.stdout?.removeAllListeners()
+        this.controlModeProcess!.stderr?.removeAllListeners()
+        this.controlModeProcess!.removeAllListeners()
 
         if (
-          this.controlModeProcess.stdin &&
-          !this.controlModeProcess.stdin.destroyed
+          this.controlModeProcess!.stdin &&
+          !this.controlModeProcess!.stdin.destroyed
         ) {
-          this.controlModeProcess.stdin.end()
+          this.controlModeProcess!.stdin.end()
         }
 
-        this.controlModeProcess.kill()
+        this.controlModeProcess!.kill()
         this.controlModeProcess = null
       }
 
-      const args = ['-C', 'attach-session', '-t', this.currentSessionId]
+      const args = ['-C', 'attach-session', '-t', this.currentSessionId!]
 
       this.controlModeProcess = spawn('tmux', args, {
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -166,7 +208,7 @@ export class TmuxAutomatorNew extends EventEmitter {
       this.cleanupControlMode()
     }
 
-    const errorHandler = (error: Error) => {
+    const errorHandler = (error: NodeError) => {
       console.error('Control mode process error:', error)
       this.isConnected = false
 
@@ -179,10 +221,10 @@ export class TmuxAutomatorNew extends EventEmitter {
       }
     }
 
-    this.controlModeProcess.stdout.on('data', stdoutHandler)
-    this.controlModeProcess.stderr.on('data', stderrHandler)
-    this.controlModeProcess.on('close', closeHandler)
-    this.controlModeProcess.on('error', errorHandler)
+    this.controlModeProcess!.stdout!.on('data', stdoutHandler)
+    this.controlModeProcess!.stderr!.on('data', stderrHandler)
+    this.controlModeProcess!.on('close', closeHandler)
+    this.controlModeProcess!.on('error', errorHandler)
 
     this.isConnected = true
 
@@ -204,17 +246,18 @@ export class TmuxAutomatorNew extends EventEmitter {
 
   private async writeToControlMode(data: string): Promise<void> {
     if (!this.controlModeProcess || !this.controlModeProcess.stdin) {
-      throw new Error('Control mode process not available')
+      throw new TmuxControlModeError('Control mode process not available')
     }
 
     if (this.controlModeProcess.stdin.destroyed) {
-      throw new Error('Control mode stdin is destroyed')
+      throw new TmuxControlModeError('Control mode stdin is destroyed')
     }
 
     return new Promise((resolve, reject) => {
-      this.controlModeProcess.stdin.write(data, error => {
+      this.controlModeProcess.stdin!.write(data, (error?: Error | null) => {
         if (error) {
-          if (error.code === 'EPIPE') {
+          const nodeError = error as NodeError
+          if (nodeError.code === 'EPIPE') {
             console.error('EPIPE error: tmux connection lost')
             this.cleanupControlMode()
           }
@@ -230,8 +273,8 @@ export class TmuxAutomatorNew extends EventEmitter {
     this.isConnected = false
 
     if (this.controlModeProcess) {
-      this.controlModeProcess.stdout.removeAllListeners()
-      this.controlModeProcess.stderr.removeAllListeners()
+      this.controlModeProcess.stdout?.removeAllListeners()
+      this.controlModeProcess.stderr?.removeAllListeners()
       this.controlModeProcess.removeAllListeners()
 
       if (
@@ -432,7 +475,7 @@ export class TmuxAutomatorNew extends EventEmitter {
 
             const sessionMatches =
               sessionName === this.currentSessionId ||
-              sessionName === this.currentSessionId.replace('$', '') ||
+              sessionName === this.currentSessionId!.replace('$', '') ||
               '$' + sessionName === this.currentSessionId
             if (sessionMatches) {
               this.panes.set(paneId, {
@@ -560,11 +603,12 @@ export class TmuxAutomatorNew extends EventEmitter {
         )
       }
 
-      this.emitEvent('panes-changed', {
+      const data: PanesChangedData = {
         sessionId: this.currentSessionId,
         sessionName: this.currentSessionName,
         windows,
-      })
+      }
+      this.emitEvent('panes-changed', data)
     } catch (error) {
       console.error('Error emitting panes changed:', error)
     }
@@ -587,7 +631,8 @@ export class TmuxAutomatorNew extends EventEmitter {
         )
       } catch (error) {
         console.error('Failed to refresh pane list:', error)
-        if (error.code === 'EPIPE') {
+        const nodeError = error as NodeError
+        if (nodeError.code === 'EPIPE') {
           this.cleanupControlMode()
         }
       }
@@ -665,7 +710,8 @@ export class TmuxAutomatorNew extends EventEmitter {
       )
     } catch (error) {
       console.error('Failed to check for Claude updates:', error)
-      if (error.code === 'EPIPE') {
+      const nodeError = error as NodeError
+      if (nodeError.code === 'EPIPE') {
         this.cleanupControlMode()
       }
     }
@@ -680,8 +726,8 @@ export class TmuxAutomatorNew extends EventEmitter {
     }
 
     if (this.controlModeProcess) {
-      this.controlModeProcess.stdout.removeAllListeners()
-      this.controlModeProcess.stderr.removeAllListeners()
+      this.controlModeProcess.stdout?.removeAllListeners()
+      this.controlModeProcess.stderr?.removeAllListeners()
       this.controlModeProcess.removeAllListeners()
 
       if (
