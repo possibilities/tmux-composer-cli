@@ -325,6 +325,14 @@ export class SessionCreator {
         }
       }
     }
+    setTimeout(() => {
+      try {
+        const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
+        execSync(
+          `tmux ${socketArgs} new-window -t ${sessionName} -n 'control' -c ${worktreePath} 'tmux-composer claude automate-new'`,
+        )
+      } catch {}
+    }, 100)
 
     setTimeout(() => {
       try {
