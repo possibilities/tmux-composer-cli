@@ -415,8 +415,12 @@ export class TmuxAutomatorNew {
       } else if (parts[0] === '%output') {
         if (parts.length >= 2) {
           const paneId = parts[1]
-          const displayKey = this.paneToKeyMap.get(paneId)
-          const pane = this.panes.get(paneId)
+          // Normalize pane ID format: %output uses %3, but list-panes uses %%3
+          const normalizedPaneId = paneId.startsWith('%')
+            ? '%' + paneId
+            : paneId
+          const displayKey = this.paneToKeyMap.get(normalizedPaneId)
+          const pane = this.panes.get(normalizedPaneId)
 
           if (displayKey) {
             // We have the pane mapped, print the change notification
