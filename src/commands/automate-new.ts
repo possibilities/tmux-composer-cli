@@ -14,6 +14,8 @@ interface PaneInfo {
   firstSeen: number
   width: number
   height: number
+  isActive: boolean
+  windowActive: boolean
 }
 
 interface WindowInfo {
@@ -29,10 +31,13 @@ interface TmuxEvent {
 interface PanesChangedData {
   sessionId: string | null
   sessionName: string | null
+  focusedWindowId: string | null
+  focusedPaneId: string | null
   windows: Array<{
     windowId: string
     windowIndex: string
     windowName: string
+    isActive: boolean
     panes: Array<{
       paneId: string
       paneIndex: string
@@ -40,6 +45,7 @@ interface PanesChangedData {
       width: number
       height: number
       hasClaude: boolean
+      isActive: boolean
     }>
   }>
 }
@@ -294,7 +300,7 @@ export class TmuxAutomatorNew extends EventEmitter {
 
     try {
       await this.writeToControlMode(
-        `list-panes -a -F "PANE %#{pane_id} #{session_id}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n`,
+        `list-panes -a -F "PANE %#{pane_id} #{session_id}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id} #{pane_active} #{window_active}"\n`,
       )
 
       this.startClaudeChecking()
@@ -502,7 +508,7 @@ export class TmuxAutomatorNew extends EventEmitter {
           }
         } else if (line.startsWith('PANE ')) {
           const match = line.match(
-            /^PANE (%%\d+) ([^:]+):(\d+)\.(\d+) (.+?) ([^ ]+) (\d+)x(\d+) (@@\d+)$/,
+            /^PANE (%%\d+) ([^:]+):(\d+)\.(\d+) (.+?) ([^ ]+) (\d+)x(\d+) (@@\d+) (\d) (\d)$/,
           )
           if (match) {
             const [
@@ -516,6 +522,8 @@ export class TmuxAutomatorNew extends EventEmitter {
               width,
               height,
               windowId,
+              paneActive,
+              windowActive,
             ] = match
             const displayKey = `${sessionIdStr}:${windowIndex}.${paneIndex}`
 
@@ -535,6 +543,8 @@ export class TmuxAutomatorNew extends EventEmitter {
                 firstSeen: existingPane?.firstSeen ?? Date.now(),
                 width: parseInt(width, 10),
                 height: parseInt(height, 10),
+                isActive: paneActive === '1',
+                windowActive: windowActive === '1',
               })
 
               this.paneToKeyMap.set(paneId, displayKey)
@@ -592,7 +602,7 @@ export class TmuxAutomatorNew extends EventEmitter {
     const paneData: string[] = []
     for (const [paneId, pane] of this.panes.entries()) {
       paneData.push(
-        `${paneId}:${pane.sessionName}:${pane.windowIndex}.${pane.paneIndex}:${pane.windowName}:${pane.command}:${pane.width}x${pane.height}:${pane.hasClaude}`,
+        `${paneId}:${pane.sessionName}:${pane.windowIndex}.${pane.paneIndex}:${pane.windowName}:${pane.command}:${pane.width}x${pane.height}:${pane.hasClaude}:${pane.isActive}:${pane.windowActive}`,
       )
     }
     return paneData.sort().join('|')
@@ -603,6 +613,8 @@ export class TmuxAutomatorNew extends EventEmitter {
       this.lastPaneListHash = this.computePaneListHash()
 
       const windowsMap = new Map<string, any>()
+      let focusedWindowId: string | null = null
+      let focusedPaneId: string | null = null
 
       for (const [paneId, pane] of this.panes.entries()) {
         const windowKey = `${pane.sessionName}:${pane.windowIndex}`
@@ -619,8 +631,17 @@ export class TmuxAutomatorNew extends EventEmitter {
             windowId: windowId || '',
             windowIndex: pane.windowIndex,
             windowName: pane.windowName,
+            isActive: pane.windowActive,
             panes: [],
           })
+
+          if (pane.windowActive && windowId) {
+            focusedWindowId = windowId
+          }
+        }
+
+        if (pane.isActive && pane.windowActive) {
+          focusedPaneId = paneId
         }
 
         windowsMap.get(windowKey).panes.push({
@@ -630,6 +651,7 @@ export class TmuxAutomatorNew extends EventEmitter {
           width: pane.width,
           height: pane.height,
           hasClaude: pane.hasClaude,
+          isActive: pane.isActive,
         })
       }
 
@@ -646,6 +668,8 @@ export class TmuxAutomatorNew extends EventEmitter {
       const data: PanesChangedData = {
         sessionId: this.currentSessionId,
         sessionName: this.currentSessionName,
+        focusedWindowId,
+        focusedPaneId,
         windows,
       }
       this.emitEvent('panes-changed', data)
@@ -667,7 +691,7 @@ export class TmuxAutomatorNew extends EventEmitter {
         this.lastPaneListHash = ''
         this.forceEmitAfterRefresh = true
         await this.writeToControlMode(
-          `list-panes -a -F "PANE %#{pane_id} #{session_id}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id}"\n`,
+          `list-panes -a -F "PANE %#{pane_id} #{session_id}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id} #{pane_active} #{window_active}"\n`,
         )
       } catch (error) {
         console.error('Failed to refresh pane list:', error)
