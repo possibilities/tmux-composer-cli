@@ -138,6 +138,7 @@ export class TmuxAutomatorNew extends EventEmitter {
   private forceEmitAfterRefresh = false
   private resizeHandler: (() => void) | null = null
   private throttledRefreshPaneList: () => void
+  private readonly CLAUDE_CHECK_INTERVAL = 1000
 
   constructor() {
     super()
@@ -739,7 +740,7 @@ export class TmuxAutomatorNew extends EventEmitter {
         this.checkForClaudeUpdates().catch(error => {
           console.error('Error in Claude check interval:', error)
         })
-      }, 1000)
+      }, this.CLAUDE_CHECK_INTERVAL)
     } catch (error) {
       console.error('Failed to start Claude checking:', error)
     }
