@@ -65,6 +65,55 @@ function normalizeSessionId(id: string): string {
   return id.startsWith('$') ? id : `$${id}`
 }
 
+/**
+ * Creates a throttled function that fires on both leading and trailing edges
+ */
+function throttle<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number,
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null
+  let lastCallTime = 0
+  let lastArgs: Parameters<T> | null = null
+
+  const invokeFunc = (args: Parameters<T>) => {
+    lastCallTime = Date.now()
+    func(...args)
+  }
+
+  return function throttled(...args: Parameters<T>) {
+    const now = Date.now()
+    const timeSinceLastCall = now - lastCallTime
+
+    // Store latest args for potential trailing call
+    lastArgs = args
+
+    // Leading edge
+    if (timeSinceLastCall >= wait) {
+      if (timeout) {
+        clearTimeout(timeout)
+        timeout = null
+      }
+      invokeFunc(args)
+    }
+
+    // Set up trailing edge
+    if (!timeout) {
+      const remainingTime = wait - timeSinceLastCall
+      timeout = setTimeout(
+        () => {
+          timeout = null
+          if (lastArgs && Date.now() - lastCallTime >= wait) {
+            invokeFunc(lastArgs)
+            lastArgs = null
+          }
+        },
+        remainingTime > 0 ? remainingTime : wait,
+      )
+    }
+  }
+}
+
 export class TmuxAutomatorNew extends EventEmitter {
   private controlModeProcess: ChildProcess | null = null
   private currentSessionName: string | null = null
@@ -82,6 +131,7 @@ export class TmuxAutomatorNew extends EventEmitter {
   private lastPaneListHash = ''
   private forceEmitAfterRefresh = false
   private resizeHandler: (() => void) | null = null
+  private throttledRefreshPaneList: () => void
 
   constructor() {
     super()
@@ -89,6 +139,13 @@ export class TmuxAutomatorNew extends EventEmitter {
     this.on('event', (event: TmuxEvent) => {
       console.log(JSON.stringify(event))
     })
+
+    // Create throttled version of refreshPaneList with 150ms delay
+    this.throttledRefreshPaneList = throttle(() => {
+      this.refreshPaneList().catch(error => {
+        console.error('Failed to refresh pane list:', error)
+      })
+    }, 150)
   }
 
   private emitEvent(eventName: string, data: any): void {
@@ -143,9 +200,7 @@ export class TmuxAutomatorNew extends EventEmitter {
 
   private setupResizeHandler() {
     const handler = () => {
-      this.refreshPaneList().catch(error => {
-        console.error('Failed to refresh pane list on resize:', error)
-      })
+      this.throttledRefreshPaneList()
     }
 
     this.resizeHandler = handler
@@ -351,11 +406,7 @@ export class TmuxAutomatorNew extends EventEmitter {
           this.hasDisplayedInitialList &&
           (!info || info.session === this.currentSessionId)
         ) {
-          setTimeout(() => {
-            this.refreshPaneList().catch(error => {
-              console.error('Failed to refresh pane list:', error)
-            })
-          }, 500)
+          this.throttledRefreshPaneList()
         }
       } else if (parts[0] === '%window-close') {
         const windowId = parts[1]
@@ -429,11 +480,7 @@ export class TmuxAutomatorNew extends EventEmitter {
             }
           }
         }
-        setTimeout(() => {
-          this.refreshPaneList().catch(error => {
-            console.error('Failed to refresh pane list:', error)
-          })
-        }, 100)
+        this.throttledRefreshPaneList()
       } else if (parts[0] === '%session-window-changed') {
         const sessionId = parts[1]
         const windowId = parts[2]
@@ -505,23 +552,16 @@ export class TmuxAutomatorNew extends EventEmitter {
       }
 
       if (parts[0] === '%window-close') {
-        setTimeout(() => this.emitPanesChanged(), 100)
+        // Emit immediately for critical event
+        this.emitPanesChanged()
       }
 
       if (parts[0] === '%window-pane-changed') {
-        setTimeout(() => {
-          this.refreshPaneList().catch(error => {
-            console.error('Failed to refresh pane list:', error)
-          })
-        }, 100)
+        this.throttledRefreshPaneList()
       }
 
       if (parts[0] === '%unlinked-window-add') {
-        setTimeout(() => {
-          this.refreshPaneList().catch(error => {
-            console.error('Failed to refresh pane list:', error)
-          })
-        }, 100)
+        this.throttledRefreshPaneList()
       }
 
       if (
