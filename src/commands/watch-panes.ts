@@ -228,17 +228,19 @@ export class TmuxPaneWatcher extends EventEmitter {
     windowIndex: string
     windowName: string
     windowId: string
+    sessionId: string
   } | null> {
     try {
       // Use display-message to get pane info directly
       const result = await this.runCommand(
-        `tmux display-message -t ${paneId} -p "#{window_index} #{window_name} #{window_id}"`,
+        `tmux display-message -t ${paneId} -p "#{session_id} #{window_index} #{window_name} #{window_id}"`,
       )
       const parts = result.trim().split(' ')
-      const windowIndex = parts[0]
+      const sessionId = parts[0]
+      const windowIndex = parts[1]
       const windowId = parts[parts.length - 1]
-      const windowName = parts.slice(1, -1).join(' ')
-      return { windowIndex, windowName, windowId }
+      const windowName = parts.slice(2, -1).join(' ')
+      return { sessionId, windowIndex, windowName, windowId }
     } catch (error) {
       return null
     }
@@ -281,16 +283,21 @@ export class TmuxPaneWatcher extends EventEmitter {
         try {
           const paneInfo = await this.getPaneInfo(paneId)
 
+          // Skip panes not in our session
+          if (!paneInfo || normalizeSessionId(paneInfo.sessionId) !== this.currentSessionId) {
+            return
+          }
+
           // Skip panes in the same window as this watcher
-          if (paneInfo && paneInfo.windowId === this.ownWindowId) {
+          if (paneInfo.windowId === this.ownWindowId) {
             return
           }
 
           const data = {
             sessionId: this.currentSessionId!,
             paneId: paneId,
-            windowName: paneInfo?.windowName || 'unknown',
-            windowIndex: paneInfo?.windowIndex || 'unknown',
+            windowName: paneInfo.windowName,
+            windowIndex: paneInfo.windowIndex,
           }
 
           // Get or create throttled emitter for this pane
