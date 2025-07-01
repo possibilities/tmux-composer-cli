@@ -86,14 +86,16 @@ async function main() {
     })
 
   program
-    .command('create-session <project-path>')
-    .description('Create worktree and session for project')
+    .command('create-session [project-path]')
+    .description(
+      'Create worktree and session for project (uses current directory if path not provided)',
+    )
     .option('--mode <mode>', 'Session mode (act or plan)', 'act')
     .option('-L <socket-name>', 'Tmux socket name')
     .option('-S <socket-path>', 'Tmux socket path')
     .option('--terminal-width <width>', 'Terminal width', parseInt)
     .option('--terminal-height <height>', 'Terminal height', parseInt)
-    .option('--attach', 'Attach to the session after creation')
+    .option('--no-attach', 'Do not attach to the session after creation')
     .option('--no-zeromq', 'Disable ZeroMQ publishing, only console log events')
     .action(async (projectPath, options) => {
       const socketOptions: TmuxSocketOptions = {
@@ -103,12 +105,15 @@ async function main() {
 
       const creator = new SessionCreator(socketOptions)
 
+      const resolvedProjectPath = projectPath || process.cwd()
+      const shouldAttach = !options.attach
+
       try {
-        await creator.create(projectPath, {
+        await creator.create(resolvedProjectPath, {
           mode: options.mode,
           terminalWidth: options.terminalWidth,
           terminalHeight: options.terminalHeight,
-          attach: options.attach,
+          attach: shouldAttach,
           zeromq: options.zeromq,
           ...socketOptions,
         })
