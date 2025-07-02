@@ -16,6 +16,7 @@ interface PaneOutputData {
   windowName: string
   paneIndex: string
   paneId: string
+  content: string
 }
 
 interface NodeError extends Error {
@@ -35,6 +36,7 @@ export class TmuxPaneWatcher extends EventEmitter {
   private isConnected = false
   private isShuttingDown = false
   private paneThrottlers = new Map<string, (data: any) => void>()
+  private paneContents = new Map<string, string>()
 
   constructor() {
     super()
@@ -109,6 +111,21 @@ export class TmuxPaneWatcher extends EventEmitter {
         else reject(new Error(`Command failed with code ${code}`))
       })
     })
+  }
+
+  private async capturePaneContent(paneId: string): Promise<string> {
+    try {
+      const content = await this.runCommand(
+        `tmux capture-pane -p -J -t ${paneId}`,
+      )
+      return content
+    } catch (error) {
+      console.error(
+        `[DEBUG] Failed to capture pane content for ${paneId}:`,
+        error,
+      )
+      return ''
+    }
   }
 
   private setupSignalHandlers() {
@@ -295,8 +312,15 @@ export class TmuxPaneWatcher extends EventEmitter {
 
           let throttledEmitter = this.paneThrottlers.get(paneId)
           if (!throttledEmitter) {
-            throttledEmitter = throttle((data: any) => {
-              this.emitEvent('pane-changed', data)
+            throttledEmitter = throttle(async (data: any) => {
+              const currentContent = await this.capturePaneContent(paneId)
+              const lastContent = this.paneContents.get(paneId)
+
+              if (!lastContent || lastContent !== currentContent) {
+                this.paneContents.set(paneId, currentContent)
+                const eventData = { ...data, content: currentContent }
+                this.emitEvent('pane-changed', eventData)
+              }
             }, 100)
             this.paneThrottlers.set(paneId, throttledEmitter)
           }
@@ -316,6 +340,7 @@ export class TmuxPaneWatcher extends EventEmitter {
     this.isShuttingDown = true
 
     this.paneThrottlers.clear()
+    this.paneContents.clear()
 
     if (this.controlModeProcess) {
       this.controlModeProcess.stdout?.removeAllListeners()
