@@ -124,9 +124,10 @@ async function main() {
   program
     .command('observe-watchers')
     .description('Observe all watchers')
-    .action(async () => {
+    .option('--ws', 'Send events over a websocket connection', true)
+    .action(async options => {
       const observer = new EventObserver()
-      await observer.start()
+      await observer.start(options)
     })
 
   try {

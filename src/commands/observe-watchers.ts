@@ -1,12 +1,16 @@
 import { Subscriber } from 'zeromq'
+import WebSocket, { WebSocketServer } from 'ws'
+
+const WS_PORT = 31337
 
 const ZMQ_SOCKET_PATH = 'ipc:///tmp/tmux-composer-events.sock'
 
 export class EventObserver {
   private subscriber: Subscriber | null = null
   private isRunning = false
+  private wsServer: WebSocketServer | null = null
 
-  async start(): Promise<void> {
+  async start(options: { ws?: boolean } = {}): Promise<void> {
     try {
       this.subscriber = new Subscriber()
       await this.subscriber.bind(ZMQ_SOCKET_PATH)
@@ -15,6 +19,18 @@ export class EventObserver {
       this.isRunning = true
       console.error('[INFO] Connected to ZeroMQ event publisher')
       console.error(`[INFO] Listening for events on ${ZMQ_SOCKET_PATH}`)
+
+      if (options.ws !== false) {
+        this.wsServer = new WebSocketServer({ port: WS_PORT })
+        console.error(
+          `[INFO] WebSocket server listening on ws://localhost:${WS_PORT}`,
+        )
+        this.wsServer.on('connection', socket => {
+          socket.on('error', err => {
+            console.error('[WS] client error:', err)
+          })
+        })
+      }
 
       this.setupSignalHandlers()
 
@@ -30,7 +46,16 @@ export class EventObserver {
 
     try {
       for await (const [message] of this.subscriber) {
-        console.log(message.toString())
+        const text = message.toString()
+        console.log(text)
+
+        if (this.wsServer) {
+          for (const client of this.wsServer.clients) {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(text)
+            }
+          }
+        }
       }
     } catch (error) {
       if (this.isRunning) {
@@ -56,6 +81,14 @@ export class EventObserver {
         this.subscriber.close()
       } catch (error) {
         console.error('[ERROR] Error during shutdown:', error)
+      }
+    }
+
+    if (this.wsServer) {
+      try {
+        this.wsServer.close()
+      } catch (error) {
+        console.error('[ERROR] Error closing WebSocket server:', error)
       }
     }
 
