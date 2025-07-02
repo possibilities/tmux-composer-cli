@@ -265,7 +265,7 @@ export class TmuxSessionWatcher extends EventEmitter {
 
     try {
       await this.writeToControlMode(
-        `list-panes -a -F "PANE %#{pane_id} #{session_id}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id} #{pane_active} #{window_active}"\n`,
+        `list-panes -s -F "PANE %#{pane_id} #{session_id}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id} #{pane_active} #{window_active}"\n`,
       )
 
       this.startClaudeChecking()
@@ -372,11 +372,7 @@ export class TmuxSessionWatcher extends EventEmitter {
 
       if (parts[0] === '%window-add') {
         const windowId = parts[1]
-        const info = this.windowIdMap.get(windowId)
-        if (
-          this.hasDisplayedInitialList &&
-          (!info || info.session === this.currentSessionId)
-        ) {
+        if (this.hasDisplayedInitialList) {
           this.throttledRefreshPaneList()
         }
       } else if (parts[0] === '%window-close') {
@@ -460,9 +456,7 @@ export class TmuxSessionWatcher extends EventEmitter {
         if (sessionId === this.currentSessionId) {
         }
       } else if (parts[0] === '%sessions-changed') {
-        this.refreshPaneList().catch(error => {
-          console.error('Failed to refresh pane list:', error)
-        })
+        return
       } else if (this.inCommandOutput && !parts[0].startsWith('%')) {
         if (line.startsWith('CHECK ')) {
           const checkMatch = line.match(/^CHECK (%%\d+) (.+)$/)
@@ -495,29 +489,26 @@ export class TmuxSessionWatcher extends EventEmitter {
             const hasClaude = command === 'claude'
 
             const capturedSessionId = normalizeSessionId(sessionIdStr)
-            const sessionMatches = capturedSessionId === this.currentSessionId
-            if (sessionMatches) {
-              this.panes.set(paneId, {
-                sessionName: capturedSessionId,
-                windowIndex,
-                paneIndex,
-                windowName: windowName.trim(),
-                command,
-                hasClaude,
-                firstSeen: existingPane?.firstSeen ?? Date.now(),
-                width: parseInt(width, 10),
-                height: parseInt(height, 10),
-                isActive: paneActive === '1',
-                windowActive: windowActive === '1',
-              })
+            this.panes.set(paneId, {
+              sessionName: capturedSessionId,
+              windowIndex,
+              paneIndex,
+              windowName: windowName.trim(),
+              command,
+              hasClaude,
+              firstSeen: existingPane?.firstSeen ?? Date.now(),
+              width: parseInt(width, 10),
+              height: parseInt(height, 10),
+              isActive: paneActive === '1',
+              windowActive: windowActive === '1',
+            })
 
-              this.paneToKeyMap.set(paneId, displayKey)
+            this.paneToKeyMap.set(paneId, displayKey)
 
-              this.windowIdMap.set(windowId, {
-                session: capturedSessionId,
-                index: windowIndex,
-              })
-            }
+            this.windowIdMap.set(windowId, {
+              session: capturedSessionId,
+              index: windowIndex,
+            })
           }
         }
       }
@@ -527,11 +518,16 @@ export class TmuxSessionWatcher extends EventEmitter {
       }
 
       if (parts[0] === '%window-pane-changed') {
-        this.throttledRefreshPaneList()
+        const windowId = parts[1]
+        const paneId = parts[2]
+        const windowInfo = this.windowIdMap.get(windowId)
+        if (windowInfo && windowInfo.session === this.currentSessionId) {
+          this.throttledRefreshPaneList()
+        }
       }
 
       if (parts[0] === '%unlinked-window-add') {
-        this.throttledRefreshPaneList()
+        return
       }
 
       if (
@@ -654,7 +650,7 @@ export class TmuxSessionWatcher extends EventEmitter {
         this.lastPaneListHash = ''
         this.forceEmitAfterRefresh = true
         await this.writeToControlMode(
-          `list-panes -a -F "PANE %#{pane_id} #{session_id}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id} #{pane_active} #{window_active}"\n`,
+          `list-panes -s -F "PANE %#{pane_id} #{session_id}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id} #{pane_active} #{window_active}"\n`,
         )
       } catch (error) {
         console.error('Failed to refresh pane list:', error)
@@ -722,7 +718,7 @@ export class TmuxSessionWatcher extends EventEmitter {
       this.claudeCheckResults.clear()
       this.isCheckingClaude = true
       await this.writeToControlMode(
-        `list-panes -a -F "CHECK %#{pane_id} #{pane_current_command}"\n`,
+        `list-panes -s -F "CHECK %#{pane_id} #{pane_current_command}"\n`,
       )
     } catch (error) {
       console.error('Failed to check for Claude updates:', error)
