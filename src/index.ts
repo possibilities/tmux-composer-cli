@@ -3,7 +3,7 @@ import packageJson from '../package.json' assert { type: 'json' }
 import { TmuxSessionWatcher } from './commands/watch-session.js'
 import { TmuxPaneWatcher } from './commands/watch-panes.js'
 import { SessionCreator } from './commands/create-session.js'
-import { EventObserver } from './commands/observe-watchers.js'
+import { EventObserver } from './commands/observe-events.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
 
 async function main() {
@@ -74,8 +74,8 @@ async function main() {
     })
 
   program
-    .command('observe-watchers')
-    .description('Observe all watchers')
+    .command('observe-events')
+    .description('Observe all events')
     .option('--ws', 'Send events over a websocket connection', true)
     .action(async options => {
       const observer = new EventObserver()
