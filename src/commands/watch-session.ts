@@ -1,6 +1,7 @@
 import { spawn, ChildProcess } from 'child_process'
 import { promisify } from 'util'
 import { EventEmitter } from 'events'
+import { randomUUID } from 'crypto'
 import { throttle } from '../core/throttle'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
 import { getTmuxSocketPath } from '../core/tmux-socket.js'
@@ -30,6 +31,7 @@ interface TmuxEvent {
   event: string
   data: any
   timestamp: string
+  sessionId: string
 }
 
 interface SessionChangedData {
@@ -91,6 +93,7 @@ export class TmuxSessionWatcher extends EventEmitter {
   private resizeHandler: (() => void) | null = null
   private throttledRefreshPaneList: () => void
   private readonly CLAUDE_CHECK_INTERVAL = 1000
+  private readonly sessionId = randomUUID()
 
   constructor() {
     super()
@@ -111,6 +114,7 @@ export class TmuxSessionWatcher extends EventEmitter {
       event: eventName,
       data,
       timestamp: new Date().toISOString(),
+      sessionId: this.sessionId,
     }
     this.emit('event', event)
   }

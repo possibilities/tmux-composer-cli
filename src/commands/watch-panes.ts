@@ -1,5 +1,6 @@
 import { spawn, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
+import { randomUUID } from 'crypto'
 import { throttle } from '../core/throttle'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
 import { getTmuxSocketPath } from '../core/tmux-socket.js'
@@ -8,6 +9,7 @@ interface TmuxEvent {
   event: string
   data: any
   timestamp: string
+  sessionId: string
 }
 
 interface PaneOutputData {
@@ -37,6 +39,7 @@ export class TmuxPaneWatcher extends EventEmitter {
   private isShuttingDown = false
   private paneThrottlers = new Map<string, (data: any) => void>()
   private paneContents = new Map<string, string>()
+  private readonly sessionId = randomUUID()
 
   constructor() {
     super()
@@ -53,6 +56,7 @@ export class TmuxPaneWatcher extends EventEmitter {
       event: eventName,
       data,
       timestamp: new Date().toISOString(),
+      sessionId: this.sessionId,
     }
     this.emit('event', event)
   }

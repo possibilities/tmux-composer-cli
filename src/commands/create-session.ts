@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import yaml from 'js-yaml'
 import { EventEmitter } from 'events'
+import { randomUUID } from 'crypto'
 import { getTmuxSocketArgs, getTmuxSocketPath } from '../core/tmux-socket.js'
 import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 import {
@@ -33,11 +34,13 @@ interface TmuxEvent {
   event: string
   data?: any
   timestamp: string
+  sessionId: string
 }
 
 export class SessionCreator extends EventEmitter {
   private socketOptions: TmuxSocketOptions
   private lastEvent: TmuxEvent | null = null
+  private readonly sessionId = randomUUID()
 
   constructor(options: CreateSessionOptions = {}) {
     super()
@@ -56,6 +59,7 @@ export class SessionCreator extends EventEmitter {
     const event: TmuxEvent = {
       event: eventName,
       timestamp: new Date().toISOString(),
+      sessionId: this.sessionId,
     }
     if (data !== undefined) {
       event.data = data
