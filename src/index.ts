@@ -114,7 +114,6 @@ async function main() {
           ...socketOptions,
         })
 
-        // Ensure clean exit after successful creation
         process.exit(0)
       } catch (error) {
         process.exit(1)

@@ -281,7 +281,6 @@ export class SessionCreator extends EventEmitter {
         totalDuration: Date.now() - startTime,
       })
 
-      // Emit the overall success event
       this.emitEvent('create-worktree-session:end', {
         sessionName,
         worktreePath,
@@ -964,7 +963,6 @@ export class SessionCreator extends EventEmitter {
     while (attempts < maxAttempts) {
       const actualWindows = await listWindows(sessionName, this.socketOptions)
 
-      // Check if all expected windows exist
       const allWindowsCreated = expectedWindows.every(window =>
         actualWindows.includes(window),
       )
@@ -974,7 +972,6 @@ export class SessionCreator extends EventEmitter {
         return
       }
 
-      // Wait 100ms before checking again
       await new Promise(resolve => setTimeout(resolve, 100))
       attempts++
     }
