@@ -1,12 +1,10 @@
 import { Command, Option } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
-import { TmuxAutomator } from './commands/automate-claude-old.js'
 import { TmuxSessionWatcher } from './commands/watch-session.js'
 import { TmuxPaneWatcher } from './commands/watch-panes.js'
 import { SessionCreator } from './commands/create-session.js'
 import { EventObserver } from './commands/observe-watchers.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
-import { MATCHERS } from './matchers.js'
 
 async function main() {
   const program = new Command()
@@ -15,51 +13,6 @@ async function main() {
     .name('tmux-composer')
     .description('Tmux Composer CLI')
     .version(packageJson.version)
-
-  const automateClaudeOldCommand = program
-    .command('automate-claude-old')
-    .description(
-      'Monitor and automate Claude interactions in tmux sessions (legacy)',
-    )
-    .option('-L <socket-name>', 'Tmux socket name')
-    .option('-S <socket-path>', 'Tmux socket path')
-
-  for (const matcher of MATCHERS) {
-    const optionName = `--skip-${matcher.name}`
-    const description = `Skip the "${matcher.name.replace(/-/g, ' ')}" matcher`
-    automateClaudeOldCommand.option(optionName, description)
-  }
-
-  automateClaudeOldCommand.action(async options => {
-    const socketOptions: TmuxSocketOptions = {
-      socketName: options.L,
-      socketPath: options.S,
-    }
-
-    const skipMatchers: Record<string, boolean> = {}
-    for (const matcher of MATCHERS) {
-      const optionKey = `skip${matcher.name
-        .split('-')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join('')}`
-      skipMatchers[matcher.name] = options[optionKey] || false
-    }
-
-    const automator = new TmuxAutomator({
-      ...socketOptions,
-      skipMatchers,
-    })
-
-    await automator.start()
-
-    process.on('SIGINT', () => {
-      process.exit(0)
-    })
-
-    process.on('SIGTERM', () => {
-      process.exit(0)
-    })
-  })
 
   program
     .command('watch-session')
