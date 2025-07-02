@@ -14,7 +14,6 @@ interface PaneInfo {
   paneIndex: string
   windowName: string
   command: string
-  hasClaude: boolean
   firstSeen: number
   width: number
   height: number
@@ -50,7 +49,6 @@ interface SessionChangedData {
       command: string
       width: number
       height: number
-      hasClaude: boolean
       isActive: boolean
     }>
   }>
@@ -85,14 +83,10 @@ export class TmuxSessionWatcher extends EventEmitter {
   private paneToKeyMap = new Map<string, string>()
   private inCommandOutput = false
   private hasDisplayedInitialList = false
-  private claudeCheckInterval: NodeJS.Timeout | null = null
-  private isCheckingClaude = false
-  private claudeCheckResults = new Map<string, string>()
   private lastPaneListHash = ''
   private forceEmitAfterRefresh = false
   private resizeHandler: (() => void) | null = null
   private throttledRefreshPaneList: () => void
-  private readonly CLAUDE_CHECK_INTERVAL = 1000
   private readonly sessionId = randomUUID()
 
   constructor() {
@@ -272,7 +266,6 @@ export class TmuxSessionWatcher extends EventEmitter {
         `list-panes -s -F "PANE %#{pane_id} #{session_id}:#{window_index}.#{pane_index} #{window_name} #{pane_current_command} #{pane_width}x#{pane_height} @#{window_id} #{pane_active} #{window_active}"\n`,
       )
 
-      this.startClaudeChecking()
       return true
     } catch (error) {
       console.error('Failed to initialize control mode:', error)
@@ -337,11 +330,6 @@ export class TmuxSessionWatcher extends EventEmitter {
     this.paneToKeyMap.clear()
     this.hasDisplayedInitialList = false
     this.lastPaneListHash = ''
-
-    if (this.claudeCheckInterval) {
-      clearInterval(this.claudeCheckInterval)
-      this.claudeCheckInterval = null
-    }
   }
 
   private processControlModeOutput(line: string) {
@@ -353,11 +341,6 @@ export class TmuxSessionWatcher extends EventEmitter {
         return
       } else if (parts[0] === '%end') {
         this.inCommandOutput = false
-        if (this.isCheckingClaude) {
-          this.isCheckingClaude = false
-          this.processClaudeCheckResults()
-          return
-        }
         if (this.panes.size > 0) {
           if (!this.hasDisplayedInitialList) {
             this.hasDisplayedInitialList = true
@@ -462,13 +445,7 @@ export class TmuxSessionWatcher extends EventEmitter {
       } else if (parts[0] === '%sessions-changed') {
         return
       } else if (this.inCommandOutput && !parts[0].startsWith('%')) {
-        if (line.startsWith('CHECK ')) {
-          const checkMatch = line.match(/^CHECK (%%\d+) (.+)$/)
-          if (checkMatch) {
-            const [_, paneId, command] = checkMatch
-            this.claudeCheckResults.set(paneId, command)
-          }
-        } else if (line.startsWith('PANE ')) {
+        if (line.startsWith('PANE ')) {
           const match = line.match(
             /^PANE (%%\d+) ([^:]+):(\d+)\.(\d+) (.+?) ([^ ]+) (\d+)x(\d+) (@@\d+) (\d) (\d)$/,
           )
@@ -490,7 +467,6 @@ export class TmuxSessionWatcher extends EventEmitter {
             const displayKey = `${sessionIdStr}:${windowIndex}.${paneIndex}`
 
             const existingPane = this.panes.get(paneId)
-            const hasClaude = command === 'claude'
 
             const capturedSessionId = normalizeSessionId(sessionIdStr)
             this.panes.set(paneId, {
@@ -499,7 +475,6 @@ export class TmuxSessionWatcher extends EventEmitter {
               paneIndex,
               windowName: windowName.trim(),
               command,
-              hasClaude,
               firstSeen: existingPane?.firstSeen ?? Date.now(),
               width: parseInt(width, 10),
               height: parseInt(height, 10),
@@ -565,7 +540,7 @@ export class TmuxSessionWatcher extends EventEmitter {
     const paneData: string[] = []
     for (const [paneId, pane] of this.panes.entries()) {
       paneData.push(
-        `${paneId}:${pane.sessionName}:${pane.windowIndex}.${pane.paneIndex}:${pane.windowName}:${pane.command}:${pane.width}x${pane.height}:${pane.hasClaude}:${pane.isActive}:${pane.windowActive}`,
+        `${paneId}:${pane.sessionName}:${pane.windowIndex}.${pane.paneIndex}:${pane.windowName}:${pane.command}:${pane.width}x${pane.height}:${pane.isActive}:${pane.windowActive}`,
       )
     }
     return paneData.sort().join('|')
@@ -613,7 +588,6 @@ export class TmuxSessionWatcher extends EventEmitter {
           command: pane.command,
           width: pane.width,
           height: pane.height,
-          hasClaude: pane.hasClaude,
           isActive: pane.isActive,
         })
       }
@@ -666,80 +640,8 @@ export class TmuxSessionWatcher extends EventEmitter {
     }
   }
 
-  private processClaudeCheckResults() {
-    let hasChanges = false
-
-    for (const [paneId, pane] of this.panes) {
-      const newCommand = this.claudeCheckResults.get(paneId)
-
-      if (newCommand !== undefined) {
-        const hadClaude = pane.hasClaude
-        const hasClaude = newCommand === 'claude'
-
-        if (pane.command !== newCommand || hasClaude !== hadClaude) {
-          this.panes.set(paneId, {
-            ...pane,
-            command: newCommand,
-            hasClaude,
-          })
-          hasChanges = true
-        }
-      }
-    }
-
-    if (hasChanges) {
-      this.emitSessionChanged()
-    }
-  }
-
-  private startClaudeChecking() {
-    try {
-      if (this.claudeCheckInterval) {
-        clearInterval(this.claudeCheckInterval)
-      }
-
-      this.claudeCheckInterval = setInterval(() => {
-        this.checkForClaudeUpdates().catch(error => {
-          console.error('Error in Claude check interval:', error)
-        })
-      }, this.CLAUDE_CHECK_INTERVAL)
-    } catch (error) {
-      console.error('Failed to start Claude checking:', error)
-    }
-  }
-
-  private async checkForClaudeUpdates() {
-    if (
-      !this.controlModeProcess ||
-      !this.controlModeProcess.stdin ||
-      !this.hasDisplayedInitialList ||
-      this.controlModeProcess.stdin.destroyed
-    ) {
-      return
-    }
-
-    try {
-      this.claudeCheckResults.clear()
-      this.isCheckingClaude = true
-      await this.writeToControlMode(
-        `list-panes -s -F "CHECK %#{pane_id} #{pane_current_command}"\n`,
-      )
-    } catch (error) {
-      console.error('Failed to check for Claude updates:', error)
-      const nodeError = error as NodeError
-      if (nodeError.code === 'EPIPE') {
-        this.cleanupControlMode()
-      }
-    }
-  }
-
   private shutdown() {
     this.isShuttingDown = true
-
-    if (this.claudeCheckInterval) {
-      clearInterval(this.claudeCheckInterval)
-      this.claudeCheckInterval = null
-    }
 
     if (this.controlModeProcess) {
       this.controlModeProcess.stdout?.removeAllListeners()
