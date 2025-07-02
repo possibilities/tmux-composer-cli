@@ -4,7 +4,7 @@ import { EventEmitter } from 'events'
 import { randomUUID } from 'crypto'
 import { throttle } from '../core/throttle'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
-import { getTmuxSocketPath } from '../core/tmux-socket.js'
+import { getTmuxSocketPath, getTmuxSocketArgs } from '../core/tmux-socket.js'
 
 const sleep = promisify(setTimeout)
 
@@ -199,7 +199,14 @@ export class TmuxSessionWatcher extends EventEmitter {
         this.controlModeProcess = null
       }
 
-      const args = ['-C', 'attach-session', '-t', this.currentSessionId!]
+      const socketArgs = getTmuxSocketArgs({})
+      const args = [
+        ...socketArgs,
+        '-C',
+        'attach-session',
+        '-t',
+        this.currentSessionId!,
+      ]
 
       this.controlModeProcess = spawn('tmux', args, {
         stdio: ['pipe', 'pipe', 'pipe'],
