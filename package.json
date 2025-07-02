@@ -12,7 +12,7 @@
     "build": "tsup",
     "build:watch": "nodemon --verbose --watch src/ --ext ts --exec tsup",
     "dev": "nodemon --verbose --watch dist/cli.js --exec 'node ./dist/cli.js'",
-    "format": "prettier --write \"**/*.{js,mjs,jsx,ts,tsx,json,md,mdx,css,yml,yaml}\"",
+    "format": "prettier --write \"**/*.{js,mjs,jsx,ts,tsx,json,md,mdx,css,yml,yaml}\""
   },
   "dependencies": {
     "commander": "^12.0.0",
@@ -29,7 +29,6 @@
     "prompts": "^2.4.2",
     "tsup": "^8.0.0",
     "tsx": "^4.20.3",
-    "typescript": "^5.0.0",
     "typescript": "^5.0.0"
   },
   "engines": {

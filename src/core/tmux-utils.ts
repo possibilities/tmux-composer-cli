@@ -64,4 +64,3 @@ export function socketExists(socketOptions: TmuxSocketOptions = {}): boolean {
     return false
   }
 }
-

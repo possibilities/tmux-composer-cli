@@ -16,8 +16,8 @@ async function main() {
 
   program
     .command('watch-session')
-    .description('Watch for session changes')
-    .option('--no-zeromq', 'Disable ZeroMQ publishing, only console log events')
+    .description('watch session changes')
+    .option('--no-zeromq', 'Disable ZeroMQ publishing')
     .action(async options => {
       const watcher = new TmuxSessionWatcher()
 
@@ -26,8 +26,8 @@ async function main() {
 
   program
     .command('watch-panes')
-    .description('Watch for pane changes')
-    .option('--no-zeromq', 'Disable ZeroMQ publishing, only console log events')
+    .description('watch pane changes')
+    .option('--no-zeromq', 'Disable ZeroMQ publishing')
     .action(async options => {
       const watcher = new TmuxPaneWatcher()
 
@@ -36,16 +36,14 @@ async function main() {
 
   program
     .command('create-session [project-path]')
-    .description(
-      'Create worktree and session for project (uses current directory if path not provided)',
-    )
+    .description('create project session')
     .option('--mode <mode>', 'Session mode (act or plan)', 'act')
     .option('-L <socket-name>', 'Tmux socket name')
     .option('-S <socket-path>', 'Tmux socket path')
     .option('--terminal-width <width>', 'Terminal width', parseInt)
     .option('--terminal-height <height>', 'Terminal height', parseInt)
     .option('--no-attach', 'Do not attach to the session after creation')
-    .option('--no-zeromq', 'Disable ZeroMQ publishing, only console log events')
+    .option('--no-zeromq', 'Disable ZeroMQ publishing')
     .action(async (projectPath, options) => {
       const socketOptions: TmuxSocketOptions = {
         socketName: options.L,
@@ -75,7 +73,7 @@ async function main() {
 
   program
     .command('observe-events')
-    .description('Observe all events')
+    .description('observe all events')
     .option('--ws', 'Send events over a websocket connection', true)
     .action(async options => {
       const observer = new EventObserver()
