@@ -34,7 +34,8 @@ export class EventObserver {
       console.error('[INFO] Connected to ZeroMQ event publisher')
       console.error(`[INFO] Listening for events on ${socketPath}`)
 
-      if (options.ws !== false) {
+      const wsEnabled = options.ws ?? true
+      if (wsEnabled) {
         const wsPort = options.wsPort || 31337
         this.wsServer = new WebSocketServer({ port: wsPort })
         console.error(

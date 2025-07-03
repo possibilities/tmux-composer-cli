@@ -80,7 +80,8 @@ async function main() {
   program
     .command('observe-events')
     .description('observe all events')
-    .option('--ws', 'Send events over a websocket connection', true)
+    .option('--ws', 'Enable WebSocket server')
+    .option('--no-ws', 'Disable WebSocket server')
     .option('--ws-port <port>', 'WebSocket server port', parseInt, 31337)
     .option('--zmq-socket <name>', 'ZeroMQ socket name')
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
