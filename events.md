@@ -190,6 +190,7 @@ In non-worktree mode:
 
   Note: The `plannedWindows` array is dynamically generated:
 
+  - Includes "agent" first if `commands.run-agent` is configured
   - Includes "server" only if a `dev` script exists
   - Includes a window for each script ending in `:watch` (window name = script name without `:watch`)
   - Always includes "control" as the last window
@@ -309,8 +310,9 @@ In non-worktree mode:
 
 ##### Window Creation Events
 
-Windows are created dynamically based on the project's package.json scripts:
+Windows are created dynamically based on the project's package.json scripts and configuration:
 
+- **`agent`** - Created first if `commands.run-agent` is configured (runs the specified command)
 - **`server`** - Created only if a `dev` script exists in package.json
 - **Dynamic windows** - Created for any script ending with `:watch` (e.g., `lint:watch` creates a `lint` window, `foo:watch` creates a `foo` window)
 - **`control`** - Always created as the last window for monitoring
@@ -335,6 +337,21 @@ Windows are created dynamically based on the project's package.json scripts:
   ```
 
 - **`create-tmux-window:{windowName}:fail`** - Window creation failed
+
+  Example for agent window:
+
+  ```json
+  {
+    "event": "create-tmux-window:agent:end",
+    "data": {
+      "windowName": "agent",
+      "windowIndex": 0,
+      "windowId": "@1",
+      "command": "claude",
+      "duration": 100
+    }
+  }
+  ```
 
 ##### Port Finding Events
 
@@ -1111,21 +1128,23 @@ Closes the current tmux session, switching to another if available.
 14. `analyze-project-scripts:start`
 15. `analyze-project-scripts:end`
 16. `create-tmux-session:start`
-17. `create-tmux-window:server:start` (if `dev` script exists)
-18. `find-open-port:start` (for server window)
-19. `find-open-port:end`
-20. `create-tmux-window:server:end`
-21. `create-tmux-session:end`
-22. `create-tmux-window:{name}:start` (for each script ending in `:watch`)
-23. `create-tmux-window:{name}:end`
-24. (Repeat for each `:watch` script found)
-25. `create-tmux-window:control:start`
-26. `create-tmux-window:control:end`
-27. `finalize-tmux-session:start`
-28. `finalize-tmux-session:end`
-29. `create-worktree-session:end`
-30. `attach-tmux-session:start` (if --attach)
-31. `switch-tmux-session:start` or `attach-tmux-session:end`
+17. `create-tmux-window:agent:start` (if `commands.run-agent` is configured)
+18. `create-tmux-window:agent:end`
+19. `create-tmux-session:end` (emitted after first window creation)
+20. `create-tmux-window:server:start` (if `dev` script exists)
+21. `find-open-port:start` (for server window)
+22. `find-open-port:end`
+23. `create-tmux-window:server:end`
+24. `create-tmux-window:{name}:start` (for each script ending in `:watch`)
+25. `create-tmux-window:{name}:end`
+26. (Repeat for each `:watch` script found)
+27. `create-tmux-window:control:start`
+28. `create-tmux-window:control:end`
+29. `finalize-tmux-session:start`
+30. `finalize-tmux-session:end`
+31. `create-worktree-session:end`
+32. `attach-tmux-session:start` (if --attach)
+33. `switch-tmux-session:start` or `attach-tmux-session:end`
 
 ### Typical continue-session flow:
 

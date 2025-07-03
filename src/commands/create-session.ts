@@ -15,6 +15,7 @@ import {
 import { socketExists, listWindows } from '../core/tmux-utils.js'
 import { TERMINAL_SIZES } from '../core/constants.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
+import { loadConfig } from '../core/config.js'
 import type {
   TmuxEventWithOptionalData,
   EventName,
@@ -86,6 +87,8 @@ export class SessionCreator extends EventEmitter {
         socketPath,
       },
     })
+
+    const config = loadConfig()
 
     this.emitEvent('initialize-session-creation:start', {
       projectPath,
@@ -284,7 +287,7 @@ export class SessionCreator extends EventEmitter {
 
       let expectedWindows: string[]
       try {
-        expectedWindows = await this.getExpectedWindows(worktreePath)
+        expectedWindows = await this.getExpectedWindows(worktreePath, config)
       } catch (error) {
         this.emitEvent('analyze-project-scripts:fail', {
           error: error instanceof Error ? error.message : String(error),
@@ -306,6 +309,7 @@ export class SessionCreator extends EventEmitter {
           options.terminalWidth,
           options.terminalHeight,
           options,
+          config,
         )
       } catch (error) {
         this.emitEvent('create-worktree-session:fail', {
@@ -443,7 +447,10 @@ export class SessionCreator extends EventEmitter {
     }
   }
 
-  protected async getExpectedWindows(worktreePath: string): Promise<string[]> {
+  protected async getExpectedWindows(
+    worktreePath: string,
+    config: ReturnType<typeof loadConfig>,
+  ): Promise<string[]> {
     const scriptsStart = Date.now()
     this.emitEvent('analyze-project-scripts:start')
     const windows: string[] = []
@@ -460,6 +467,10 @@ export class SessionCreator extends EventEmitter {
 
       if (scripts) {
         availableScripts.push(...Object.keys(scripts))
+      }
+
+      if (config.commands?.['run-agent']) {
+        windows.push('agent')
       }
 
       if (scripts.dev) {
@@ -500,6 +511,7 @@ export class SessionCreator extends EventEmitter {
     terminalWidth?: number,
     terminalHeight?: number,
     options: CreateSessionOptions = {},
+    config: ReturnType<typeof loadConfig> = {},
   ): Promise<string[]> {
     const sessionStart = Date.now()
     this.emitEvent('create-tmux-session:start')
@@ -668,6 +680,18 @@ export class SessionCreator extends EventEmitter {
         `create-tmux-window:${windowName}:end` as EventName,
         eventData,
       )
+    }
+
+    if (config.commands?.['run-agent'] && expectedWindows.includes('agent')) {
+      const agentCommand = config.commands['run-agent']
+
+      if (!firstWindowCreated) {
+        await createSession('agent', agentCommand)
+      } else {
+        await createWindow('agent', agentCommand, windowIndex)
+      }
+
+      windowIndex++
     }
 
     if (scripts.dev && expectedWindows.includes('server')) {

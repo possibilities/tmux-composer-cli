@@ -7,6 +7,7 @@ import { z } from 'zod'
 const ConfigSchema = z.object({
   commands: z
     .object({
+      'run-agent': z.string().optional(),
       'before-finish': z.string().optional(),
     })
     .optional(),

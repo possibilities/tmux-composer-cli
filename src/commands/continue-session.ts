@@ -4,6 +4,7 @@ import { SessionCreator } from './create-session.js'
 import { getLatestWorktree } from '../core/git-utils.js'
 import { getTmuxSocketArgs, getTmuxSocketPath } from '../core/tmux-socket.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
+import { loadConfig } from '../core/config.js'
 import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 
 interface ContinueSessionOptions extends TmuxSocketOptions {
@@ -158,10 +159,12 @@ export class SessionContinuer extends SessionCreator {
       },
     })
 
+    const config = loadConfig()
+
     try {
       let expectedWindows: string[]
       try {
-        expectedWindows = await this.getExpectedWindows(worktreePath)
+        expectedWindows = await this.getExpectedWindows(worktreePath, config)
       } catch (error) {
         this.emitEvent('analyze-project-scripts:fail', {
           error: error instanceof Error ? error.message : String(error),
@@ -183,6 +186,7 @@ export class SessionContinuer extends SessionCreator {
           options.terminalWidth,
           options.terminalHeight,
           { ...options, worktree: false },
+          config,
         )
       } catch (error) {
         this.emitEvent('continue-session:fail', {
