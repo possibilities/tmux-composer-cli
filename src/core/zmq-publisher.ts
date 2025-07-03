@@ -6,6 +6,9 @@ import {
   ensureZmqSocketDirectory,
   type ZmqSocketOptions,
 } from './zmq-socket.js'
+import type { TmuxEventWithOptionalData } from './events.js'
+
+export type { TmuxEventWithOptionalData } from './events.js'
 
 export interface EventSource {
   script: string
@@ -16,17 +19,10 @@ export interface EventSource {
   hostname: string
 }
 
-export interface TmuxEvent {
-  event: string
-  data?: any
-  timestamp: string
-  source?: EventSource
-}
-
 export class ZmqEventPublisher {
   private publisher: Publisher | null = null
   private isConnected = false
-  private eventQueue: TmuxEvent[] = []
+  private eventQueue: TmuxEventWithOptionalData[] = []
   private socketPath: string
 
   constructor(socketOptions: ZmqSocketOptions = {}) {
@@ -61,7 +57,7 @@ export class ZmqEventPublisher {
     }
   }
 
-  async publishEvent(event: TmuxEvent): Promise<void> {
+  async publishEvent(event: TmuxEventWithOptionalData): Promise<void> {
     if (!this.isConnected || !this.publisher) {
       this.eventQueue.push(event)
       if (!this.isConnected) {
@@ -150,9 +146,9 @@ export async function enableZmqPublishing(
     hostname: os.hostname(),
   }
 
-  emitter.on('event', async (event: TmuxEvent) => {
+  emitter.on('event', async (event: TmuxEventWithOptionalData) => {
     try {
-      const eventWithSource: TmuxEvent = {
+      const eventWithSource: TmuxEventWithOptionalData = {
         ...event,
         source,
       }

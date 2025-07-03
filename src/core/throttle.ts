@@ -1,17 +1,17 @@
-export function throttle<T extends (...args: any[]) => any>(
-  func: T,
+export function throttle<TArgs extends unknown[], TReturn>(
+  func: (...args: TArgs) => TReturn,
   wait: number,
-): (...args: Parameters<T>) => void {
+): (...args: TArgs) => void {
   let timeout: NodeJS.Timeout | null = null
   let lastCallTime = 0
-  let lastArgs: Parameters<T> | null = null
+  let lastArgs: TArgs | null = null
 
-  const invokeFunc = (args: Parameters<T>) => {
+  const invokeFunc = (args: TArgs) => {
     lastCallTime = Date.now()
     func(...args)
   }
 
-  return function throttled(...args: Parameters<T>) {
+  return function throttled(...args: TArgs) {
     const now = Date.now()
     const timeSinceLastCall = now - lastCallTime
 

@@ -2,9 +2,10 @@ import { spawn, ChildProcess } from 'child_process'
 import { promisify } from 'util'
 import { EventEmitter } from 'events'
 import { randomUUID } from 'crypto'
-import { throttle } from '../core/throttle'
+import { throttle } from '../core/throttle.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
 import { getTmuxSocketPath, getTmuxSocketArgs } from '../core/tmux-socket.js'
+import type { SessionChangedData, TmuxEvent } from '../core/events.js'
 
 const sleep = promisify(setTimeout)
 
@@ -24,34 +25,6 @@ interface PaneInfo {
 interface WindowInfo {
   session: string
   index: string
-}
-
-interface TmuxEvent {
-  event: string
-  data: any
-  timestamp: string
-  sessionId: string
-}
-
-interface SessionChangedData {
-  sessionId: string | null
-  sessionName: string | null
-  focusedWindowId: string | null
-  focusedPaneId: string | null
-  windows: Array<{
-    windowId: string
-    windowIndex: string
-    windowName: string
-    isActive: boolean
-    panes: Array<{
-      paneId: string
-      paneIndex: string
-      command: string
-      width: number
-      height: number
-      isActive: boolean
-    }>
-  }>
 }
 
 class TmuxControlModeError extends Error {
@@ -103,8 +76,11 @@ export class TmuxSessionWatcher extends EventEmitter {
     }, 150)
   }
 
-  private emitEvent(eventName: string, data: any): void {
-    const event: TmuxEvent = {
+  private emitEvent(
+    eventName: 'session-changed',
+    data: SessionChangedData,
+  ): void {
+    const event: TmuxEvent<'session-changed'> = {
       event: eventName,
       data,
       timestamp: new Date().toISOString(),
@@ -185,7 +161,7 @@ export class TmuxSessionWatcher extends EventEmitter {
 
     this.resizeHandler = handler
 
-    if (process.stdout && (process.stdout as any).on) {
+    if (process.stdout && process.stdout.on) {
       process.stdout.on('resize', handler)
     }
 
@@ -336,8 +312,8 @@ export class TmuxSessionWatcher extends EventEmitter {
     }
 
     if (this.resizeHandler) {
-      if (process.stdout && (process.stdout as any).off) {
-        ;(process.stdout as any).off('resize', this.resizeHandler)
+      if (process.stdout && process.stdout.off) {
+        process.stdout.off('resize', this.resizeHandler)
       }
       process.off('SIGWINCH', this.resizeHandler)
       this.resizeHandler = null
@@ -568,7 +544,7 @@ export class TmuxSessionWatcher extends EventEmitter {
     try {
       this.lastPaneListHash = this.computePaneListHash()
 
-      const windowsMap = new Map<string, any>()
+      const windowsMap = new Map<string, SessionChangedData['windows'][0]>()
       let focusedWindowId: string | null = null
       let focusedPaneId: string | null = null
 
@@ -616,7 +592,7 @@ export class TmuxSessionWatcher extends EventEmitter {
 
       for (const window of windows) {
         window.panes.sort(
-          (a: any, b: any) => parseInt(a.paneIndex) - parseInt(b.paneIndex),
+          (a, b) => parseInt(a.paneIndex) - parseInt(b.paneIndex),
         )
       }
 
@@ -678,8 +654,8 @@ export class TmuxSessionWatcher extends EventEmitter {
     }
 
     if (this.resizeHandler) {
-      if (process.stdout && (process.stdout as any).off) {
-        ;(process.stdout as any).off('resize', this.resizeHandler)
+      if (process.stdout && process.stdout.off) {
+        process.stdout.off('resize', this.resizeHandler)
       }
       process.off('SIGWINCH', this.resizeHandler)
       this.resizeHandler = null

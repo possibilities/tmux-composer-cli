@@ -96,10 +96,12 @@ async function main() {
     })
 
     await program.parseAsync(process.argv)
-  } catch (error: any) {
+  } catch (error) {
     if (
-      error.code === 'commander.help' ||
-      error.code === 'commander.helpDisplayed'
+      error instanceof Error &&
+      'code' in error &&
+      (error.code === 'commander.help' ||
+        error.code === 'commander.helpDisplayed')
     ) {
       process.exit(0)
     }

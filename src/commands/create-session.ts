@@ -15,6 +15,34 @@ import {
 import { socketExists, listWindows } from '../core/tmux-utils.js'
 import { TERMINAL_SIZES } from '../core/constants.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
+import type {
+  TmuxEventWithOptionalData,
+  EventName,
+  EventDataMap,
+  InitializeSessionCreationStartData,
+  BaseEventData,
+  AnalyzeProjectMetadataEndData,
+  EnsureCleanRepositoryEndData,
+  EnsureCleanRepositoryFailData,
+  ErrorEventData,
+  CreateProjectWorktreeEndData,
+  CreateProjectWorktreeFailData,
+  InstallProjectDependenciesEndData,
+  InstallProjectDependenciesFailData,
+  AnalyzeProjectStructureEndData,
+  AnalyzeProjectScriptsEndData,
+  CreateTmuxSessionEndData,
+  CreateTmuxWindowEndData,
+  CreateTmuxWindowFailData,
+  FindOpenPortEndData,
+  FindOpenPortFailData,
+  FinalizeTmuxSessionEndData,
+  CreateWorktreeSessionEndData,
+  AttachTmuxSessionEndData,
+  AttachTmuxSessionFailData,
+  SwitchTmuxSessionStartData,
+  SelectWindowFailData,
+} from '../core/events.js'
 
 interface CreateSessionOptions extends TmuxSocketOptions {
   terminalWidth?: number
@@ -25,16 +53,9 @@ interface CreateSessionOptions extends TmuxSocketOptions {
   zmqSocketPath?: string
 }
 
-interface TmuxEvent {
-  event: string
-  data?: any
-  timestamp: string
-  sessionId: string
-}
-
 export class SessionCreator extends EventEmitter {
   private socketOptions: TmuxSocketOptions
-  private lastEvent: TmuxEvent | null = null
+  private lastEvent: TmuxEventWithOptionalData | null = null
   private readonly sessionId = randomUUID()
 
   constructor(options: CreateSessionOptions = {}) {
@@ -44,21 +65,26 @@ export class SessionCreator extends EventEmitter {
       socketPath: options.socketPath,
     }
 
-    this.on('event', (event: TmuxEvent) => {
+    this.on('event', (event: TmuxEventWithOptionalData) => {
       console.log(JSON.stringify(event))
       this.lastEvent = event
     })
   }
 
-  private emitEvent(eventName: string, data?: any): void {
-    const event: TmuxEvent = {
+  private emitEvent<T extends EventName>(
+    eventName: T,
+    ...args: T extends keyof EventDataMap
+      ? EventDataMap[T] extends undefined
+        ? []
+        : [data: EventDataMap[T]]
+      : []
+  ): void {
+    const event = {
       event: eventName,
       timestamp: new Date().toISOString(),
       sessionId: this.sessionId,
-    }
-    if (data !== undefined) {
-      event.data = data
-    }
+      ...(args.length > 0 ? { data: args[0] } : {}),
+    } as TmuxEventWithOptionalData<T>
     this.emit('event', event)
   }
 
@@ -590,7 +616,7 @@ export class SessionCreator extends EventEmitter {
         { encoding: 'utf-8' },
       ).trim()
 
-      const eventData: any = {
+      const eventData: CreateTmuxWindowEndData = {
         windowName,
         windowIndex,
         windowId,

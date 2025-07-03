@@ -1,24 +1,18 @@
 import { spawn, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
 import { randomUUID } from 'crypto'
-import { throttle } from '../core/throttle'
+import { throttle } from '../core/throttle.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
 import { getTmuxSocketPath, getTmuxSocketArgs } from '../core/tmux-socket.js'
+import type { PaneChangedData, TmuxEvent } from '../core/events.js'
 
-interface TmuxEvent {
-  event: string
-  data: any
-  timestamp: string
+interface PaneInfo {
   sessionId: string
-}
-
-interface PaneOutputData {
-  sessionId: string
+  sessionName: string
   windowIndex: string
   windowName: string
   paneIndex: string
   paneId: string
-  content: string
 }
 
 interface NodeError extends Error {
@@ -37,7 +31,7 @@ export class TmuxPaneWatcher extends EventEmitter {
   private ownWindowId: string | null = null
   private isConnected = false
   private isShuttingDown = false
-  private paneThrottlers = new Map<string, (data: any) => void>()
+  private paneThrottlers = new Map<string, (data: PaneChangedData) => void>()
   private paneContents = new Map<string, string>()
   private readonly sessionId = randomUUID()
 
@@ -51,8 +45,8 @@ export class TmuxPaneWatcher extends EventEmitter {
     })
   }
 
-  private emitEvent(eventName: string, data: any): void {
-    const event: TmuxEvent = {
+  private emitEvent(eventName: 'pane-changed', data: PaneChangedData): void {
+    const event: TmuxEvent<'pane-changed'> = {
       event: eventName,
       data,
       timestamp: new Date().toISOString(),
@@ -334,7 +328,7 @@ export class TmuxPaneWatcher extends EventEmitter {
 
           let throttledEmitter = this.paneThrottlers.get(paneId)
           if (!throttledEmitter) {
-            throttledEmitter = throttle(async (data: any) => {
+            throttledEmitter = throttle(async (data: PaneChangedData) => {
               const currentContent = await this.capturePaneContent(paneId)
               const lastContent = this.paneContents.get(paneId)
 
