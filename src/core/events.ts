@@ -61,6 +61,16 @@ export type EventName =
   | 'find-latest-worktree:start'
   | 'find-latest-worktree:end'
   | 'find-latest-worktree:fail'
+  | 'resume-session:start'
+  | 'resume-session:end'
+  | 'resume-session:fail'
+  | 'find-all-worktrees:start'
+  | 'find-all-worktrees:end'
+  | 'find-all-worktrees:fail'
+  | 'display-menu:start'
+  | 'display-menu:end'
+  | 'display-menu:fail'
+  | 'display-menu:cancel'
 
 export interface BaseEventData {
   duration?: number
@@ -286,6 +296,31 @@ export interface ContinueSessionEndData extends BaseEventData {
   branch: string
 }
 
+export interface ResumeSessionStartData {
+  projectPath: string
+  options: {
+    socketName?: string | null
+    socketPath?: string | null
+    terminalWidth?: number
+    terminalHeight?: number
+    attach?: boolean
+  }
+}
+
+export interface ResumeSessionEndData extends BaseEventData {
+  cancelled?: boolean
+}
+
+export interface FindAllWorktreesEndData extends BaseEventData {
+  worktreeCount: number
+}
+
+export interface DisplayMenuStartData {
+  worktreeCount: number
+}
+
+export interface DisplayMenuCancelData extends BaseEventData {}
+
 export type EventDataMap = {
   'session-changed': SessionChangedData
   'pane-changed': PaneChangedData
@@ -347,6 +382,16 @@ export type EventDataMap = {
   'find-latest-worktree:start': undefined
   'find-latest-worktree:end': FindLatestWorktreeEndData
   'find-latest-worktree:fail': FindLatestWorktreeFailData
+  'resume-session:start': ResumeSessionStartData
+  'resume-session:end': ResumeSessionEndData
+  'resume-session:fail': ErrorEventData
+  'find-all-worktrees:start': undefined
+  'find-all-worktrees:end': FindAllWorktreesEndData
+  'find-all-worktrees:fail': ErrorEventData
+  'display-menu:start': DisplayMenuStartData
+  'display-menu:end': BaseEventData
+  'display-menu:fail': ErrorEventData
+  'display-menu:cancel': DisplayMenuCancelData
 }
 
 export interface TmuxEvent<T extends EventName = EventName> {

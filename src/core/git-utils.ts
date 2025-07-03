@@ -196,3 +196,52 @@ export function getLatestWorktree(projectPath: string): WorktreeInfo | null {
 
   return worktreesWithStats[0]
 }
+
+export interface WorktreeInfoWithNumber extends WorktreeInfo {
+  worktreeNumber: number
+  projectName: string
+  mtime: Date
+}
+
+export function getAllProjectWorktrees(
+  projectPath: string,
+): WorktreeInfoWithNumber[] {
+  const worktrees = getExistingWorktrees(projectPath)
+
+  const projectWorktrees = worktrees.filter(wt => {
+    const wtBasename = path.basename(wt.path)
+    return (
+      /-worktree-\d{3}$/.test(wtBasename) && wt.path.startsWith(WORKTREES_PATH)
+    )
+  })
+
+  const worktreesWithInfo = projectWorktrees
+    .map(wt => {
+      const wtBasename = path.basename(wt.path)
+      const match = wtBasename.match(/^(.+)-worktree-(\d{3})$/)
+
+      if (!match) return null
+
+      try {
+        const stats = fs.statSync(wt.path)
+        return {
+          ...wt,
+          projectName: match[1],
+          worktreeNumber: parseInt(match[2], 10),
+          mtime: stats.mtime,
+        }
+      } catch {
+        return {
+          ...wt,
+          projectName: match[1],
+          worktreeNumber: parseInt(match[2], 10),
+          mtime: new Date(0),
+        }
+      }
+    })
+    .filter((wt): wt is WorktreeInfoWithNumber => wt !== null)
+
+  worktreesWithInfo.sort((a, b) => b.worktreeNumber - a.worktreeNumber)
+
+  return worktreesWithInfo
+}
