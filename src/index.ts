@@ -6,6 +6,7 @@ import { SessionCreator } from './commands/create-session.js'
 import { SessionContinuer } from './commands/continue-session.js'
 import { EventObserver } from './commands/observe-events.js'
 import { SessionFinisher } from './commands/finish-session.js'
+import { SessionCloser } from './commands/close-session.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
 
 async function main() {
@@ -148,6 +149,27 @@ async function main() {
 
       try {
         await finisher.finish()
+        process.exit(0)
+      } catch (error) {
+        process.exit(1)
+      }
+    })
+
+  program
+    .command('close-session')
+    .description('close current tmux session')
+    .option('--tmux-socket <socket-name>', 'Tmux socket name')
+    .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
+    .action(async options => {
+      const socketOptions: TmuxSocketOptions = {
+        socketName: options.tmuxSocket,
+        socketPath: options.tmuxSocketPath,
+      }
+
+      const closer = new SessionCloser(socketOptions)
+
+      try {
+        closer.close()
         process.exit(0)
       } catch (error) {
         process.exit(1)
