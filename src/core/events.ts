@@ -55,6 +55,12 @@ export type EventName =
   | 'attach-tmux-session:fail'
   | 'switch-tmux-session:start'
   | 'select-window:fail'
+  | 'continue-session:start'
+  | 'continue-session:end'
+  | 'continue-session:fail'
+  | 'find-latest-worktree:start'
+  | 'find-latest-worktree:end'
+  | 'find-latest-worktree:fail'
 
 export interface BaseEventData {
   duration?: number
@@ -248,6 +254,38 @@ export interface SelectWindowFailData extends ErrorEventData {
   window: string
 }
 
+export interface ContinueSessionStartData {
+  projectPath: string
+  options: {
+    socketName?: string | null
+    socketPath?: string | null
+    terminalWidth?: number
+    terminalHeight?: number
+    attach?: boolean
+  }
+}
+
+export interface FindLatestWorktreeEndData extends BaseEventData {
+  worktreePath: string
+  projectName: string
+  worktreeNumber: string
+  sessionName: string
+  branch: string
+  commit: string
+}
+
+export interface FindLatestWorktreeFailData extends ErrorEventData {
+  worktreePath?: string
+}
+
+export interface ContinueSessionEndData extends BaseEventData {
+  sessionName: string
+  worktreePath: string
+  windows: string[]
+  worktreeNumber: string
+  branch: string
+}
+
 export type EventDataMap = {
   'session-changed': SessionChangedData
   'pane-changed': PaneChangedData
@@ -303,6 +341,12 @@ export type EventDataMap = {
   'attach-tmux-session:fail': AttachTmuxSessionFailData
   'switch-tmux-session:start': SwitchTmuxSessionStartData
   'select-window:fail': SelectWindowFailData
+  'continue-session:start': ContinueSessionStartData
+  'continue-session:end': ContinueSessionEndData
+  'continue-session:fail': ErrorEventData
+  'find-latest-worktree:start': undefined
+  'find-latest-worktree:end': FindLatestWorktreeEndData
+  'find-latest-worktree:fail': FindLatestWorktreeFailData
 }
 
 export interface TmuxEvent<T extends EventName = EventName> {

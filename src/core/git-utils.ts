@@ -173,12 +173,12 @@ export function getExistingWorktrees(projectPath: string): WorktreeInfo[] {
 
 export function getLatestWorktree(projectPath: string): WorktreeInfo | null {
   const worktrees = getExistingWorktrees(projectPath)
-  const projectName = path.basename(projectPath)
-  
+
   const projectWorktrees = worktrees.filter(wt => {
     const wtBasename = path.basename(wt.path)
-    return wtBasename.startsWith(`${projectName}-worktree-`) && 
-           /worktree-\d{3}$/.test(wtBasename)
+    return (
+      /-worktree-\d{3}$/.test(wtBasename) && wt.path.startsWith(WORKTREES_PATH)
+    )
   })
 
   if (projectWorktrees.length === 0) return null

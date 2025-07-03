@@ -45,7 +45,7 @@ export class SessionContinuer extends SessionCreator {
     this.emitEvent('find-latest-worktree:start')
 
     const latestWorktree = getLatestWorktree(projectPath)
-    
+
     if (!latestWorktree) {
       this.emitEvent('find-latest-worktree:fail', {
         error: 'No worktrees found for this repository',
@@ -53,17 +53,20 @@ export class SessionContinuer extends SessionCreator {
         duration: Date.now() - findWorktreeStart,
       })
       this.emitEvent('continue-session:fail', {
-        error: 'No worktrees found for this repository. Use create-session to create one.',
+        error:
+          'No worktrees found for this repository. Use create-session to create one.',
         errorCode: 'NO_WORKTREES',
         duration: Date.now() - startTime,
       })
-      throw new Error('No worktrees found for this repository. Use create-session to create one.')
+      throw new Error(
+        'No worktrees found for this repository. Use create-session to create one.',
+      )
     }
 
     const worktreePath = latestWorktree.path
     const worktreeBasename = path.basename(worktreePath)
     const worktreeMatch = worktreeBasename.match(/^(.+)-worktree-(\d{3})$/)
-    
+
     if (!worktreeMatch) {
       this.emitEvent('find-latest-worktree:fail', {
         error: 'Latest worktree does not match expected naming pattern',
@@ -109,10 +112,7 @@ export class SessionContinuer extends SessionCreator {
         throw new Error(`Session '${sessionName}' already exists`)
       }
     } catch (error) {
-      if (
-        error instanceof Error &&
-        !error.message.includes('already exists')
-      ) {
+      if (error instanceof Error && !error.message.includes('already exists')) {
       } else {
         throw error
       }

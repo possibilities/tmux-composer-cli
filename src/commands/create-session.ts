@@ -33,7 +33,7 @@ interface CreateSessionOptions extends TmuxSocketOptions {
 }
 
 export class SessionCreator extends EventEmitter {
-  private socketOptions: TmuxSocketOptions
+  protected socketOptions: TmuxSocketOptions
   private readonly sessionId = randomUUID()
 
   constructor(options: CreateSessionOptions = {}) {
@@ -828,7 +828,10 @@ export class SessionCreator extends EventEmitter {
     return port
   }
 
-  protected async waitForWindows(sessionName: string, expectedWindows: string[]) {
+  protected async waitForWindows(
+    sessionName: string,
+    expectedWindows: string[],
+  ) {
     const maxAttempts = 30
     let attempts = 0
 
