@@ -3,8 +3,29 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 
-export const CODE_PATH = path.join(os.homedir(), 'code')
 export const WORKTREES_PATH = path.join(os.homedir(), 'code', 'worktrees')
+
+export function getMainRepositoryPath(worktreePath: string): string {
+  try {
+    const gitCommonDir = execSync(
+      'git rev-parse --path-format=absolute --git-common-dir',
+      {
+        cwd: worktreePath,
+        encoding: 'utf-8',
+      },
+    ).trim()
+
+    if (gitCommonDir.endsWith('.git')) {
+      return path.dirname(gitCommonDir)
+    }
+
+    return gitCommonDir
+  } catch (error) {
+    throw new Error(
+      `Failed to find main repository path: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+}
 
 export function isGitRepositoryClean(projectPath: string): boolean {
   try {
@@ -18,12 +39,13 @@ export function isGitRepositoryClean(projectPath: string): boolean {
   }
 }
 
-export function getNextWorktreeNumber(projectName: string): string {
+export function getNextWorktreeNumber(projectPath: string): string {
+  const projectName = path.basename(projectPath)
   const usedNumbers = new Set<number>()
 
   try {
     const branches = execSync('git branch --list "worktree-*"', {
-      cwd: path.join(CODE_PATH, projectName),
+      cwd: projectPath,
       encoding: 'utf-8',
     }).trim()
 

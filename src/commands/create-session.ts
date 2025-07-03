@@ -10,7 +10,6 @@ import {
   getNextWorktreeNumber,
   createWorktree,
   installDependencies,
-  CODE_PATH,
   WORKTREES_PATH,
 } from '../core/git-utils.js'
 import { socketExists, listWindows } from '../core/tmux-utils.js'
@@ -103,7 +102,7 @@ export class SessionCreator extends EventEmitter {
     const metadataStartTime = Date.now()
     this.emitEvent('analyze-project-metadata:start')
     const projectName = path.basename(projectPath)
-    const worktreeNum = getNextWorktreeNumber(projectName)
+    const worktreeNum = getNextWorktreeNumber(projectPath)
     const sessionName = `${projectName}-worktree-${worktreeNum}`
     this.emitEvent('analyze-project-metadata:end', {
       projectPath,
