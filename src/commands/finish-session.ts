@@ -6,6 +6,11 @@ import {
 } from '../core/git-sync.js'
 import { getTmuxSocketArgs } from '../core/tmux-socket.js'
 import type { TmuxSocketOptions } from '../core/tmux-socket.js'
+import {
+  listSessions,
+  getAttachedSession,
+  switchToSession,
+} from '../core/tmux-utils.js'
 
 export class SessionFinisher {
   private socketOptions: TmuxSocketOptions
@@ -86,6 +91,19 @@ export class SessionFinisher {
       ).trim()
 
       console.log(`Killing worktree session: ${currentSession}`)
+
+      const allSessions = listSessions(this.socketOptions)
+      const attachedSession = getAttachedSession(this.socketOptions)
+      const isAttachedToCurrentSession = attachedSession === currentSession
+      const hasOtherSessions = allSessions.length > 1
+
+      if (isAttachedToCurrentSession && hasOtherSessions) {
+        const otherSession = allSessions.find(s => s !== currentSession)
+        if (otherSession) {
+          console.log(`Switching to session: ${otherSession}`)
+          switchToSession(otherSession, this.socketOptions)
+        }
+      }
 
       execSync(`tmux ${socketArgs} kill-session -t ${currentSession}`)
     }
