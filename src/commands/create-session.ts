@@ -117,7 +117,6 @@ export class SessionCreator extends EventEmitter {
     } else {
       sessionName = projectName
 
-      // Check if session already exists
       try {
         const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
         const sessions = execSync(
@@ -139,12 +138,10 @@ export class SessionCreator extends EventEmitter {
           throw new Error(`Session '${sessionName}' already exists`)
         }
       } catch (error) {
-        // If tmux command fails, it means no server running, so we can proceed
         if (
           error instanceof Error &&
           !error.message.includes('already exists')
         ) {
-          // Tmux server not running, which is fine
         } else {
           throw error
         }
@@ -169,7 +166,6 @@ export class SessionCreator extends EventEmitter {
       const isClean = isGitRepositoryClean(projectPath)
 
       if (!isClean) {
-        // Always fail when repository has uncommitted changes
         this.emitEvent('ensure-clean-repository:fail', {
           isClean: false,
           error: 'Repository has uncommitted changes',
@@ -264,7 +260,6 @@ export class SessionCreator extends EventEmitter {
           throw error
         }
       } else {
-        // Non-worktree mode: use current directory
         worktreePath = projectPath
         this.emitEvent('skip-worktree-creation', {
           reason: 'Non-worktree mode',
@@ -576,6 +571,11 @@ export class SessionCreator extends EventEmitter {
         `tmux ${socketArgs.join(' ')} display-message -t ${sessionName} -p '#{session_id}'`,
         { encoding: 'utf-8' },
       ).trim()
+
+      const mode = options.worktree === false ? 'project' : 'worktree'
+      execSync(
+        `tmux ${socketArgs.join(' ')} set-environment -t ${sessionName} TMUX_COMPOSER_MODE ${mode}`,
+      )
 
       if (windowName === 'work') {
         this.emitEvent('create-tmux-session:end', {

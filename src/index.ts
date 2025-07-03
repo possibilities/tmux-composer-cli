@@ -4,6 +4,7 @@ import { TmuxSessionWatcher } from './commands/watch-session.js'
 import { TmuxPaneWatcher } from './commands/watch-panes.js'
 import { SessionCreator } from './commands/create-session.js'
 import { EventObserver } from './commands/observe-events.js'
+import { SessionFinisher } from './commands/finish-session.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
 
 async function main() {
@@ -90,6 +91,27 @@ async function main() {
     .action(async options => {
       const observer = new EventObserver()
       await observer.start(options)
+    })
+
+  program
+    .command('finish-session')
+    .description('finish current tmux-composer session')
+    .option('--tmux-socket <socket-name>', 'Tmux socket name')
+    .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
+    .action(async options => {
+      const socketOptions: TmuxSocketOptions = {
+        socketName: options.tmuxSocket,
+        socketPath: options.tmuxSocketPath,
+      }
+
+      const finisher = new SessionFinisher(socketOptions)
+
+      try {
+        await finisher.finish()
+        process.exit(0)
+      } catch (error) {
+        process.exit(1)
+      }
     })
 
   try {
