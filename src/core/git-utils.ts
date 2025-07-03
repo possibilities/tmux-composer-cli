@@ -111,3 +111,88 @@ export function installDependencies(worktreePath: string) {
     })
   }
 }
+
+export interface WorktreeInfo {
+  path: string
+  branch: string
+  commit: string
+  bare?: boolean
+  detached?: boolean
+  locked?: boolean
+  prunable?: boolean
+}
+
+export function getExistingWorktrees(projectPath: string): WorktreeInfo[] {
+  try {
+    const output = execSync('git worktree list --porcelain', {
+      cwd: projectPath,
+      encoding: 'utf-8',
+    }).trim()
+
+    if (!output) return []
+
+    const worktrees: WorktreeInfo[] = []
+    const lines = output.split('\n')
+    let currentWorktree: Partial<WorktreeInfo> = {}
+
+    for (const line of lines) {
+      if (line.startsWith('worktree ')) {
+        if (currentWorktree.path) {
+          worktrees.push(currentWorktree as WorktreeInfo)
+        }
+        currentWorktree = { path: line.substring(9) }
+      } else if (line.startsWith('HEAD ')) {
+        currentWorktree.commit = line.substring(5)
+      } else if (line.startsWith('branch ')) {
+        currentWorktree.branch = line.substring(7).replace('refs/heads/', '')
+      } else if (line === 'bare') {
+        currentWorktree.bare = true
+      } else if (line === 'detached') {
+        currentWorktree.detached = true
+      } else if (line.startsWith('locked')) {
+        currentWorktree.locked = true
+      } else if (line.startsWith('prunable')) {
+        currentWorktree.prunable = true
+      } else if (line === '' && currentWorktree.path) {
+        worktrees.push(currentWorktree as WorktreeInfo)
+        currentWorktree = {}
+      }
+    }
+
+    if (currentWorktree.path) {
+      worktrees.push(currentWorktree as WorktreeInfo)
+    }
+
+    return worktrees
+  } catch (error) {
+    throw new Error(
+      `Failed to list worktrees: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+}
+
+export function getLatestWorktree(projectPath: string): WorktreeInfo | null {
+  const worktrees = getExistingWorktrees(projectPath)
+  const projectName = path.basename(projectPath)
+  
+  const projectWorktrees = worktrees.filter(wt => {
+    const wtBasename = path.basename(wt.path)
+    return wtBasename.startsWith(`${projectName}-worktree-`) && 
+           /worktree-\d{3}$/.test(wtBasename)
+  })
+
+  if (projectWorktrees.length === 0) return null
+
+  const worktreesWithStats = projectWorktrees.map(wt => {
+    try {
+      const stats = fs.statSync(wt.path)
+      return { ...wt, mtime: stats.mtime }
+    } catch {
+      return { ...wt, mtime: new Date(0) }
+    }
+  })
+
+  worktreesWithStats.sort((a, b) => b.mtime.getTime() - a.mtime.getTime())
+
+  return worktreesWithStats[0]
+}

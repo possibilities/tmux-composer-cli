@@ -3,6 +3,7 @@ import packageJson from '../package.json' assert { type: 'json' }
 import { TmuxSessionWatcher } from './commands/watch-session.js'
 import { TmuxPaneWatcher } from './commands/watch-panes.js'
 import { SessionCreator } from './commands/create-session.js'
+import { SessionContinuer } from './commands/continue-session.js'
 import { EventObserver } from './commands/observe-events.js'
 import { SessionFinisher } from './commands/finish-session.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
@@ -68,6 +69,45 @@ async function main() {
           terminalHeight: options.terminalHeight,
           attach: shouldAttach,
           worktree: options.worktree,
+          zmq: options.zmq,
+          zmqSocket: options.zmqSocket,
+          zmqSocketPath: options.zmqSocketPath,
+          ...socketOptions,
+        })
+
+        process.exit(0)
+      } catch (error) {
+        process.exit(1)
+      }
+    })
+
+  program
+    .command('continue-session [project-path]')
+    .description('continue with the latest worktree session')
+    .option('--tmux-socket <socket-name>', 'Tmux socket name')
+    .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
+    .option('--terminal-width <width>', 'Terminal width', parseInt)
+    .option('--terminal-height <height>', 'Terminal height', parseInt)
+    .option('--no-attach', 'Do not attach to the session after creation')
+    .option('--no-zmq', 'Disable ZeroMQ publishing')
+    .option('--zmq-socket <name>', 'ZeroMQ socket name')
+    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
+    .action(async (projectPath, options) => {
+      const socketOptions: TmuxSocketOptions = {
+        socketName: options.tmuxSocket,
+        socketPath: options.tmuxSocketPath,
+      }
+
+      const continuer = new SessionContinuer(socketOptions)
+
+      const resolvedProjectPath = projectPath || process.cwd()
+      const shouldAttach = options.attach !== false
+
+      try {
+        await continuer.continue(resolvedProjectPath, {
+          terminalWidth: options.terminalWidth,
+          terminalHeight: options.terminalHeight,
+          attach: shouldAttach,
           zmq: options.zmq,
           zmqSocket: options.zmqSocket,
           zmqSocketPath: options.zmqSocketPath,

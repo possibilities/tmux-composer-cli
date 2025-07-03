@@ -48,7 +48,7 @@ export class SessionCreator extends EventEmitter {
     })
   }
 
-  private emitEvent<T extends EventName>(
+  protected emitEvent<T extends EventName>(
     eventName: T,
     ...args: T extends keyof EventDataMap
       ? EventDataMap[T] extends undefined
@@ -443,7 +443,7 @@ export class SessionCreator extends EventEmitter {
     }
   }
 
-  private async getExpectedWindows(worktreePath: string): Promise<string[]> {
+  protected async getExpectedWindows(worktreePath: string): Promise<string[]> {
     const scriptsStart = Date.now()
     this.emitEvent('analyze-project-scripts:start')
     const windows: string[] = []
@@ -493,7 +493,7 @@ export class SessionCreator extends EventEmitter {
     }
   }
 
-  private async createTmuxSession(
+  protected async createTmuxSession(
     sessionName: string,
     worktreePath: string,
     expectedWindows: string[],
@@ -799,7 +799,7 @@ export class SessionCreator extends EventEmitter {
     return createdWindows
   }
 
-  private findAvailablePort(): number {
+  protected findAvailablePort(): number {
     const getRandomPort = () =>
       Math.floor(Math.random() * (65535 - 49152 + 1)) + 49152
     const isPortAvailable = (port: number): boolean => {
@@ -828,7 +828,7 @@ export class SessionCreator extends EventEmitter {
     return port
   }
 
-  private async waitForWindows(sessionName: string, expectedWindows: string[]) {
+  protected async waitForWindows(sessionName: string, expectedWindows: string[]) {
     const maxAttempts = 30
     let attempts = 0
 
@@ -856,7 +856,7 @@ export class SessionCreator extends EventEmitter {
     })
   }
 
-  private async waitForPaneReady(
+  protected async waitForPaneReady(
     sessionName: string,
     windowName: string,
     maxWaitMs: number = 5000,
