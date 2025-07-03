@@ -80,7 +80,17 @@ Monitors pane content changes within the current tmux session.
 
 ### 3. create-session
 
-Creates a new tmux session with multiple windows based on project configuration.
+Creates a new tmux session with multiple windows based on project configuration. Supports two modes:
+
+- **Worktree mode (default)**: Creates a new git worktree for the session
+- **Non-worktree mode (`--no-worktree`)**: Creates session in the current directory
+
+In non-worktree mode:
+
+- Session name is just the project name (no worktree number)
+- Always fails if repository has uncommitted changes (no prompt)
+- Fails if a session with the same name already exists
+- No worktree creation or dependency installation
 
 #### Events
 
@@ -98,7 +108,8 @@ Creates a new tmux session with multiple windows based on project configuration.
         "socketPath": null,
         "terminalWidth": 120,
         "terminalHeight": 40,
-        "attach": true
+        "attach": true,
+        "worktreeMode": true
       }
     }
   }
@@ -128,10 +139,16 @@ Creates a new tmux session with multiple windows based on project configuration.
       "projectName": "my-project",
       "worktreeNumber": 1,
       "sessionName": "my-project-worktree-1",
+      "worktreeMode": true,
       "duration": 10
     }
   }
   ```
+
+  Note: When `worktreeMode` is false:
+
+  - `worktreeNumber` will be undefined
+  - `sessionName` will be just the project name (e.g., "my-project")
 
 - **`analyze-project-structure:start`** - Analyzing project structure
 
@@ -143,6 +160,7 @@ Creates a new tmux session with multiple windows based on project configuration.
     "data": {
       "hasPackageJson": true,
       "packageJsonPath": "/path/to/project/package.json",
+      "worktreeMode": true,
       "duration": 5
     }
   }
@@ -196,7 +214,7 @@ Creates a new tmux session with multiple windows based on project configuration.
   }
   ```
 
-- **`ensure-clean-repository:fail`** - Repository has uncommitted changes
+- **`ensure-clean-repository:fail`** - Repository has uncommitted changes (both worktree and non-worktree modes)
   ```json
   {
     "event": "ensure-clean-repository:fail",
@@ -211,7 +229,7 @@ Creates a new tmux session with multiple windows based on project configuration.
 
 ##### Worktree Events
 
-- **`create-project-worktree:start`** - Creating git worktree
+- **`create-project-worktree:start`** - Creating git worktree (worktree mode only)
 
 - **`create-project-worktree:end`** - Worktree created successfully
 
@@ -229,6 +247,19 @@ Creates a new tmux session with multiple windows based on project configuration.
   ```
 
 - **`create-project-worktree:fail`** - Worktree creation failed
+
+- **`skip-worktree-creation`** - Worktree creation skipped (non-worktree mode only)
+
+  ```json
+  {
+    "event": "skip-worktree-creation",
+    "data": {
+      "reason": "Non-worktree mode",
+      "currentPath": "/path/to/project",
+      "duration": 0
+    }
+  }
+  ```
 
 ##### Dependency Events
 
@@ -337,6 +368,7 @@ Windows are created dynamically based on the project's package.json scripts:
       "selectedWindow": "server",
       "totalWindows": 6,
       "worktreePath": "/path/to/worktree",
+      "worktreeMode": true,
       "duration": 10,
       "totalDuration": 7500
     }
@@ -356,6 +388,7 @@ Windows are created dynamically based on the project's package.json scripts:
       "sessionName": "my-project-worktree-1",
       "worktreePath": "/path/to/worktree",
       "windows": ["server", "lint", "types", "test", "control"],
+      "worktreeMode": true,
       "duration": 7450,
       "totalDuration": 7500
     }
@@ -447,7 +480,8 @@ All `:fail` events include:
 
 Common error codes:
 
-- `DIRTY_REPOSITORY`: Repository has uncommitted changes
+- `DIRTY_REPOSITORY`: Repository has uncommitted changes (both worktree and non-worktree modes)
+- `SESSION_EXISTS`: Session with same name already exists (non-worktree mode)
 - `MISSING_PACKAGE_JSON`: No package.json found
 - `TMUX_SERVER_FAILED`: Tmux server failed to start
 - `PANE_NOT_READY`: Pane did not become ready within timeout

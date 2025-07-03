@@ -11,6 +11,7 @@ export default defineConfig({
   sourcemap: false,
   dts: false,
   bundle: true,
+  external: [],
   outExtension() {
     return {
       js: '.js',

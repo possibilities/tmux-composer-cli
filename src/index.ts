@@ -46,6 +46,7 @@ async function main() {
     .option('--terminal-width <width>', 'Terminal width', parseInt)
     .option('--terminal-height <height>', 'Terminal height', parseInt)
     .option('--no-attach', 'Do not attach to the session after creation')
+    .option('--no-worktree', 'Create session without worktree')
     .option('--no-zmq', 'Disable ZeroMQ publishing')
     .option('--zmq-socket <name>', 'ZeroMQ socket name')
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
@@ -65,6 +66,7 @@ async function main() {
           terminalWidth: options.terminalWidth,
           terminalHeight: options.terminalHeight,
           attach: shouldAttach,
+          worktree: options.worktree,
           zmq: options.zmq,
           zmqSocket: options.zmqSocket,
           zmqSocketPath: options.zmqSocketPath,

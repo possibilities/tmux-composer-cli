@@ -26,6 +26,7 @@ interface CreateSessionOptions extends TmuxSocketOptions {
   terminalWidth?: number
   terminalHeight?: number
   attach?: boolean
+  worktree?: boolean
   zmq?: boolean
   zmqSocket?: string
   zmqSocketPath?: string
@@ -94,6 +95,7 @@ export class SessionCreator extends EventEmitter {
         terminalWidth: options.terminalWidth,
         terminalHeight: options.terminalHeight,
         attach: options.attach,
+        worktreeMode: options.worktree !== false,
       },
     })
 
@@ -104,13 +106,57 @@ export class SessionCreator extends EventEmitter {
     const metadataStartTime = Date.now()
     this.emitEvent('analyze-project-metadata:start')
     const projectName = path.basename(projectPath)
-    const worktreeNum = getNextWorktreeNumber(projectPath)
-    const sessionName = `${projectName}-worktree-${worktreeNum}`
+
+    const isWorktreeMode = options.worktree !== false
+    let worktreeNum: string | undefined
+    let sessionName: string
+
+    if (isWorktreeMode) {
+      worktreeNum = getNextWorktreeNumber(projectPath)
+      sessionName = `${projectName}-worktree-${worktreeNum}`
+    } else {
+      sessionName = projectName
+
+      // Check if session already exists
+      try {
+        const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
+        const sessions = execSync(
+          `tmux ${socketArgs} list-sessions -F '#{session_name}'`,
+          {
+            encoding: 'utf-8',
+            stdio: ['pipe', 'pipe', 'ignore'],
+          },
+        )
+          .trim()
+          .split('\n')
+
+        if (sessions.includes(sessionName)) {
+          this.emitEvent('analyze-project-metadata:fail', {
+            error: `Session '${sessionName}' already exists`,
+            errorCode: 'SESSION_EXISTS',
+            duration: Date.now() - metadataStartTime,
+          })
+          throw new Error(`Session '${sessionName}' already exists`)
+        }
+      } catch (error) {
+        // If tmux command fails, it means no server running, so we can proceed
+        if (
+          error instanceof Error &&
+          !error.message.includes('already exists')
+        ) {
+          // Tmux server not running, which is fine
+        } else {
+          throw error
+        }
+      }
+    }
+
     this.emitEvent('analyze-project-metadata:end', {
       projectPath,
       projectName,
       worktreeNumber: worktreeNum,
       sessionName,
+      worktreeMode: isWorktreeMode,
       duration: Date.now() - metadataStartTime,
     })
 
@@ -123,6 +169,7 @@ export class SessionCreator extends EventEmitter {
       const isClean = isGitRepositoryClean(projectPath)
 
       if (!isClean) {
+        // Always fail when repository has uncommitted changes
         this.emitEvent('ensure-clean-repository:fail', {
           isClean: false,
           error: 'Repository has uncommitted changes',
@@ -158,59 +205,72 @@ export class SessionCreator extends EventEmitter {
         duration: Date.now() - repoCheckStart,
       })
 
-      await fs.promises.mkdir(WORKTREES_PATH, { recursive: true })
-
-      const worktreeStart = Date.now()
-      this.emitEvent('create-project-worktree:start')
       let worktreePath: string
-      try {
-        worktreePath = createWorktree(projectPath, projectName, worktreeNum)
-        this.emitEvent('create-project-worktree:end', {
-          sourcePath: projectPath,
-          worktreePath,
-          branch,
-          worktreeNumber: worktreeNum,
-          duration: Date.now() - worktreeStart,
-        })
-      } catch (error) {
-        this.emitEvent('create-project-worktree:fail', {
-          error: error instanceof Error ? error.message : String(error),
-          sourcePath: projectPath,
-          worktreeNumber: worktreeNum,
-          duration: Date.now() - worktreeStart,
-        })
-        this.emitEvent('create-worktree-session:fail', {
-          error: `Failed to create worktree: ${error instanceof Error ? error.message : String(error)}`,
-          duration: Date.now() - sessionStartTime,
-        })
-        throw error
-      }
 
-      const depsStart = Date.now()
-      this.emitEvent('install-project-dependencies:start')
-      try {
-        installDependencies(worktreePath)
-        this.emitEvent('install-project-dependencies:end', {
-          packageManager: 'pnpm',
-          worktreePath,
-          hasPackageJson: fs.existsSync(
-            path.join(worktreePath, 'package.json'),
-          ),
-          hasLockfile: fs.existsSync(path.join(worktreePath, 'pnpm-lock.yaml')),
-          duration: Date.now() - depsStart,
+      if (isWorktreeMode) {
+        await fs.promises.mkdir(WORKTREES_PATH, { recursive: true })
+
+        const worktreeStart = Date.now()
+        this.emitEvent('create-project-worktree:start')
+        try {
+          worktreePath = createWorktree(projectPath, projectName, worktreeNum!)
+          this.emitEvent('create-project-worktree:end', {
+            sourcePath: projectPath,
+            worktreePath,
+            branch,
+            worktreeNumber: worktreeNum,
+            duration: Date.now() - worktreeStart,
+          })
+        } catch (error) {
+          this.emitEvent('create-project-worktree:fail', {
+            error: error instanceof Error ? error.message : String(error),
+            sourcePath: projectPath,
+            worktreeNumber: worktreeNum,
+            duration: Date.now() - worktreeStart,
+          })
+          this.emitEvent('create-worktree-session:fail', {
+            error: `Failed to create worktree: ${error instanceof Error ? error.message : String(error)}`,
+            duration: Date.now() - sessionStartTime,
+          })
+          throw error
+        }
+
+        const depsStart = Date.now()
+        this.emitEvent('install-project-dependencies:start')
+        try {
+          installDependencies(worktreePath)
+          this.emitEvent('install-project-dependencies:end', {
+            packageManager: 'pnpm',
+            worktreePath,
+            hasPackageJson: fs.existsSync(
+              path.join(worktreePath, 'package.json'),
+            ),
+            hasLockfile: fs.existsSync(
+              path.join(worktreePath, 'pnpm-lock.yaml'),
+            ),
+            duration: Date.now() - depsStart,
+          })
+        } catch (error) {
+          this.emitEvent('install-project-dependencies:fail', {
+            error: error instanceof Error ? error.message : String(error),
+            packageManager: 'pnpm',
+            worktreePath,
+            duration: Date.now() - depsStart,
+          })
+          this.emitEvent('create-worktree-session:fail', {
+            error: `Failed to install dependencies: ${error instanceof Error ? error.message : String(error)}`,
+            duration: Date.now() - sessionStartTime,
+          })
+          throw error
+        }
+      } else {
+        // Non-worktree mode: use current directory
+        worktreePath = projectPath
+        this.emitEvent('skip-worktree-creation', {
+          reason: 'Non-worktree mode',
+          currentPath: projectPath,
+          duration: 0,
         })
-      } catch (error) {
-        this.emitEvent('install-project-dependencies:fail', {
-          error: error instanceof Error ? error.message : String(error),
-          packageManager: 'pnpm',
-          worktreePath,
-          duration: Date.now() - depsStart,
-        })
-        this.emitEvent('create-worktree-session:fail', {
-          error: `Failed to install dependencies: ${error instanceof Error ? error.message : String(error)}`,
-          duration: Date.now() - sessionStartTime,
-        })
-        throw error
       }
 
       const structureStart = Date.now()
@@ -223,6 +283,7 @@ export class SessionCreator extends EventEmitter {
         packageJsonPath: hasPackageJson
           ? path.join(worktreePath, 'package.json')
           : null,
+        worktreeMode: isWorktreeMode,
         duration: Date.now() - structureStart,
       })
 
@@ -269,6 +330,7 @@ export class SessionCreator extends EventEmitter {
         selectedWindow: windows[0] || 'none',
         totalWindows: windows.length,
         worktreePath,
+        worktreeMode: isWorktreeMode,
         duration: Date.now() - finalizeStart,
         totalDuration: Date.now() - startTime,
       })
@@ -277,6 +339,7 @@ export class SessionCreator extends EventEmitter {
         sessionName,
         worktreePath,
         windows,
+        worktreeMode: isWorktreeMode,
         duration: Date.now() - sessionStartTime,
         totalDuration: Date.now() - startTime,
       })

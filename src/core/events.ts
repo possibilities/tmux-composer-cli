@@ -7,6 +7,7 @@ export type EventName =
   | 'initialize-session-creation:end'
   | 'analyze-project-metadata:start'
   | 'analyze-project-metadata:end'
+  | 'analyze-project-metadata:fail'
   | 'analyze-project-structure:start'
   | 'analyze-project-structure:end'
   | 'analyze-project-scripts:start'
@@ -15,6 +16,8 @@ export type EventName =
   | 'ensure-clean-repository:start'
   | 'ensure-clean-repository:end'
   | 'ensure-clean-repository:fail'
+  | 'ensure-clean-repository:warn'
+  | 'skip-worktree-creation'
   | 'create-worktree-session:start'
   | 'create-worktree-session:end'
   | 'create-worktree-session:fail'
@@ -100,19 +103,22 @@ export interface InitializeSessionCreationStartData {
     terminalWidth?: number
     terminalHeight?: number
     attach?: boolean
+    worktreeMode?: boolean
   }
 }
 
 export interface AnalyzeProjectMetadataEndData extends BaseEventData {
   projectPath: string
   projectName: string
-  worktreeNumber: string
+  worktreeNumber?: string
   sessionName: string
+  worktreeMode?: boolean
 }
 
 export interface AnalyzeProjectStructureEndData extends BaseEventData {
   hasPackageJson: boolean
   packageJsonPath: string | null
+  worktreeMode?: boolean
 }
 
 export interface AnalyzeProjectScriptsEndData extends BaseEventData {
@@ -133,16 +139,26 @@ export interface EnsureCleanRepositoryFailData extends ErrorEventData {
   isClean: boolean
 }
 
+export interface EnsureCleanRepositoryWarnData extends BaseEventData {
+  isClean: boolean
+  warning: string
+}
+
+export interface SkipWorktreeCreationData extends BaseEventData {
+  reason: string
+  currentPath: string
+}
+
 export interface CreateProjectWorktreeEndData extends BaseEventData {
   sourcePath: string
   worktreePath: string
   branch: string
-  worktreeNumber: string
+  worktreeNumber?: string
 }
 
 export interface CreateProjectWorktreeFailData extends ErrorEventData {
   sourcePath: string
-  worktreeNumber: string
+  worktreeNumber?: string
 }
 
 export interface InstallProjectDependenciesEndData extends BaseEventData {
@@ -196,6 +212,7 @@ export interface FinalizeTmuxSessionEndData extends BaseEventData {
   selectedWindow: string
   totalWindows: number
   worktreePath: string
+  worktreeMode?: boolean
   totalDuration: number
 }
 
@@ -203,6 +220,7 @@ export interface CreateWorktreeSessionEndData extends BaseEventData {
   sessionName: string
   worktreePath: string
   windows: string[]
+  worktreeMode?: boolean
   totalDuration: number
 }
 
@@ -237,6 +255,7 @@ export type EventDataMap = {
   'initialize-session-creation:end': BaseEventData
   'analyze-project-metadata:start': undefined
   'analyze-project-metadata:end': AnalyzeProjectMetadataEndData
+  'analyze-project-metadata:fail': ErrorEventData
   'analyze-project-structure:start': undefined
   'analyze-project-structure:end': AnalyzeProjectStructureEndData
   'analyze-project-scripts:start': undefined
@@ -245,6 +264,8 @@ export type EventDataMap = {
   'ensure-clean-repository:start': undefined
   'ensure-clean-repository:end': EnsureCleanRepositoryEndData
   'ensure-clean-repository:fail': EnsureCleanRepositoryFailData
+  'ensure-clean-repository:warn': EnsureCleanRepositoryWarnData
+  'skip-worktree-creation': SkipWorktreeCreationData
   'create-worktree-session:start': undefined
   'create-worktree-session:end': CreateWorktreeSessionEndData
   'create-worktree-session:fail': ErrorEventData

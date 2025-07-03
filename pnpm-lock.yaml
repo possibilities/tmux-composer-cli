@@ -13,6 +13,9 @@ importers:
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
+      prompts:
+        specifier: ^2.4.2
+        version: 2.4.2
       ws:
         specifier: ^8.18.3
         version: 8.18.3
@@ -26,6 +29,9 @@ importers:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.1
+      '@types/prompts':
+        specifier: ^2.4.9
+        version: 2.4.9
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
@@ -35,9 +41,6 @@ importers:
       prettier:
         specifier: ^3.5.3
         version: 3.5.3
-      prompts:
-        specifier: ^2.4.2
-        version: 2.4.2
       tsup:
         specifier: ^8.0.0
         version: 8.5.0(tsx@4.20.3)(typescript@5.8.3)
@@ -497,6 +500,12 @@ packages:
     resolution:
       {
         integrity: sha512-jJD50LtlD2dodAEO653i3YF04NWak6jN3ky+Ri3Em3mGR39/glWiboM/IePaRbgwSfqM1TpGXfAg8ohn/4dTgA==,
+      }
+
+  '@types/prompts@2.4.9':
+    resolution:
+      {
+        integrity: sha512-qTxFi6Buiu8+50/+3DGIWLHM6QuWsEKugJnnP6iv2Mc4ncxE4A/OJkjuVOA+5X0X1S/nq5VJRa8Lu+nwcvbrKA==,
       }
 
   '@types/ws@8.18.1':
@@ -1543,6 +1552,11 @@ snapshots:
   '@types/node@20.19.1':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/prompts@2.4.9':
+    dependencies:
+      '@types/node': 20.19.1
+      kleur: 3.0.3
 
   '@types/ws@8.18.1':
     dependencies:
