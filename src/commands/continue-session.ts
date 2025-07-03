@@ -65,7 +65,7 @@ export class SessionContinuer extends SessionCreator {
 
     const worktreePath = latestWorktree.path
     const worktreeBasename = path.basename(worktreePath)
-    const worktreeMatch = worktreeBasename.match(/^(.+)-worktree-(\d{3})$/)
+    const worktreeMatch = worktreeBasename.match(/^(.+)-worktree-(\d{5})$/)
 
     if (!worktreeMatch) {
       this.emitEvent('find-latest-worktree:fail', {

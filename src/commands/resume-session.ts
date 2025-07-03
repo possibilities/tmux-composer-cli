@@ -86,7 +86,7 @@ export class SessionResumer extends SessionCreator {
     for (const wt of worktrees) {
       const sessionName = `${wt.projectName}-worktree-${wt.worktreeNumber
         .toString()
-        .padStart(3, '0')}`
+        .padStart(5, '0')}`
 
       let sessionExists = false
       try {
@@ -114,7 +114,7 @@ export class SessionResumer extends SessionCreator {
       const displayName = `${wt.worktreeNumber
         .toString()
         .padStart(
-          3,
+          5,
           '0',
         )} | ${branchName} | ${dateStr} ${timeStr}${existsMarker}`
 

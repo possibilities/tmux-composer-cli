@@ -53,7 +53,7 @@ export function getNextWorktreeNumber(projectPath: string): string {
       const branchNumbers = branches
         .split('\n')
         .map(branch => branch.trim().replace(/^\*?\s*/, ''))
-        .filter(branch => /^worktree-\d{3}$/.test(branch))
+        .filter(branch => /^worktree-\d{5}$/.test(branch))
         .map(branch => parseInt(branch.substring(9), 10))
 
       branchNumbers.forEach(num => usedNumbers.add(num))
@@ -63,7 +63,7 @@ export function getNextWorktreeNumber(projectPath: string): string {
   if (fs.existsSync(WORKTREES_PATH)) {
     try {
       const dirs = fs.readdirSync(WORKTREES_PATH)
-      const pattern = new RegExp(`^${projectName}-worktree-(\\d{3})$`)
+      const pattern = new RegExp(`^${projectName}-worktree-(\\d{5})$`)
 
       dirs.forEach(dir => {
         const match = dir.match(pattern)
@@ -76,7 +76,7 @@ export function getNextWorktreeNumber(projectPath: string): string {
 
   for (let i = 1; i < 1000; i++) {
     if (!usedNumbers.has(i)) {
-      return i.toString().padStart(3, '0')
+      return i.toString().padStart(5, '0')
     }
   }
 
@@ -177,7 +177,7 @@ export function getLatestWorktree(projectPath: string): WorktreeInfo | null {
   const projectWorktrees = worktrees.filter(wt => {
     const wtBasename = path.basename(wt.path)
     return (
-      /-worktree-\d{3}$/.test(wtBasename) && wt.path.startsWith(WORKTREES_PATH)
+      /-worktree-\d{5}$/.test(wtBasename) && wt.path.startsWith(WORKTREES_PATH)
     )
   })
 
@@ -211,16 +211,30 @@ export function getAllProjectWorktrees(
   const projectWorktrees = worktrees.filter(wt => {
     const wtBasename = path.basename(wt.path)
     return (
-      /-worktree-\d{3}$/.test(wtBasename) && wt.path.startsWith(WORKTREES_PATH)
+      /-worktree-\d{5}$/.test(wtBasename) && wt.path.startsWith(WORKTREES_PATH)
     )
   })
 
   const worktreesWithInfo = projectWorktrees
     .map(wt => {
       const wtBasename = path.basename(wt.path)
-      const match = wtBasename.match(/^(.+)-worktree-(\d{3})$/)
+      const match = wtBasename.match(/^(.+)-worktree-(\d{5})$/)
 
       if (!match) return null
+
+      if (!fs.existsSync(wt.path)) {
+        return null
+      }
+
+      try {
+        execSync('git rev-parse --is-inside-work-tree', {
+          cwd: wt.path,
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'ignore'],
+        })
+      } catch {
+        return null
+      }
 
       try {
         const stats = fs.statSync(wt.path)
