@@ -42,8 +42,8 @@ async function main() {
     .command('create-session [project-path]')
     .description('create project session')
     .option('--mode <mode>', 'Session mode (act or plan)', 'act')
-    .option('-L <socket-name>', 'Tmux socket name')
-    .option('-S <socket-path>', 'Tmux socket path')
+    .option('--tmux-socket <socket-name>', 'Tmux socket name')
+    .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
     .option('--terminal-width <width>', 'Terminal width', parseInt)
     .option('--terminal-height <height>', 'Terminal height', parseInt)
     .option('--no-attach', 'Do not attach to the session after creation')
@@ -52,8 +52,8 @@ async function main() {
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .action(async (projectPath, options) => {
       const socketOptions: TmuxSocketOptions = {
-        socketName: options.L,
-        socketPath: options.S,
+        socketName: options.tmuxSocket,
+        socketPath: options.tmuxSocketPath,
       }
 
       const creator = new SessionCreator(socketOptions)
