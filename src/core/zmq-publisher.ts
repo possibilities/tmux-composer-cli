@@ -1,8 +1,11 @@
 import { Publisher } from 'zeromq'
 import { EventEmitter } from 'events'
 import os from 'os'
-
-const ZMQ_SOCKET_PATH = 'ipc:///tmp/tmux-composer-events.sock'
+import {
+  getZmqSocketPath,
+  ensureZmqSocketDirectory,
+  type ZmqSocketOptions,
+} from './zmq-socket.js'
 
 export interface EventSource {
   script: string
@@ -24,6 +27,11 @@ export class ZmqEventPublisher {
   private publisher: Publisher | null = null
   private isConnected = false
   private eventQueue: TmuxEvent[] = []
+  private socketPath: string
+
+  constructor(socketOptions: ZmqSocketOptions = {}) {
+    this.socketPath = getZmqSocketPath(socketOptions)
+  }
 
   async connect(): Promise<void> {
     if (this.isConnected) {
@@ -31,9 +39,11 @@ export class ZmqEventPublisher {
     }
 
     try {
+      await ensureZmqSocketDirectory()
+
       this.publisher = new Publisher()
       this.publisher.linger = 1000
-      await this.publisher.connect(ZMQ_SOCKET_PATH)
+      await this.publisher.connect(this.socketPath)
 
       await new Promise(resolve => setTimeout(resolve, 100))
 
@@ -84,24 +94,31 @@ export class ZmqEventPublisher {
   }
 }
 
-let publisherInstance: ZmqEventPublisher | null = null
+const publisherInstances = new Map<string, ZmqEventPublisher>()
 
-export function getZmqPublisher(): ZmqEventPublisher {
-  if (!publisherInstance) {
-    publisherInstance = new ZmqEventPublisher()
+export function getZmqPublisher(
+  socketOptions: ZmqSocketOptions = {},
+): ZmqEventPublisher {
+  const socketPath = getZmqSocketPath(socketOptions)
+
+  let publisher = publisherInstances.get(socketPath)
+  if (!publisher) {
+    publisher = new ZmqEventPublisher(socketOptions)
+    publisherInstances.set(socketPath, publisher)
   }
-  return publisherInstance
+
+  return publisher
 }
 
 export async function shutdownZmqPublisher(): Promise<void> {
-  if (publisherInstance) {
-    await publisherInstance.disconnect()
-    publisherInstance = null
+  for (const publisher of publisherInstances.values()) {
+    await publisher.disconnect()
   }
+  publisherInstances.clear()
 }
 
-export interface ZmqPublishingOptions {
-  zeromq?: boolean
+export interface ZmqPublishingOptions extends ZmqSocketOptions {
+  zmq?: boolean
   source?: Partial<EventSource>
 }
 
@@ -109,11 +126,14 @@ export async function enableZmqPublishing(
   emitter: EventEmitter,
   options: ZmqPublishingOptions = {},
 ): Promise<void> {
-  if (options.zeromq === false) {
+  if (options.zmq === false) {
     return
   }
 
-  const publisher = getZmqPublisher()
+  const publisher = getZmqPublisher({
+    socketName: options.socketName,
+    socketPath: options.socketPath,
+  })
 
   try {
     await publisher.connect()

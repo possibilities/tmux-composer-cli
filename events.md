@@ -483,7 +483,7 @@ When ZeroMQ is enabled (default), events are also published to:
 - Topic: All events published to single topic
 - Format: UTF-8 JSON strings
 
-To disable ZeroMQ publishing, use the `--no-zeromq` flag with any command.
+To disable ZeroMQ publishing, use the `--no-zmq` flag with any command.
 
 ## Observing Events
 

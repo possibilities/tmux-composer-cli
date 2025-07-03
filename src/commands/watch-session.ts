@@ -113,7 +113,16 @@ export class TmuxSessionWatcher extends EventEmitter {
     this.emit('event', event)
   }
 
-  async start(options: { zeromq?: boolean } = {}) {
+  async start(
+    options: { zmq?: boolean; zmqSocket?: string; zmqSocketPath?: string } = {},
+  ) {
+    if (options.zmq === false && (options.zmqSocket || options.zmqSocketPath)) {
+      console.error(
+        'Error: Cannot use --no-zmq with --zmq-socket or --zmq-socket-path',
+      )
+      process.exit(1)
+    }
+
     try {
       const sessionName = await this.runCommand(
         'tmux display-message -p "#{session_name}"',
@@ -133,7 +142,9 @@ export class TmuxSessionWatcher extends EventEmitter {
     const socketPath = getTmuxSocketPath({})
 
     await enableZmqPublishing(this, {
-      zeromq: options.zeromq,
+      zmq: options.zmq,
+      socketName: options.zmqSocket,
+      socketPath: options.zmqSocketPath,
       source: {
         script: 'watch-session',
         sessionId: this.currentSessionId,

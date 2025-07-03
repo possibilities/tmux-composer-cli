@@ -17,7 +17,9 @@ async function main() {
   program
     .command('watch-session')
     .description('watch session changes')
-    .option('--no-zeromq', 'Disable ZeroMQ publishing')
+    .option('--no-zmq', 'Disable ZeroMQ publishing')
+    .option('--zmq-socket <name>', 'ZeroMQ socket name')
+    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .action(async options => {
       const watcher = new TmuxSessionWatcher()
 
@@ -27,7 +29,9 @@ async function main() {
   program
     .command('watch-panes')
     .description('watch pane changes')
-    .option('--no-zeromq', 'Disable ZeroMQ publishing')
+    .option('--no-zmq', 'Disable ZeroMQ publishing')
+    .option('--zmq-socket <name>', 'ZeroMQ socket name')
+    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .action(async options => {
       const watcher = new TmuxPaneWatcher()
 
@@ -43,7 +47,9 @@ async function main() {
     .option('--terminal-width <width>', 'Terminal width', parseInt)
     .option('--terminal-height <height>', 'Terminal height', parseInt)
     .option('--no-attach', 'Do not attach to the session after creation')
-    .option('--no-zeromq', 'Disable ZeroMQ publishing')
+    .option('--no-zmq', 'Disable ZeroMQ publishing')
+    .option('--zmq-socket <name>', 'ZeroMQ socket name')
+    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .action(async (projectPath, options) => {
       const socketOptions: TmuxSocketOptions = {
         socketName: options.L,
@@ -61,7 +67,9 @@ async function main() {
           terminalWidth: options.terminalWidth,
           terminalHeight: options.terminalHeight,
           attach: shouldAttach,
-          zeromq: options.zeromq,
+          zmq: options.zmq,
+          zmqSocket: options.zmqSocket,
+          zmqSocketPath: options.zmqSocketPath,
           ...socketOptions,
         })
 
@@ -75,6 +83,9 @@ async function main() {
     .command('observe-events')
     .description('observe all events')
     .option('--ws', 'Send events over a websocket connection', true)
+    .option('--ws-port <port>', 'WebSocket server port', parseInt, 31337)
+    .option('--zmq-socket <name>', 'ZeroMQ socket name')
+    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .action(async options => {
       const observer = new EventObserver()
       await observer.start(options)

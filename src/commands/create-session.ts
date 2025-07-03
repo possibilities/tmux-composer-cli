@@ -27,7 +27,9 @@ interface CreateSessionOptions extends TmuxSocketOptions {
   terminalWidth?: number
   terminalHeight?: number
   attach?: boolean
-  zeromq?: boolean
+  zmq?: boolean
+  zmqSocket?: string
+  zmqSocketPath?: string
 }
 
 interface TmuxEvent {
@@ -68,12 +70,21 @@ export class SessionCreator extends EventEmitter {
   }
 
   async create(projectPath: string, options: CreateSessionOptions = {}) {
+    if (options.zmq === false && (options.zmqSocket || options.zmqSocketPath)) {
+      console.error(
+        'Error: Cannot use --no-zmq with --zmq-socket or --zmq-socket-path',
+      )
+      process.exit(1)
+    }
+
     const startTime = Date.now()
 
     const socketPath = getTmuxSocketPath(this.socketOptions)
 
     await enableZmqPublishing(this, {
-      zeromq: options.zeromq,
+      zmq: options.zmq,
+      socketName: options.zmqSocket,
+      socketPath: options.zmqSocketPath,
       source: {
         script: 'create-session',
         socketPath,
@@ -262,6 +273,7 @@ export class SessionCreator extends EventEmitter {
           mode,
           options.terminalWidth,
           options.terminalHeight,
+          options,
         )
       } catch (error) {
         this.emitEvent('create-worktree-session:fail', {
@@ -494,6 +506,7 @@ export class SessionCreator extends EventEmitter {
     mode: 'act' | 'plan',
     terminalWidth?: number,
     terminalHeight?: number,
+    options: CreateSessionOptions = {},
   ): Promise<string[]> {
     const sessionStart = Date.now()
     this.emitEvent('create-tmux-session:start')
@@ -891,14 +904,20 @@ export class SessionCreator extends EventEmitter {
           throw new Error('Control window failed to create within timeout')
         }
 
+        const zmqSocketArgs = options.zmqSocket
+          ? ` --zmq-socket ${options.zmqSocket}`
+          : options.zmqSocketPath
+            ? ` --zmq-socket-path ${options.zmqSocketPath}`
+            : ''
+
         execSync(
-          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer watch-session | jq .' Enter`,
+          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer watch-session${zmqSocketArgs} | jq .' Enter`,
         )
         execSync(
           `tmux ${socketArgs} split-window -t ${sessionName}:control -h -c ${worktreePath}`,
         )
         execSync(
-          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer watch-panes | jq .' Enter`,
+          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer watch-panes${zmqSocketArgs} | jq .' Enter`,
         )
 
         const windowId = execSync(
@@ -911,8 +930,8 @@ export class SessionCreator extends EventEmitter {
           windowIndex,
           windowId,
           commands: [
-            'tmux-composer watch-session | jq .',
-            'tmux-composer watch-panes | jq .',
+            `tmux-composer watch-session${zmqSocketArgs} | jq .`,
+            `tmux-composer watch-panes${zmqSocketArgs} | jq .`,
           ],
           duration: Date.now() - controlStart,
         })

@@ -1,29 +1,47 @@
 import { Subscriber } from 'zeromq'
 import WebSocket, { WebSocketServer } from 'ws'
-
-const WS_PORT = 31337
-
-const ZMQ_SOCKET_PATH = 'ipc:///tmp/tmux-composer-events.sock'
+import {
+  getZmqSocketPath,
+  ensureZmqSocketDirectory,
+  type ZmqSocketOptions,
+} from '../core/zmq-socket.js'
 
 export class EventObserver {
   private subscriber: Subscriber | null = null
   private isRunning = false
   private wsServer: WebSocketServer | null = null
 
-  async start(options: { ws?: boolean } = {}): Promise<void> {
+  async start(
+    options: {
+      ws?: boolean
+      wsPort?: number
+      zmqSocket?: string
+      zmqSocketPath?: string
+    } = {},
+  ): Promise<void> {
+    // No need to check for --no-zmq here since observe-events doesn't have that option
+
     try {
+      await ensureZmqSocketDirectory()
+
+      const socketPath = getZmqSocketPath({
+        socketName: options.zmqSocket,
+        socketPath: options.zmqSocketPath,
+      })
+
       this.subscriber = new Subscriber()
-      await this.subscriber.bind(ZMQ_SOCKET_PATH)
+      await this.subscriber.bind(socketPath)
       await this.subscriber.subscribe()
 
       this.isRunning = true
       console.error('[INFO] Connected to ZeroMQ event publisher')
-      console.error(`[INFO] Listening for events on ${ZMQ_SOCKET_PATH}`)
+      console.error(`[INFO] Listening for events on ${socketPath}`)
 
       if (options.ws !== false) {
-        this.wsServer = new WebSocketServer({ port: WS_PORT })
+        const wsPort = options.wsPort || 31337
+        this.wsServer = new WebSocketServer({ port: wsPort })
         console.error(
-          `[INFO] WebSocket server listening on ws://localhost:${WS_PORT}`,
+          `[INFO] WebSocket server listening on ws://localhost:${wsPort}`,
         )
         this.wsServer.on('connection', socket => {
           socket.on('error', err => {
