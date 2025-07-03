@@ -18,32 +18,8 @@ async function main() {
     .version(packageJson.version)
 
   program
-    .command('watch-session')
-    .description('watch session changes')
-    .option('--no-zmq', 'Disable ZeroMQ publishing')
-    .option('--zmq-socket <name>', 'ZeroMQ socket name')
-    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
-    .action(async options => {
-      const watcher = new TmuxSessionWatcher()
-
-      await watcher.start(options)
-    })
-
-  program
-    .command('watch-panes')
-    .description('watch pane changes')
-    .option('--no-zmq', 'Disable ZeroMQ publishing')
-    .option('--zmq-socket <name>', 'ZeroMQ socket name')
-    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
-    .action(async options => {
-      const watcher = new TmuxPaneWatcher()
-
-      await watcher.start(options)
-    })
-
-  program
     .command('create-session [project-path]')
-    .description('create project session')
+    .description('create session')
     .option('--tmux-socket <socket-name>', 'Tmux socket name')
     .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
     .option('--terminal-width <width>', 'Terminal width', parseInt)
@@ -84,7 +60,7 @@ async function main() {
 
   program
     .command('continue-session [project-path]')
-    .description('continue with the latest worktree session')
+    .description('continue session')
     .option('--tmux-socket <socket-name>', 'Tmux socket name')
     .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
     .option('--terminal-width <width>', 'Terminal width', parseInt)
@@ -122,21 +98,8 @@ async function main() {
     })
 
   program
-    .command('observe-events')
-    .description('observe all events')
-    .option('--ws', 'Enable WebSocket server')
-    .option('--no-ws', 'Disable WebSocket server')
-    .option('--ws-port <port>', 'WebSocket server port', parseInt, 31337)
-    .option('--zmq-socket <name>', 'ZeroMQ socket name')
-    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
-    .action(async options => {
-      const observer = new EventObserver()
-      await observer.start(options)
-    })
-
-  program
     .command('finish-session')
-    .description('finish current tmux-composer session')
+    .description('finish session')
     .option('--tmux-socket <socket-name>', 'Tmux socket name')
     .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
     .action(async options => {
@@ -157,7 +120,7 @@ async function main() {
 
   program
     .command('close-session')
-    .description('close current tmux session')
+    .description('close session')
     .option('--tmux-socket <socket-name>', 'Tmux socket name')
     .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
     .action(async options => {
@@ -174,6 +137,43 @@ async function main() {
       } catch (error) {
         process.exit(1)
       }
+    })
+
+  program
+    .command('watch-session')
+    .description('watch session')
+    .option('--no-zmq', 'Disable ZeroMQ publishing')
+    .option('--zmq-socket <name>', 'ZeroMQ socket name')
+    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
+    .action(async options => {
+      const watcher = new TmuxSessionWatcher()
+
+      await watcher.start(options)
+    })
+
+  program
+    .command('watch-panes')
+    .description('watch panes')
+    .option('--no-zmq', 'Disable ZeroMQ publishing')
+    .option('--zmq-socket <name>', 'ZeroMQ socket name')
+    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
+    .action(async options => {
+      const watcher = new TmuxPaneWatcher()
+
+      await watcher.start(options)
+    })
+
+  program
+    .command('observe-events')
+    .description('observe events')
+    .option('--ws', 'Enable WebSocket server')
+    .option('--no-ws', 'Disable WebSocket server')
+    .option('--ws-port <port>', 'WebSocket server port', parseInt, 31337)
+    .option('--zmq-socket <name>', 'ZeroMQ socket name')
+    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
+    .action(async options => {
+      const observer = new EventObserver()
+      await observer.start(options)
     })
 
   try {
