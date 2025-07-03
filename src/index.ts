@@ -41,7 +41,6 @@ async function main() {
   program
     .command('create-session [project-path]')
     .description('create project session')
-    .option('--mode <mode>', 'Session mode (act or plan)', 'act')
     .option('--tmux-socket <socket-name>', 'Tmux socket name')
     .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
     .option('--terminal-width <width>', 'Terminal width', parseInt)
@@ -63,7 +62,6 @@ async function main() {
 
       try {
         await creator.create(resolvedProjectPath, {
-          mode: options.mode,
           terminalWidth: options.terminalWidth,
           terminalHeight: options.terminalHeight,
           attach: shouldAttach,

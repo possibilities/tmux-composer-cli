@@ -94,7 +94,6 @@ Creates a new tmux session with multiple windows based on project configuration.
     "data": {
       "projectPath": "/path/to/project",
       "options": {
-        "mode": "act",
         "socketName": null,
         "socketPath": null,
         "terminalWidth": 120,
@@ -143,8 +142,6 @@ Creates a new tmux session with multiple windows based on project configuration.
     "event": "analyze-project-structure:end",
     "data": {
       "hasPackageJson": true,
-      "hasTmuxComposerConfig": true,
-      "configPath": "/path/to/project/tmux-composer.yaml",
       "packageJsonPath": "/path/to/project/package.json",
       "duration": 5
     }
@@ -166,9 +163,7 @@ Creates a new tmux session with multiple windows based on project configuration.
         "types:watch",
         "test:watch"
       ],
-      "plannedWindows": ["work", "server", "lint", "types", "test", "control"],
-      "agentCommand": { "act": "claude", "plan": "claude" },
-      "contextCommand": { "act": "context-cmd", "plan": "context-cmd" },
+      "plannedWindows": ["server", "lint", "types", "test", "control"],
       "duration": 8
     }
   }
@@ -262,12 +257,11 @@ Creates a new tmux session with multiple windows based on project configuration.
       "sessionName": "my-project-worktree-1",
       "sessionId": "$0",
       "socketPath": "/tmp/tmux-1000/default",
-      "firstWindow": "work",
+      "firstWindow": "server",
       "terminalSize": {
         "width": 120,
         "height": 40
       },
-      "mode": "act",
       "duration": 50
     }
   }
@@ -277,7 +271,7 @@ Creates a new tmux session with multiple windows based on project configuration.
 
 ##### Window Creation Events
 
-- **`create-tmux-window:{windowName}:start`** - Creating specific window (work, server, lint, types, test, control)
+- **`create-tmux-window:{windowName}:start`** - Creating specific window (server, lint, types, test, control)
 
 - **`create-tmux-window:{windowName}:end`** - Window created successfully
 
@@ -297,30 +291,6 @@ Creates a new tmux session with multiple windows based on project configuration.
   ```
 
 - **`create-tmux-window:{windowName}:fail`** - Window creation failed
-
-##### Context Command Events
-
-- **`invoking-context-command:start`** - Executing context command
-
-- **`invoking-context-command:end`** - Context loaded into tmux buffer
-
-  ```json
-  {
-    "event": "invoking-context-command:end",
-    "data": {
-      "command": "generate-context",
-      "mode": "act",
-      "workingDirectory": "/path/to/worktree",
-      "outputSize": 2048,
-      "contextLength": 50,
-      "bufferSize": 2048,
-      "truncated": false,
-      "duration": 200
-    }
-  }
-  ```
-
-- **`invoking-context-command:fail`** - Context command failed
 
 ##### Port Finding Events
 
@@ -351,7 +321,7 @@ Creates a new tmux session with multiple windows based on project configuration.
     "event": "finalize-tmux-session:end",
     "data": {
       "sessionName": "my-project-worktree-1",
-      "selectedWindow": "work",
+      "selectedWindow": "server",
       "totalWindows": 6,
       "worktreePath": "/path/to/worktree",
       "duration": 10,
@@ -372,7 +342,7 @@ Creates a new tmux session with multiple windows based on project configuration.
     "data": {
       "sessionName": "my-project-worktree-1",
       "worktreePath": "/path/to/worktree",
-      "windows": ["work", "server", "lint", "types", "test", "control"],
+      "windows": ["server", "lint", "types", "test", "control"],
       "duration": 7450,
       "totalDuration": 7500
     }
@@ -436,28 +406,24 @@ Creates a new tmux session with multiple windows based on project configuration.
 14. `analyze-project-scripts:start`
 15. `analyze-project-scripts:end`
 16. `create-tmux-session:start`
-17. `create-tmux-window:work:start`
-18. `create-tmux-session:end`
-19. `invoking-context-command:start` (if context configured)
-20. `invoking-context-command:end`
-21. `create-tmux-window:work:end`
-22. `find-open-port:start` (for server window)
-23. `find-open-port:end`
-24. `create-tmux-window:server:start`
-25. `create-tmux-window:server:end`
-26. `create-tmux-window:lint:start` (if lint:watch exists)
-27. `create-tmux-window:lint:end`
-28. `create-tmux-window:types:start` (if types:watch exists)
-29. `create-tmux-window:types:end`
-30. `create-tmux-window:test:start` (if test:watch exists)
-31. `create-tmux-window:test:end`
-32. `create-tmux-window:control:start`
-33. `create-tmux-window:control:end`
-34. `finalize-tmux-session:start`
-35. `finalize-tmux-session:end`
-36. `create-worktree-session:end`
-37. `attach-tmux-session:start` (if --attach)
-38. `switch-tmux-session:start` or `attach-tmux-session:end`
+17. `create-tmux-window:server:start`
+18. `find-open-port:start` (for server window)
+19. `find-open-port:end`
+20. `create-tmux-window:server:end`
+21. `create-tmux-session:end`
+22. `create-tmux-window:lint:start` (if lint:watch exists)
+23. `create-tmux-window:lint:end`
+24. `create-tmux-window:types:start` (if types:watch exists)
+25. `create-tmux-window:types:end`
+26. `create-tmux-window:test:start` (if test:watch exists)
+27. `create-tmux-window:test:end`
+28. `create-tmux-window:control:start`
+29. `create-tmux-window:control:end`
+30. `finalize-tmux-session:start`
+31. `finalize-tmux-session:end`
+32. `create-worktree-session:end`
+33. `attach-tmux-session:start` (if --attach)
+34. `switch-tmux-session:start` or `attach-tmux-session:end`
 
 ## Error Handling
 
@@ -470,7 +436,6 @@ All `:fail` events include:
 Common error codes:
 
 - `DIRTY_REPOSITORY`: Repository has uncommitted changes
-- `INVALID_MODE`: Invalid mode specified (not 'act' or 'plan')
 - `MISSING_PACKAGE_JSON`: No package.json found
 - `TMUX_SERVER_FAILED`: Tmux server failed to start
 - `PANE_NOT_READY`: Pane did not become ready within timeout
