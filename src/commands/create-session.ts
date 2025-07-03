@@ -339,26 +339,26 @@ export class SessionCreator extends EventEmitter {
         totalDuration: Date.now() - startTime,
       })
 
+      try {
+        const firstWindow = windows[0]
+        if (firstWindow) {
+          execSync(
+            `tmux ${socketArgs} select-window -t ${sessionName}:${firstWindow}`,
+          )
+        }
+      } catch (error) {
+        this.emitEvent('select-window:fail', {
+          sessionName,
+          window: windows[0] || 'none',
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
+
       if (options.attach) {
         const attachStart = Date.now()
         this.emitEvent('attach-tmux-session:start')
 
         await this.waitForWindows(sessionName, windows)
-
-        try {
-          const firstWindow = windows[0]
-          if (firstWindow) {
-            execSync(
-              `tmux ${socketArgs} select-window -t ${sessionName}:${firstWindow}`,
-            )
-          }
-        } catch (error) {
-          this.emitEvent('select-window:fail', {
-            sessionName,
-            window: windows[0] || 'none',
-            error: error instanceof Error ? error.message : String(error),
-          })
-        }
 
         const insideTmux = !!process.env.TMUX
 
