@@ -142,13 +142,21 @@ async function main() {
     .description('finish session')
     .option('--tmux-socket <socket-name>', 'Tmux socket name')
     .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
+    .option('--no-zmq', 'Disable ZeroMQ publishing')
+    .option('--zmq-socket <name>', 'ZeroMQ socket name')
+    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .action(async options => {
       const socketOptions: TmuxSocketOptions = {
         socketName: options.tmuxSocket,
         socketPath: options.tmuxSocketPath,
       }
 
-      const finisher = new SessionFinisher(socketOptions)
+      const finisher = new SessionFinisher({
+        ...socketOptions,
+        zmq: options.zmq,
+        zmqSocket: options.zmqSocket,
+        zmqSocketPath: options.zmqSocketPath,
+      })
 
       try {
         await finisher.finish()
@@ -163,16 +171,24 @@ async function main() {
     .description('close session')
     .option('--tmux-socket <socket-name>', 'Tmux socket name')
     .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
+    .option('--no-zmq', 'Disable ZeroMQ publishing')
+    .option('--zmq-socket <name>', 'ZeroMQ socket name')
+    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .action(async options => {
       const socketOptions: TmuxSocketOptions = {
         socketName: options.tmuxSocket,
         socketPath: options.tmuxSocketPath,
       }
 
-      const closer = new SessionCloser(socketOptions)
+      const closer = new SessionCloser({
+        ...socketOptions,
+        zmq: options.zmq,
+        zmqSocket: options.zmqSocket,
+        zmqSocketPath: options.zmqSocketPath,
+      })
 
       try {
-        closer.close()
+        await closer.close()
         process.exit(0)
       } catch (error) {
         process.exit(1)

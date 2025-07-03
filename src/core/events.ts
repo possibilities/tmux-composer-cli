@@ -71,6 +71,72 @@ export type EventName =
   | 'display-menu:end'
   | 'display-menu:fail'
   | 'display-menu:cancel'
+  | 'initialize-continue-session:start'
+  | 'initialize-continue-session:end'
+  | 'validate-existing-session:start'
+  | 'validate-existing-session:end'
+  | 'validate-existing-session:fail'
+  | 'set-tmux-composer-mode:start'
+  | 'set-tmux-composer-mode:end'
+  | 'set-tmux-composer-mode:fail'
+  | 'check-existing-sessions:start'
+  | 'check-existing-sessions:end'
+  | 'check-existing-sessions:fail'
+  | 'analyze-worktree-sessions:start'
+  | 'analyze-worktree-sessions:end'
+  | 'prepare-menu-items:start'
+  | 'prepare-menu-items:end'
+  | 'prepare-menu-items:fail'
+  | 'select-worktree-session:start'
+  | 'select-worktree-session:end'
+  | 'select-worktree-session:fail'
+  | 'finish-session:start'
+  | 'finish-session:end'
+  | 'finish-session:fail'
+  | 'load-configuration:start'
+  | 'load-configuration:end'
+  | 'load-configuration:fail'
+  | 'validate-composer-session:start'
+  | 'validate-composer-session:end'
+  | 'validate-composer-session:fail'
+  | 'get-session-mode:start'
+  | 'get-session-mode:end'
+  | 'get-session-mode:fail'
+  | 'run-before-finish-command:start'
+  | 'run-before-finish-command:end'
+  | 'run-before-finish-command:fail'
+  | 'sync-worktree-to-main:start'
+  | 'sync-worktree-to-main:end'
+  | 'sync-worktree-to-main:fail'
+  | 'check-install-dependencies:start'
+  | 'check-install-dependencies:end'
+  | 'check-install-dependencies:fail'
+  | 'find-alternative-session:start'
+  | 'find-alternative-session:end'
+  | 'find-alternative-session:fail'
+  | 'switch-before-kill:start'
+  | 'switch-before-kill:end'
+  | 'switch-before-kill:fail'
+  | 'kill-current-session:start'
+  | 'kill-current-session:end'
+  | 'kill-current-session:fail'
+  | 'close-session:start'
+  | 'close-session:end'
+  | 'close-session:fail'
+  | 'get-current-session:start'
+  | 'get-current-session:end'
+  | 'get-current-session:fail'
+  | 'list-all-sessions:start'
+  | 'list-all-sessions:end'
+  | 'list-all-sessions:fail'
+  | 'check-attached-session:start'
+  | 'check-attached-session:end'
+  | 'switch-before-close:start'
+  | 'switch-before-close:end'
+  | 'switch-before-close:fail'
+  | 'kill-session:start'
+  | 'kill-session:end'
+  | 'kill-session:fail'
 
 export interface BaseEventData {
   duration?: number
@@ -321,6 +387,189 @@ export interface DisplayMenuStartData {
 
 export interface DisplayMenuCancelData extends BaseEventData {}
 
+export interface InitializeContinueSessionEndData extends BaseEventData {}
+
+export interface ValidateExistingSessionEndData extends BaseEventData {
+  sessionName: string
+  exists: boolean
+}
+
+export interface ValidateExistingSessionFailData extends ErrorEventData {
+  sessionName: string
+}
+
+export interface SetTmuxComposerModeEndData extends BaseEventData {
+  mode: string
+  sessionName: string
+}
+
+export interface SetTmuxComposerModeFailData extends ErrorEventData {
+  sessionName: string
+}
+
+export interface CheckExistingSessionsEndData extends BaseEventData {
+  sessionsWithWorktrees: Array<{
+    sessionName: string
+    worktreeNumber: string
+    worktreePath: string
+    exists: boolean
+  }>
+}
+
+export interface AnalyzeWorktreeSessionsEndData extends BaseEventData {
+  totalWorktrees: number
+  activeSessions: number
+  worktreesWithoutSessions: number
+}
+
+export interface PrepareMenuItemsEndData extends BaseEventData {
+  menuItemCount: number
+}
+
+export interface SelectWorktreeSessionEndData extends BaseEventData {
+  selectedWorktree: string
+  sessionName: string
+  action: 'switch' | 'create'
+}
+
+export interface SelectWorktreeSessionFailData extends ErrorEventData {
+  cancelled?: boolean
+}
+
+export interface FinishSessionStartData {
+  options: {
+    socketName?: string | null
+    socketPath?: string | null
+  }
+}
+
+export interface FinishSessionEndData extends BaseEventData {
+  sessionName: string
+  mode: 'worktree' | 'project'
+}
+
+export interface LoadConfigurationEndData extends BaseEventData {
+  hasBeforeFinishCommand: boolean
+}
+
+export interface ValidateComposerSessionEndData extends BaseEventData {
+  isValid: boolean
+  sessionName: string
+}
+
+export interface ValidateComposerSessionFailData extends ErrorEventData {
+  sessionName?: string
+}
+
+export interface GetSessionModeEndData extends BaseEventData {
+  mode: 'worktree' | 'project'
+  sessionName: string
+}
+
+export interface GetSessionModeFailData extends ErrorEventData {
+  sessionName: string
+}
+
+export interface RunBeforeFinishCommandEndData extends BaseEventData {
+  command: string
+  exitCode: number
+}
+
+export interface RunBeforeFinishCommandFailData extends ErrorEventData {
+  command: string
+  exitCode?: number
+}
+
+export interface SyncWorktreeToMainEndData extends BaseEventData {
+  worktreePath: string
+  mainBranch: string
+  commitsMerged: number
+}
+
+export interface SyncWorktreeToMainFailData extends ErrorEventData {
+  worktreePath: string
+}
+
+export interface CheckInstallDependenciesEndData extends BaseEventData {
+  worktreePath: string
+  dependenciesInstalled: boolean
+  packageManager?: string
+}
+
+export interface CheckInstallDependenciesFailData extends ErrorEventData {
+  worktreePath: string
+}
+
+export interface FindAlternativeSessionEndData extends BaseEventData {
+  currentSession: string
+  alternativeSession?: string
+  hasAlternative: boolean
+}
+
+export interface SwitchBeforeKillEndData extends BaseEventData {
+  fromSession: string
+  toSession: string
+}
+
+export interface SwitchBeforeKillFailData extends ErrorEventData {
+  fromSession: string
+  toSession: string
+}
+
+export interface KillCurrentSessionEndData extends BaseEventData {
+  sessionName: string
+}
+
+export interface KillCurrentSessionFailData extends ErrorEventData {
+  sessionName: string
+}
+
+export interface CloseSessionStartData {
+  options: {
+    socketName?: string | null
+    socketPath?: string | null
+  }
+}
+
+export interface CloseSessionEndData extends BaseEventData {
+  sessionName: string
+}
+
+export interface GetCurrentSessionEndData extends BaseEventData {
+  sessionName: string
+}
+
+export interface GetCurrentSessionFailData extends ErrorEventData {}
+
+export interface ListAllSessionsEndData extends BaseEventData {
+  sessions: string[]
+  count: number
+}
+
+export interface CheckAttachedSessionEndData extends BaseEventData {
+  attachedSession?: string
+  isAttachedToCurrent: boolean
+  currentSession: string
+}
+
+export interface SwitchBeforeCloseEndData extends BaseEventData {
+  fromSession: string
+  toSession: string
+}
+
+export interface SwitchBeforeCloseFailData extends ErrorEventData {
+  fromSession: string
+  toSession: string
+}
+
+export interface KillSessionEndData extends BaseEventData {
+  sessionName: string
+}
+
+export interface KillSessionFailData extends ErrorEventData {
+  sessionName: string
+}
+
 export type EventDataMap = {
   'session-changed': SessionChangedData
   'pane-changed': PaneChangedData
@@ -392,6 +641,72 @@ export type EventDataMap = {
   'display-menu:end': BaseEventData
   'display-menu:fail': ErrorEventData
   'display-menu:cancel': DisplayMenuCancelData
+  'initialize-continue-session:start': undefined
+  'initialize-continue-session:end': InitializeContinueSessionEndData
+  'validate-existing-session:start': undefined
+  'validate-existing-session:end': ValidateExistingSessionEndData
+  'validate-existing-session:fail': ValidateExistingSessionFailData
+  'set-tmux-composer-mode:start': undefined
+  'set-tmux-composer-mode:end': SetTmuxComposerModeEndData
+  'set-tmux-composer-mode:fail': SetTmuxComposerModeFailData
+  'check-existing-sessions:start': undefined
+  'check-existing-sessions:end': CheckExistingSessionsEndData
+  'check-existing-sessions:fail': ErrorEventData
+  'analyze-worktree-sessions:start': undefined
+  'analyze-worktree-sessions:end': AnalyzeWorktreeSessionsEndData
+  'prepare-menu-items:start': undefined
+  'prepare-menu-items:end': PrepareMenuItemsEndData
+  'prepare-menu-items:fail': ErrorEventData
+  'select-worktree-session:start': undefined
+  'select-worktree-session:end': SelectWorktreeSessionEndData
+  'select-worktree-session:fail': SelectWorktreeSessionFailData
+  'finish-session:start': FinishSessionStartData
+  'finish-session:end': FinishSessionEndData
+  'finish-session:fail': ErrorEventData
+  'load-configuration:start': undefined
+  'load-configuration:end': LoadConfigurationEndData
+  'load-configuration:fail': ErrorEventData
+  'validate-composer-session:start': undefined
+  'validate-composer-session:end': ValidateComposerSessionEndData
+  'validate-composer-session:fail': ValidateComposerSessionFailData
+  'get-session-mode:start': undefined
+  'get-session-mode:end': GetSessionModeEndData
+  'get-session-mode:fail': GetSessionModeFailData
+  'run-before-finish-command:start': undefined
+  'run-before-finish-command:end': RunBeforeFinishCommandEndData
+  'run-before-finish-command:fail': RunBeforeFinishCommandFailData
+  'sync-worktree-to-main:start': undefined
+  'sync-worktree-to-main:end': SyncWorktreeToMainEndData
+  'sync-worktree-to-main:fail': SyncWorktreeToMainFailData
+  'check-install-dependencies:start': undefined
+  'check-install-dependencies:end': CheckInstallDependenciesEndData
+  'check-install-dependencies:fail': CheckInstallDependenciesFailData
+  'find-alternative-session:start': undefined
+  'find-alternative-session:end': FindAlternativeSessionEndData
+  'find-alternative-session:fail': ErrorEventData
+  'switch-before-kill:start': undefined
+  'switch-before-kill:end': SwitchBeforeKillEndData
+  'switch-before-kill:fail': SwitchBeforeKillFailData
+  'kill-current-session:start': undefined
+  'kill-current-session:end': KillCurrentSessionEndData
+  'kill-current-session:fail': KillCurrentSessionFailData
+  'close-session:start': CloseSessionStartData
+  'close-session:end': CloseSessionEndData
+  'close-session:fail': ErrorEventData
+  'get-current-session:start': undefined
+  'get-current-session:end': GetCurrentSessionEndData
+  'get-current-session:fail': GetCurrentSessionFailData
+  'list-all-sessions:start': undefined
+  'list-all-sessions:end': ListAllSessionsEndData
+  'list-all-sessions:fail': ErrorEventData
+  'check-attached-session:start': undefined
+  'check-attached-session:end': CheckAttachedSessionEndData
+  'switch-before-close:start': undefined
+  'switch-before-close:end': SwitchBeforeCloseEndData
+  'switch-before-close:fail': SwitchBeforeCloseFailData
+  'kill-session:start': undefined
+  'kill-session:end': KillSessionEndData
+  'kill-session:fail': KillSessionFailData
 }
 
 export interface TmuxEvent<T extends EventName = EventName> {

@@ -70,6 +70,9 @@ export class SessionResumer extends SessionCreator {
     const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
     const socketPath = getTmuxSocketPath(this.socketOptions)
 
+    const checkSessionsStart = Date.now()
+    this.emitEvent('check-existing-sessions:start')
+
     await enableZmqPublishing(this, {
       zmq: options.zmq,
       socketName: options.zmqSocket,
@@ -79,6 +82,13 @@ export class SessionResumer extends SessionCreator {
         socketPath,
       },
     })
+
+    const sessionsWithWorktrees: Array<{
+      sessionName: string
+      worktreeNumber: string
+      worktreePath: string
+      exists: boolean
+    }> = []
 
     const menuItems: string[] = []
     const currentDirectory = process.cwd()
@@ -102,6 +112,13 @@ export class SessionResumer extends SessionCreator {
 
         sessionExists = sessions.includes(sessionName)
       } catch {}
+
+      sessionsWithWorktrees.push({
+        sessionName,
+        worktreeNumber: wt.worktreeNumber.toString().padStart(5, '0'),
+        worktreePath: wt.path,
+        exists: sessionExists,
+      })
 
       const dateStr = wt.mtime.toLocaleDateString()
       const timeStr = wt.mtime.toLocaleTimeString([], {
@@ -149,6 +166,32 @@ export class SessionResumer extends SessionCreator {
       menuItems.push(command)
     }
 
+    this.emitEvent('check-existing-sessions:end', {
+      sessionsWithWorktrees,
+      duration: Date.now() - checkSessionsStart,
+    })
+
+    const analyzeStart = Date.now()
+    this.emitEvent('analyze-worktree-sessions:start')
+
+    const activeSessions = sessionsWithWorktrees.filter(s => s.exists).length
+    const worktreesWithoutSessions = worktrees.length - activeSessions
+
+    this.emitEvent('analyze-worktree-sessions:end', {
+      totalWorktrees: worktrees.length,
+      activeSessions,
+      worktreesWithoutSessions,
+      duration: Date.now() - analyzeStart,
+    })
+
+    const prepareMenuStart = Date.now()
+    this.emitEvent('prepare-menu-items:start')
+
+    this.emitEvent('prepare-menu-items:end', {
+      menuItemCount: menuItems.length / 3,
+      duration: Date.now() - prepareMenuStart,
+    })
+
     const menuCommand = [
       'tmux',
       ...getTmuxSocketArgs(this.socketOptions),
@@ -180,6 +223,12 @@ export class SessionResumer extends SessionCreator {
 
     if (result.status !== 0) {
       this.emitEvent('display-menu:cancel', {
+        duration: Date.now() - startTime,
+      })
+      this.emitEvent('select-worktree-session:fail', {
+        error: 'Menu cancelled',
+        errorCode: 'MENU_CANCELLED',
+        cancelled: true,
         duration: Date.now() - startTime,
       })
       this.emitEvent('resume-session:end', {

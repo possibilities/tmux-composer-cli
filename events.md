@@ -434,6 +434,441 @@ Windows are created dynamically based on the project's package.json scripts:
 
 - **`select-window:fail`** - Failed to select window
 
+### 4. continue-session
+
+Continues the latest worktree session, creating it if it doesn't exist. Similar to create-session but uses an existing worktree.
+
+#### Events
+
+##### Initialization Events
+
+- **`initialize-continue-session:start`** - Starting continuation process
+
+- **`initialize-continue-session:end`** - Initialization complete
+
+  ```json
+  {
+    "event": "initialize-continue-session:end",
+    "data": {
+      "duration": 10
+    }
+  }
+  ```
+
+- **`continue-session:start`** - Session continuation begins
+  ```json
+  {
+    "event": "continue-session:start",
+    "data": {
+      "projectPath": "/path/to/project",
+      "options": {
+        "socketName": null,
+        "socketPath": null,
+        "terminalWidth": 120,
+        "terminalHeight": 40,
+        "attach": true
+      }
+    }
+  }
+  ```
+
+##### Validation Events
+
+- **`validate-existing-session:start`** - Checking if session already exists
+
+- **`validate-existing-session:end`** - Session validation complete
+
+  ```json
+  {
+    "event": "validate-existing-session:end",
+    "data": {
+      "sessionName": "my-project-worktree-00001",
+      "exists": false,
+      "duration": 15
+    }
+  }
+  ```
+
+- **`validate-existing-session:fail`** - Session validation failed
+
+##### Session Mode Events
+
+- **`set-tmux-composer-mode:start`** - Setting TMUX_COMPOSER_MODE environment variable
+
+- **`set-tmux-composer-mode:end`** - Mode set successfully
+
+  ```json
+  {
+    "event": "set-tmux-composer-mode:end",
+    "data": {
+      "mode": "worktree",
+      "sessionName": "my-project-worktree-00001",
+      "duration": 5
+    }
+  }
+  ```
+
+- **`set-tmux-composer-mode:fail`** - Failed to set mode
+
+### 5. resume-session
+
+Displays an interactive menu to select and resume or create worktree sessions.
+
+#### Events
+
+##### Session Discovery Events
+
+- **`check-existing-sessions:start`** - Checking which worktrees have active sessions
+
+- **`check-existing-sessions:end`** - Session check complete
+  ```json
+  {
+    "event": "check-existing-sessions:end",
+    "data": {
+      "sessionsWithWorktrees": [
+        {
+          "sessionName": "my-project-worktree-00001",
+          "worktreeNumber": "00001",
+          "worktreePath": "/path/to/worktree",
+          "exists": true
+        }
+      ],
+      "duration": 50
+    }
+  }
+  ```
+
+##### Analysis Events
+
+- **`analyze-worktree-sessions:start`** - Analyzing worktree and session states
+
+- **`analyze-worktree-sessions:end`** - Analysis complete
+  ```json
+  {
+    "event": "analyze-worktree-sessions:end",
+    "data": {
+      "totalWorktrees": 3,
+      "activeSessions": 1,
+      "worktreesWithoutSessions": 2,
+      "duration": 10
+    }
+  }
+  ```
+
+##### Menu Events
+
+- **`prepare-menu-items:start`** - Building menu items
+
+- **`prepare-menu-items:end`** - Menu preparation complete
+  ```json
+  {
+    "event": "prepare-menu-items:end",
+    "data": {
+      "menuItemCount": 3,
+      "duration": 20
+    }
+  }
+  ```
+
+##### Selection Events
+
+- **`select-worktree-session:fail`** - User cancelled menu or selection failed
+  ```json
+  {
+    "event": "select-worktree-session:fail",
+    "data": {
+      "error": "Menu cancelled",
+      "errorCode": "MENU_CANCELLED",
+      "cancelled": true,
+      "duration": 5000
+    }
+  }
+  ```
+
+### 6. finish-session
+
+Finishes a tmux-composer session, syncing changes and cleaning up.
+
+#### Events
+
+##### Initialization Events
+
+- **`finish-session:start`** - Session finishing process begins
+  ```json
+  {
+    "event": "finish-session:start",
+    "data": {
+      "options": {
+        "socketName": null,
+        "socketPath": null
+      }
+    }
+  }
+  ```
+
+##### Configuration Events
+
+- **`load-configuration:start`** - Loading tmux-composer configuration
+
+- **`load-configuration:end`** - Configuration loaded
+  ```json
+  {
+    "event": "load-configuration:end",
+    "data": {
+      "hasBeforeFinishCommand": true,
+      "duration": 10
+    }
+  }
+  ```
+
+##### Validation Events
+
+- **`validate-composer-session:start`** - Validating this is a composer session
+
+- **`validate-composer-session:end`** - Validation complete
+
+  ```json
+  {
+    "event": "validate-composer-session:end",
+    "data": {
+      "isValid": true,
+      "sessionName": "my-project-worktree-00001",
+      "duration": 5
+    }
+  }
+  ```
+
+- **`get-session-mode:start`** - Getting session mode (worktree/project)
+
+- **`get-session-mode:end`** - Mode retrieved
+  ```json
+  {
+    "event": "get-session-mode:end",
+    "data": {
+      "mode": "worktree",
+      "sessionName": "my-project-worktree-00001",
+      "duration": 5
+    }
+  }
+  ```
+
+##### Hook Events
+
+- **`run-before-finish-command:start`** - Running before-finish hook
+
+- **`run-before-finish-command:end`** - Hook completed
+  ```json
+  {
+    "event": "run-before-finish-command:end",
+    "data": {
+      "command": "npm run test",
+      "exitCode": 0,
+      "duration": 3000
+    }
+  }
+  ```
+
+##### Worktree Sync Events
+
+- **`sync-worktree-to-main:start`** - Syncing worktree changes to main branch
+
+- **`sync-worktree-to-main:end`** - Sync complete
+
+  ```json
+  {
+    "event": "sync-worktree-to-main:end",
+    "data": {
+      "worktreePath": "/path/to/worktree",
+      "mainBranch": "main",
+      "commitsMerged": 5,
+      "duration": 2000
+    }
+  }
+  ```
+
+- **`check-install-dependencies:start`** - Checking and installing dependencies
+
+- **`check-install-dependencies:end`** - Dependencies check complete
+  ```json
+  {
+    "event": "check-install-dependencies:end",
+    "data": {
+      "worktreePath": "/path/to/worktree",
+      "dependenciesInstalled": true,
+      "packageManager": "npm",
+      "duration": 5000
+    }
+  }
+  ```
+
+##### Session Management Events
+
+- **`find-alternative-session:start`** - Finding alternative session to switch to
+
+- **`find-alternative-session:end`** - Alternative session found
+
+  ```json
+  {
+    "event": "find-alternative-session:end",
+    "data": {
+      "currentSession": "my-project-worktree-00001",
+      "alternativeSession": "my-project-worktree-00002",
+      "hasAlternative": true,
+      "duration": 10
+    }
+  }
+  ```
+
+- **`switch-before-kill:start`** - Switching to alternative session
+
+- **`switch-before-kill:end`** - Switch complete
+
+  ```json
+  {
+    "event": "switch-before-kill:end",
+    "data": {
+      "fromSession": "my-project-worktree-00001",
+      "toSession": "my-project-worktree-00002",
+      "duration": 50
+    }
+  }
+  ```
+
+- **`kill-current-session:start`** - Killing the current session
+
+- **`kill-current-session:end`** - Session killed
+
+  ```json
+  {
+    "event": "kill-current-session:end",
+    "data": {
+      "sessionName": "my-project-worktree-00001",
+      "duration": 20
+    }
+  }
+  ```
+
+- **`finish-session:end`** - Session finishing complete
+  ```json
+  {
+    "event": "finish-session:end",
+    "data": {
+      "sessionName": "my-project-worktree-00001",
+      "mode": "worktree",
+      "duration": 10500
+    }
+  }
+  ```
+
+### 7. close-session
+
+Closes the current tmux session, switching to another if available.
+
+#### Events
+
+##### Initialization Events
+
+- **`close-session:start`** - Session closing process begins
+  ```json
+  {
+    "event": "close-session:start",
+    "data": {
+      "options": {
+        "socketName": null,
+        "socketPath": null
+      }
+    }
+  }
+  ```
+
+##### Session Discovery Events
+
+- **`get-current-session:start`** - Getting current session name
+
+- **`get-current-session:end`** - Current session retrieved
+
+  ```json
+  {
+    "event": "get-current-session:end",
+    "data": {
+      "sessionName": "my-project-worktree-00001",
+      "duration": 5
+    }
+  }
+  ```
+
+- **`list-all-sessions:start`** - Listing all available sessions
+
+- **`list-all-sessions:end`** - Session list retrieved
+  ```json
+  {
+    "event": "list-all-sessions:end",
+    "data": {
+      "sessions": ["my-project-worktree-00001", "my-project-worktree-00002"],
+      "count": 2,
+      "duration": 10
+    }
+  }
+  ```
+
+##### Session Management Events
+
+- **`check-attached-session:start`** - Checking if attached to current session
+
+- **`check-attached-session:end`** - Attachment check complete
+
+  ```json
+  {
+    "event": "check-attached-session:end",
+    "data": {
+      "attachedSession": "my-project-worktree-00001",
+      "isAttachedToCurrent": true,
+      "currentSession": "my-project-worktree-00001",
+      "duration": 5
+    }
+  }
+  ```
+
+- **`switch-before-close:start`** - Switching to alternative session before closing
+
+- **`switch-before-close:end`** - Switch complete
+
+  ```json
+  {
+    "event": "switch-before-close:end",
+    "data": {
+      "fromSession": "my-project-worktree-00001",
+      "toSession": "my-project-worktree-00002",
+      "duration": 50
+    }
+  }
+  ```
+
+- **`kill-session:start`** - Killing the session
+
+- **`kill-session:end`** - Session killed
+
+  ```json
+  {
+    "event": "kill-session:end",
+    "data": {
+      "sessionName": "my-project-worktree-00001",
+      "duration": 20
+    }
+  }
+  ```
+
+- **`close-session:end`** - Session closed successfully
+  ```json
+  {
+    "event": "close-session:end",
+    "data": {
+      "sessionName": "my-project-worktree-00001",
+      "duration": 100
+    }
+  }
+  ```
+
 ## Event Flow
 
 ### Typical create-session flow:
@@ -470,6 +905,83 @@ Windows are created dynamically based on the project's package.json scripts:
 30. `attach-tmux-session:start` (if --attach)
 31. `switch-tmux-session:start` or `attach-tmux-session:end`
 
+### Typical continue-session flow:
+
+1. `initialize-continue-session:start`
+2. `initialize-continue-session:end`
+3. `continue-session:start`
+4. `find-latest-worktree:start`
+5. `find-latest-worktree:end`
+6. `validate-existing-session:start`
+7. `validate-existing-session:end`
+8. `analyze-project-structure:start`
+9. `analyze-project-structure:end`
+10. `analyze-project-scripts:start`
+11. `analyze-project-scripts:end`
+12. `create-tmux-session:start`
+13. Create windows (similar to create-session)
+14. `create-tmux-session:end`
+15. `continue-session:end`
+16. `set-tmux-composer-mode:start`
+17. `set-tmux-composer-mode:end`
+18. `attach-tmux-session:start` (if --attach)
+19. `attach-tmux-session:end`
+
+### Typical resume-session flow:
+
+1. `resume-session:start`
+2. `find-all-worktrees:start`
+3. `find-all-worktrees:end`
+4. `check-existing-sessions:start`
+5. `check-existing-sessions:end`
+6. `analyze-worktree-sessions:start`
+7. `analyze-worktree-sessions:end`
+8. `prepare-menu-items:start`
+9. `prepare-menu-items:end`
+10. `display-menu:start`
+11. User selects option
+12. `display-menu:end` or `display-menu:cancel`
+13. `resume-session:end` or `select-worktree-session:fail`
+
+### Typical finish-session flow:
+
+1. `finish-session:start`
+2. `load-configuration:start`
+3. `load-configuration:end`
+4. `validate-composer-session:start`
+5. `validate-composer-session:end`
+6. `get-session-mode:start`
+7. `get-session-mode:end`
+8. `run-before-finish-command:start` (if configured)
+9. `run-before-finish-command:end`
+10. For worktree mode:
+    - `sync-worktree-to-main:start`
+    - `sync-worktree-to-main:end`
+    - `check-install-dependencies:start`
+    - `check-install-dependencies:end`
+11. `find-alternative-session:start`
+12. `find-alternative-session:end`
+13. `switch-before-kill:start` (if attached and alternatives exist)
+14. `switch-before-kill:end`
+15. `kill-current-session:start`
+16. `kill-current-session:end`
+17. `finish-session:end`
+
+### Typical close-session flow:
+
+1. `close-session:start`
+2. `get-current-session:start`
+3. `get-current-session:end`
+4. `list-all-sessions:start`
+5. `list-all-sessions:end`
+6. `check-attached-session:start`
+7. `check-attached-session:end`
+8. `switch-before-close:start` (if attached and alternatives exist)
+9. `switch-before-close:end`
+10. `kill-session:start`
+11. `kill-session:end`
+12. `close-session:end`
+
 ## Error Handling
 
 All `:fail` events include:
@@ -481,10 +993,24 @@ All `:fail` events include:
 Common error codes:
 
 - `DIRTY_REPOSITORY`: Repository has uncommitted changes (both worktree and non-worktree modes)
-- `SESSION_EXISTS`: Session with same name already exists (non-worktree mode)
+- `SESSION_EXISTS`: Session with same name already exists
 - `MISSING_PACKAGE_JSON`: No package.json found
 - `TMUX_SERVER_FAILED`: Tmux server failed to start
 - `PANE_NOT_READY`: Pane did not become ready within timeout
+- `NO_WORKTREES`: No worktrees found for the repository
+- `INVALID_WORKTREE_NAME`: Worktree name doesn't match expected pattern
+- `NOT_COMPOSER_SESSION`: Command used on non-composer session
+- `INVALID_MODE`: Invalid TMUX_COMPOSER_MODE value
+- `SESSION_NOT_FOUND`: Failed to get current tmux session
+- `CONFIG_LOAD_FAILED`: Failed to load configuration
+- `BEFORE_FINISH_FAILED`: Before-finish command failed
+- `SYNC_FAILED`: Failed to sync worktree to main branch
+- `DEPS_INSTALL_FAILED`: Failed to install dependencies
+- `SWITCH_FAILED`: Failed to switch sessions
+- `KILL_FAILED`: Failed to kill session
+- `LIST_SESSIONS_FAILED`: Failed to list tmux sessions
+- `SET_MODE_FAILED`: Failed to set TMUX_COMPOSER_MODE
+- `MENU_CANCELLED`: User cancelled interactive menu
 
 ## ZeroMQ Publishing
 
@@ -494,7 +1020,11 @@ When ZeroMQ is enabled (default), events are also published to:
 - Topic: All events published to single topic
 - Format: UTF-8 JSON strings
 
-To disable ZeroMQ publishing, use the `--no-zmq` flag with any command.
+All session commands support ZeroMQ options:
+
+- `--no-zmq`: Disable ZeroMQ publishing
+- `--zmq-socket <name>`: Custom ZeroMQ socket name
+- `--zmq-socket-path <path>`: Custom ZeroMQ socket full path
 
 ## Observing Events
 

@@ -1,46 +1,171 @@
 import { execSync } from 'child_process'
-import { getTmuxSocketArgs } from '../core/tmux-socket.js'
-import type { TmuxSocketOptions } from '../core/tmux-socket.js'
+import { getTmuxSocketArgs, getTmuxSocketPath } from '../core/tmux-socket.js'
+import { enableZmqPublishing } from '../core/zmq-publisher.js'
+import { BaseSessionCommand } from '../core/base-session-command.js'
+import type { BaseSessionOptions } from '../core/base-session-command.js'
 import {
   listSessions,
   getAttachedSession,
   switchToSession,
 } from '../core/tmux-utils.js'
 
-export class SessionCloser {
-  private socketOptions: TmuxSocketOptions
+interface CloseSessionOptions extends BaseSessionOptions {}
 
-  constructor(options: TmuxSocketOptions = {}) {
-    this.socketOptions = {
-      socketName: options.socketName,
-      socketPath: options.socketPath,
-    }
+export class SessionCloser extends BaseSessionCommand {
+  constructor(options: CloseSessionOptions = {}) {
+    super(options)
   }
 
-  close(): void {
+  async close(): Promise<void> {
+    const startTime = Date.now()
+
+    this.emitEvent('close-session:start', {
+      options: {
+        socketName: this.socketOptions.socketName,
+        socketPath: this.socketOptions.socketPath,
+      },
+    })
+
+    const socketPath = getTmuxSocketPath(this.socketOptions)
+
+    const options = this.socketOptions as CloseSessionOptions
+    if (options.zmq === false && (options.zmqSocket || options.zmqSocketPath)) {
+      console.error(
+        'Error: Cannot use --no-zmq with --zmq-socket or --zmq-socket-path',
+      )
+      process.exit(1)
+    }
+
+    await enableZmqPublishing(this, {
+      zmq: options.zmq,
+      socketName: options.zmqSocket,
+      socketPath: options.zmqSocketPath,
+      source: {
+        script: 'close-session',
+        socketPath,
+      },
+    })
+
     const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
 
-    const currentSession = execSync(
-      `tmux ${socketArgs} display-message -p '#S'`,
-      { encoding: 'utf-8' },
-    ).trim()
+    const getCurrentStart = Date.now()
+    this.emitEvent('get-current-session:start')
 
-    console.log(`Closing session: ${currentSession}`)
+    let currentSession: string
+    try {
+      currentSession = execSync(`tmux ${socketArgs} display-message -p '#S'`, {
+        encoding: 'utf-8',
+      }).trim()
+      this.emitEvent('get-current-session:end', {
+        sessionName: currentSession,
+        duration: Date.now() - getCurrentStart,
+      })
+    } catch (error) {
+      this.emitEvent('get-current-session:fail', {
+        error: error instanceof Error ? error.message : String(error),
+        errorCode: 'SESSION_NOT_FOUND',
+        duration: Date.now() - getCurrentStart,
+      })
+      this.emitEvent('close-session:fail', {
+        error: 'Failed to get current session',
+        errorCode: 'SESSION_NOT_FOUND',
+        duration: Date.now() - startTime,
+      })
+      throw error
+    }
 
-    const allSessions = listSessions(this.socketOptions)
-    const attachedSession = getAttachedSession(this.socketOptions)
+    const listSessionsStart = Date.now()
+    this.emitEvent('list-all-sessions:start')
+
+    let allSessions: string[]
+    let attachedSession: string | null
+    try {
+      allSessions = listSessions(this.socketOptions)
+      attachedSession = getAttachedSession(this.socketOptions)
+      this.emitEvent('list-all-sessions:end', {
+        sessions: allSessions,
+        count: allSessions.length,
+        duration: Date.now() - listSessionsStart,
+      })
+    } catch (error) {
+      this.emitEvent('list-all-sessions:fail', {
+        error: error instanceof Error ? error.message : String(error),
+        errorCode: 'LIST_FAILED',
+        duration: Date.now() - listSessionsStart,
+      })
+      this.emitEvent('close-session:fail', {
+        error: 'Failed to list sessions',
+        errorCode: 'LIST_FAILED',
+        duration: Date.now() - startTime,
+      })
+      throw error
+    }
+
+    const checkAttachedStart = Date.now()
+    this.emitEvent('check-attached-session:start')
+
     const isAttachedToCurrentSession = attachedSession === currentSession
     const hasOtherSessions = allSessions.length > 1
+
+    this.emitEvent('check-attached-session:end', {
+      attachedSession: attachedSession ?? undefined,
+      isAttachedToCurrent: isAttachedToCurrentSession,
+      currentSession,
+      duration: Date.now() - checkAttachedStart,
+    })
 
     if (isAttachedToCurrentSession && hasOtherSessions) {
       const otherSession = allSessions.find(s => s !== currentSession)
       if (otherSession) {
-        console.log(`Switching to session: ${otherSession}`)
-        switchToSession(otherSession, this.socketOptions)
+        const switchStart = Date.now()
+        this.emitEvent('switch-before-close:start')
+
+        try {
+          switchToSession(otherSession, this.socketOptions)
+          this.emitEvent('switch-before-close:end', {
+            fromSession: currentSession,
+            toSession: otherSession,
+            duration: Date.now() - switchStart,
+          })
+        } catch (error) {
+          this.emitEvent('switch-before-close:fail', {
+            error: error instanceof Error ? error.message : String(error),
+            errorCode: 'SWITCH_FAILED',
+            fromSession: currentSession,
+            toSession: otherSession,
+            duration: Date.now() - switchStart,
+          })
+        }
       }
     }
 
-    execSync(`tmux ${socketArgs} kill-session -t ${currentSession}`)
-    console.log('Session closed successfully')
+    const killStart = Date.now()
+    this.emitEvent('kill-session:start')
+
+    try {
+      execSync(`tmux ${socketArgs} kill-session -t ${currentSession}`)
+      this.emitEvent('kill-session:end', {
+        sessionName: currentSession,
+        duration: Date.now() - killStart,
+      })
+    } catch (error) {
+      this.emitEvent('kill-session:fail', {
+        error: error instanceof Error ? error.message : String(error),
+        errorCode: 'KILL_FAILED',
+        sessionName: currentSession,
+        duration: Date.now() - killStart,
+      })
+      this.emitEvent('close-session:fail', {
+        error: 'Failed to kill session',
+        errorCode: 'KILL_FAILED',
+        duration: Date.now() - startTime,
+      })
+      throw error
+    }
+
+    this.emitEvent('close-session:end', {
+      sessionName: currentSession,
+      duration: Date.now() - startTime,
+    })
   }
 }

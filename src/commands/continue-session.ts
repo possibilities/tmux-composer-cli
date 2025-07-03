@@ -30,6 +30,8 @@ export class SessionContinuer extends SessionCreator {
 
     const startTime = Date.now()
 
+    this.emitEvent('initialize-continue-session:start')
+
     this.emitEvent('continue-session:start', {
       projectPath,
       options: {
@@ -39,6 +41,10 @@ export class SessionContinuer extends SessionCreator {
         terminalHeight: options.terminalHeight,
         attach: options.attach,
       },
+    })
+
+    this.emitEvent('initialize-continue-session:end', {
+      duration: Date.now() - startTime,
     })
 
     const findWorktreeStart = Date.now()
@@ -91,6 +97,9 @@ export class SessionContinuer extends SessionCreator {
       duration: Date.now() - findWorktreeStart,
     })
 
+    const validateSessionStart = Date.now()
+    this.emitEvent('validate-existing-session:start')
+
     try {
       const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
       const sessions = execSync(
@@ -103,7 +112,20 @@ export class SessionContinuer extends SessionCreator {
         .trim()
         .split('\n')
 
-      if (sessions.includes(sessionName)) {
+      const sessionExists = sessions.includes(sessionName)
+      this.emitEvent('validate-existing-session:end', {
+        sessionName,
+        exists: sessionExists,
+        duration: Date.now() - validateSessionStart,
+      })
+
+      if (sessionExists) {
+        this.emitEvent('validate-existing-session:fail', {
+          error: `Session '${sessionName}' already exists`,
+          errorCode: 'SESSION_EXISTS',
+          sessionName,
+          duration: Date.now() - validateSessionStart,
+        })
         this.emitEvent('continue-session:fail', {
           error: `Session '${sessionName}' already exists`,
           errorCode: 'SESSION_EXISTS',
@@ -113,6 +135,12 @@ export class SessionContinuer extends SessionCreator {
       }
     } catch (error) {
       if (error instanceof Error && !error.message.includes('already exists')) {
+        this.emitEvent('validate-existing-session:fail', {
+          error: 'Failed to list sessions',
+          errorCode: 'LIST_SESSIONS_FAILED',
+          sessionName,
+          duration: Date.now() - validateSessionStart,
+        })
       } else {
         throw error
       }
@@ -175,6 +203,27 @@ export class SessionContinuer extends SessionCreator {
         branch: latestWorktree.branch,
         duration: Date.now() - startTime,
       })
+
+      const setModeStart = Date.now()
+      this.emitEvent('set-tmux-composer-mode:start')
+
+      try {
+        execSync(
+          `tmux ${socketArgs} set-environment -t ${sessionName} TMUX_COMPOSER_MODE worktree`,
+        )
+        this.emitEvent('set-tmux-composer-mode:end', {
+          mode: 'worktree',
+          sessionName,
+          duration: Date.now() - setModeStart,
+        })
+      } catch (error) {
+        this.emitEvent('set-tmux-composer-mode:fail', {
+          error: error instanceof Error ? error.message : String(error),
+          errorCode: 'SET_MODE_FAILED',
+          sessionName,
+          duration: Date.now() - setModeStart,
+        })
+      }
 
       if (options.attach) {
         const attachStart = Date.now()
