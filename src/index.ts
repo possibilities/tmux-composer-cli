@@ -1,11 +1,11 @@
 import { Command } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
-import { TmuxSessionWatcher } from './commands/watch-session.js'
-import { TmuxPaneWatcher } from './commands/watch-panes.js'
+import { TmuxSessionWatcher } from './commands/observe-session.js'
+import { TmuxPaneWatcher } from './commands/observe-panes.js'
 import { SessionCreator } from './commands/create-session.js'
 import { SessionContinuer } from './commands/continue-session.js'
 import { SessionResumer } from './commands/resume-session.js'
-import { EventObserver } from './commands/observe-events.js'
+import { EventObserver } from './commands/observe-observers.js'
 import { SessionFinisher } from './commands/finish-session.js'
 import { SessionCloser } from './commands/close-session.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
@@ -198,8 +198,8 @@ async function main() {
     })
 
   program
-    .command('watch-session')
-    .description('watch session')
+    .command('observe-session')
+    .description('observe session')
     .option('--no-zmq', 'Disable ZeroMQ publishing')
     .option('--zmq-socket <name>', 'ZeroMQ socket name')
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
@@ -210,8 +210,8 @@ async function main() {
     })
 
   program
-    .command('watch-panes')
-    .description('watch panes')
+    .command('observe-panes')
+    .description('observe panes')
     .option('--no-zmq', 'Disable ZeroMQ publishing')
     .option('--zmq-socket <name>', 'ZeroMQ socket name')
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
@@ -222,8 +222,8 @@ async function main() {
     })
 
   program
-    .command('observe-events')
-    .description('observe events')
+    .command('observe-observers')
+    .description('observe observers')
     .option('--ws', 'Enable WebSocket server')
     .option('--no-ws', 'Disable WebSocket server')
     .option('--ws-port <port>', 'WebSocket server port', parseInt, 31337)

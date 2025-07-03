@@ -759,13 +759,13 @@ export class SessionCreator extends EventEmitter {
             : ''
 
         execSync(
-          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer watch-session${zmqSocketArgs} | jq .' Enter`,
+          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer observe-session${zmqSocketArgs} | jq .' Enter`,
         )
         execSync(
           `tmux ${socketArgs} split-window -t ${sessionName}:control -h -c ${worktreePath}`,
         )
         execSync(
-          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer watch-panes${zmqSocketArgs} | jq .' Enter`,
+          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer observe-panes${zmqSocketArgs} | jq .' Enter`,
         )
 
         const windowId = execSync(
@@ -777,10 +777,10 @@ export class SessionCreator extends EventEmitter {
           windowName: 'control',
           windowIndex,
           windowId,
-          command: `tmux-composer watch-session${zmqSocketArgs} | jq .`,
+          command: `tmux-composer observe-session${zmqSocketArgs} | jq .`,
           commands: [
-            `tmux-composer watch-session${zmqSocketArgs} | jq .`,
-            `tmux-composer watch-panes${zmqSocketArgs} | jq .`,
+            `tmux-composer observe-session${zmqSocketArgs} | jq .`,
+            `tmux-composer observe-panes${zmqSocketArgs} | jq .`,
           ],
           duration: Date.now() - controlStart,
         })

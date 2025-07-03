@@ -120,7 +120,7 @@ export class TmuxSessionWatcher extends EventEmitter {
       socketName: options.zmqSocket,
       socketPath: options.zmqSocketPath,
       source: {
-        script: 'watch-session',
+        script: 'observe-session',
         sessionId: this.currentSessionId,
         sessionName: this.currentSessionName,
         socketPath,

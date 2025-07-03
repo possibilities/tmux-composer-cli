@@ -86,7 +86,7 @@ export class TmuxPaneWatcher extends EventEmitter {
       socketName: options.zmqSocket,
       socketPath: options.zmqSocketPath,
       source: {
-        script: 'watch-panes',
+        script: 'observe-panes',
         sessionId: this.currentSessionId,
         sessionName: this.currentSessionName,
         socketPath,

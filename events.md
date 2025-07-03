@@ -17,7 +17,7 @@ The tmux-composer CLI emits JSON-formatted events to stdout and optionally publi
 
 ## Commands and Their Events
 
-### 1. watch-session
+### 1. observe-session
 
 Monitors tmux session changes including windows and panes.
 
@@ -56,7 +56,7 @@ Monitors tmux session changes including windows and panes.
   }
   ```
 
-### 2. watch-panes
+### 2. observe-panes
 
 Monitors pane content changes within the current tmux session.
 
@@ -1272,15 +1272,15 @@ All session commands support ZeroMQ options:
 
 ## Observing Events
 
-Use the `observe-events` command to monitor all events:
+Use the `observe-observers` command to monitor all events:
 
 ```bash
 # Output to stdout
-tmux-composer observe-events
+tmux-composer observe-observers
 
 # Pretty print with jq
-tmux-composer observe-events | jq .
+tmux-composer observe-observers | jq .
 
 # Also expose via WebSocket on port 31337
-tmux-composer observe-events --ws
+tmux-composer observe-observers --ws
 ```
