@@ -1,5 +1,5 @@
 import { execSync, spawnSync } from 'child_process'
-import { SessionCreator } from './create-session.js'
+import { SessionContinuer } from './continue-session.js'
 import { getAllProjectWorktrees } from '../core/git-utils.js'
 import { getTmuxSocketArgs, getTmuxSocketPath } from '../core/tmux-socket.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
@@ -12,9 +12,10 @@ interface ResumeSessionOptions extends TmuxSocketOptions {
   zmq?: boolean
   zmqSocket?: string
   zmqSocketPath?: string
+  worktree?: string
 }
 
-export class SessionResumer extends SessionCreator {
+export class SessionResumer extends SessionContinuer {
   constructor(options: ResumeSessionOptions = {}) {
     super(options)
   }
@@ -23,6 +24,13 @@ export class SessionResumer extends SessionCreator {
     if (options.zmq === false && (options.zmqSocket || options.zmqSocketPath)) {
       console.error(
         'Error: Cannot use --no-zmq with --zmq-socket or --zmq-socket-path',
+      )
+      process.exit(1)
+    }
+
+    if (options.attach === false && !options.worktree && !process.env.TMUX) {
+      console.error(
+        'Error: Cannot use --no-attach without --worktree when not in a tmux session (menu cannot be displayed)',
       )
       process.exit(1)
     }
@@ -37,6 +45,7 @@ export class SessionResumer extends SessionCreator {
         terminalWidth: options.terminalWidth,
         terminalHeight: options.terminalHeight,
         attach: options.attach,
+        worktree: options.worktree,
       },
     })
 
@@ -70,8 +79,158 @@ export class SessionResumer extends SessionCreator {
     const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
     const socketPath = getTmuxSocketPath(this.socketOptions)
 
-    const checkSessionsStart = Date.now()
-    this.emitEvent('check-existing-sessions:start')
+    if (options.worktree) {
+      const worktreeInput = options.worktree.trim()
+
+      const findWorktreeStart = Date.now()
+      this.emitEvent('find-worktree:start', {
+        worktreeInput,
+      })
+
+      let targetWorktree = null
+
+      for (const wt of worktrees) {
+        const worktreeNumber = wt.worktreeNumber.toString()
+        const paddedNumber = worktreeNumber.padStart(5, '0')
+        const sessionName = `${wt.projectName}-worktree-${paddedNumber}`
+
+        if (
+          worktreeNumber === worktreeInput ||
+          paddedNumber === worktreeInput ||
+          sessionName === worktreeInput
+        ) {
+          targetWorktree = wt
+          break
+        }
+      }
+
+      if (!targetWorktree) {
+        this.emitEvent('find-worktree:fail', {
+          error: `Worktree '${worktreeInput}' not found`,
+          errorCode: 'WORKTREE_NOT_FOUND',
+          duration: Date.now() - findWorktreeStart,
+        })
+        this.emitEvent('resume-session:fail', {
+          error: `Worktree '${worktreeInput}' not found`,
+          errorCode: 'WORKTREE_NOT_FOUND',
+          duration: Date.now() - startTime,
+        })
+        throw new Error(`Worktree '${worktreeInput}' not found`)
+      }
+
+      this.emitEvent('find-worktree:end', {
+        worktreeInput,
+        worktree: {
+          number: targetWorktree.worktreeNumber,
+          path: targetWorktree.path,
+          branch: targetWorktree.branch,
+          projectName: targetWorktree.projectName,
+        },
+        duration: Date.now() - findWorktreeStart,
+      })
+
+      const sessionName = `${targetWorktree.projectName}-worktree-${targetWorktree.worktreeNumber
+        .toString()
+        .padStart(5, '0')}`
+
+      await enableZmqPublishing(this, {
+        zmq: options.zmq,
+        socketName: options.zmqSocket,
+        socketPath: options.zmqSocketPath,
+        source: {
+          script: 'resume-session',
+          socketPath,
+        },
+      })
+
+      const checkSessionStart = Date.now()
+      this.emitEvent('check-session-exists:start', {
+        sessionName,
+      })
+
+      let sessionExists = false
+      try {
+        const sessions = execSync(
+          `tmux ${socketArgs} list-sessions -F '#{session_name}'`,
+          {
+            encoding: 'utf-8',
+            stdio: ['pipe', 'pipe', 'ignore'],
+          },
+        )
+          .trim()
+          .split('\n')
+
+        sessionExists = sessions.includes(sessionName)
+      } catch {}
+
+      this.emitEvent('check-session-exists:end', {
+        sessionName,
+        exists: sessionExists,
+        duration: Date.now() - checkSessionStart,
+      })
+
+      if (sessionExists) {
+        if (options.attach !== false) {
+          const switchSessionStart = Date.now()
+          this.emitEvent('switch-to-existing-session:start', {
+            sessionName,
+          })
+
+          execSync(`tmux ${socketArgs} switch-client -t ${sessionName}`, {
+            stdio: 'inherit',
+          })
+
+          this.emitEvent('switch-to-existing-session:end', {
+            sessionName,
+            duration: Date.now() - switchSessionStart,
+          })
+        }
+
+        this.emitEvent('resume-session:end', {
+          sessionName,
+          action: 'switched',
+          worktreePath: targetWorktree.path,
+          duration: Date.now() - startTime,
+        })
+      } else {
+        const createSessionStart = Date.now()
+        this.emitEvent('create-new-session:start', {
+          sessionName,
+          worktreePath: targetWorktree.path,
+        })
+
+        const continueOptions = {
+          ...options,
+          attach: options.attach !== false,
+        }
+
+        await this.continue(projectPath, continueOptions)
+
+        if (targetWorktree.branch) {
+          execSync(
+            `cd ${targetWorktree.path} && git checkout ${targetWorktree.branch}`,
+            {
+              stdio: 'inherit',
+            },
+          )
+        }
+
+        this.emitEvent('create-new-session:end', {
+          sessionName,
+          worktreePath: targetWorktree.path,
+          duration: Date.now() - createSessionStart,
+        })
+
+        this.emitEvent('resume-session:end', {
+          sessionName,
+          action: 'created',
+          worktreePath: targetWorktree.path,
+          duration: Date.now() - startTime,
+        })
+      }
+
+      return
+    }
 
     await enableZmqPublishing(this, {
       zmq: options.zmq,
@@ -82,6 +241,9 @@ export class SessionResumer extends SessionCreator {
         socketPath,
       },
     })
+
+    const checkSessionsStart = Date.now()
+    this.emitEvent('check-existing-sessions:start')
 
     const sessionsWithWorktrees: Array<{
       sessionName: string

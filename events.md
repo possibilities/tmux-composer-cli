@@ -512,9 +512,151 @@ Continues the latest worktree session, creating it if it doesn't exist. Similar 
 
 ### 5. resume-session
 
-Displays an interactive menu to select and resume or create worktree sessions.
+Displays an interactive menu to select and resume or create worktree sessions. Supports direct worktree selection with `--worktree` flag.
+
+#### Usage Modes
+
+- **Interactive mode (default)**: Shows a menu to select from available worktrees
+- **Direct mode (`--worktree <worktree>`)**: Directly resumes or creates a specific worktree session
+  - Accepts worktree number (e.g., `3`), padded number (e.g., `00003`), or full session name
+  - Validates `--no-attach` flag usage when not in tmux
 
 #### Events
+
+##### Initialization Events
+
+- **`resume-session:start`** - Resume session process begins
+  ```json
+  {
+    "event": "resume-session:start",
+    "data": {
+      "projectPath": "/path/to/project",
+      "options": {
+        "socketName": null,
+        "socketPath": null,
+        "terminalWidth": 120,
+        "terminalHeight": 40,
+        "attach": true,
+        "worktree": "3"
+      }
+    }
+  }
+  ```
+
+##### Direct Worktree Selection Events (when --worktree is provided)
+
+- **`find-worktree:start`** - Searching for specified worktree
+
+  ```json
+  {
+    "event": "find-worktree:start",
+    "data": {
+      "worktreeInput": "3"
+    }
+  }
+  ```
+
+- **`find-worktree:end`** - Worktree found
+
+  ```json
+  {
+    "event": "find-worktree:end",
+    "data": {
+      "worktreeInput": "3",
+      "worktree": {
+        "number": 3,
+        "path": "/home/user/code/.worktrees/my-project-worktree-00003",
+        "branch": "feature-branch",
+        "projectName": "my-project"
+      },
+      "duration": 10
+    }
+  }
+  ```
+
+- **`find-worktree:fail`** - Worktree not found
+
+  ```json
+  {
+    "event": "find-worktree:fail",
+    "data": {
+      "error": "Worktree '999' not found",
+      "errorCode": "WORKTREE_NOT_FOUND",
+      "duration": 10
+    }
+  }
+  ```
+
+- **`check-session-exists:start`** - Checking if session exists
+
+  ```json
+  {
+    "event": "check-session-exists:start",
+    "data": {
+      "sessionName": "my-project-worktree-00003"
+    }
+  }
+  ```
+
+- **`check-session-exists:end`** - Session existence check complete
+
+  ```json
+  {
+    "event": "check-session-exists:end",
+    "data": {
+      "sessionName": "my-project-worktree-00003",
+      "exists": false,
+      "duration": 15
+    }
+  }
+  ```
+
+- **`switch-to-existing-session:start`** - Switching to existing session
+
+  ```json
+  {
+    "event": "switch-to-existing-session:start",
+    "data": {
+      "sessionName": "my-project-worktree-00003"
+    }
+  }
+  ```
+
+- **`switch-to-existing-session:end`** - Switch complete
+
+  ```json
+  {
+    "event": "switch-to-existing-session:end",
+    "data": {
+      "sessionName": "my-project-worktree-00003",
+      "duration": 20
+    }
+  }
+  ```
+
+- **`create-new-session:start`** - Creating new session for worktree
+
+  ```json
+  {
+    "event": "create-new-session:start",
+    "data": {
+      "sessionName": "my-project-worktree-00003",
+      "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00003"
+    }
+  }
+  ```
+
+- **`create-new-session:end`** - New session created
+  ```json
+  {
+    "event": "create-new-session:end",
+    "data": {
+      "sessionName": "my-project-worktree-00003",
+      "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00003",
+      "duration": 5000
+    }
+  }
+  ```
 
 ##### Session Discovery Events
 
@@ -570,6 +712,52 @@ Displays an interactive menu to select and resume or create worktree sessions.
   }
   ```
 
+##### Display Menu Events
+
+- **`display-menu:start`** - Showing interactive menu
+
+  ```json
+  {
+    "event": "display-menu:start",
+    "data": {
+      "worktreeCount": 3
+    }
+  }
+  ```
+
+- **`display-menu:end`** - Menu interaction complete
+
+  ```json
+  {
+    "event": "display-menu:end",
+    "data": {
+      "duration": 5000
+    }
+  }
+  ```
+
+- **`display-menu:cancel`** - User cancelled menu
+
+  ```json
+  {
+    "event": "display-menu:cancel",
+    "data": {
+      "duration": 3000
+    }
+  }
+  ```
+
+- **`display-menu:fail`** - Menu display failed
+  ```json
+  {
+    "event": "display-menu:fail",
+    "data": {
+      "error": "Failed to display menu: Error message",
+      "duration": 100
+    }
+  }
+  ```
+
 ##### Selection Events
 
 - **`select-worktree-session:fail`** - User cancelled menu or selection failed
@@ -581,6 +769,40 @@ Displays an interactive menu to select and resume or create worktree sessions.
       "errorCode": "MENU_CANCELLED",
       "cancelled": true,
       "duration": 5000
+    }
+  }
+  ```
+
+##### Completion Events
+
+- **`resume-session:end`** - Resume session process complete
+
+  ```json
+  {
+    "event": "resume-session:end",
+    "data": {
+      "sessionName": "my-project-worktree-00003",
+      "action": "switched",
+      "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00003",
+      "duration": 100
+    }
+  }
+  ```
+
+  Note: The `action` field can be:
+
+  - `"switched"` - Switched to existing session
+  - `"created"` - Created new session
+  - When using interactive mode, `worktreePath` may not be included
+
+- **`resume-session:fail`** - Resume session process failed
+  ```json
+  {
+    "event": "resume-session:fail",
+    "data": {
+      "error": "Worktree '999' not found",
+      "errorCode": "WORKTREE_NOT_FOUND",
+      "duration": 50
     }
   }
   ```
@@ -929,6 +1151,8 @@ Closes the current tmux session, switching to another if available.
 
 ### Typical resume-session flow:
 
+#### Interactive mode (default):
+
 1. `resume-session:start`
 2. `find-all-worktrees:start`
 3. `find-all-worktrees:end`
@@ -942,6 +1166,25 @@ Closes the current tmux session, switching to another if available.
 11. User selects option
 12. `display-menu:end` or `display-menu:cancel`
 13. `resume-session:end` or `select-worktree-session:fail`
+
+#### Direct mode (--worktree):
+
+1. `resume-session:start`
+2. `find-all-worktrees:start`
+3. `find-all-worktrees:end`
+4. `find-worktree:start`
+5. `find-worktree:end` or `find-worktree:fail`
+6. If worktree found:
+   - `check-session-exists:start`
+   - `check-session-exists:end`
+   - If session exists and attach is true:
+     - `switch-to-existing-session:start`
+     - `switch-to-existing-session:end`
+   - If session doesn't exist:
+     - `create-new-session:start`
+     - (continue-session events...)
+     - `create-new-session:end`
+7. `resume-session:end` or `resume-session:fail`
 
 ### Typical finish-session flow:
 
@@ -998,6 +1241,7 @@ Common error codes:
 - `TMUX_SERVER_FAILED`: Tmux server failed to start
 - `PANE_NOT_READY`: Pane did not become ready within timeout
 - `NO_WORKTREES`: No worktrees found for the repository
+- `WORKTREE_NOT_FOUND`: Specified worktree not found (resume-session --worktree)
 - `INVALID_WORKTREE_NAME`: Worktree name doesn't match expected pattern
 - `NOT_COMPOSER_SESSION`: Command used on non-composer session
 - `INVALID_MODE`: Invalid TMUX_COMPOSER_MODE value

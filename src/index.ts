@@ -109,6 +109,7 @@ async function main() {
     .option('--no-zmq', 'Disable ZeroMQ publishing')
     .option('--zmq-socket <name>', 'ZeroMQ socket name')
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
+    .option('--worktree <worktree>', 'Worktree to resume (number or full name)')
     .action(async (projectPath, options) => {
       const socketOptions: TmuxSocketOptions = {
         socketName: options.tmuxSocket,
@@ -128,6 +129,7 @@ async function main() {
           zmq: options.zmq,
           zmqSocket: options.zmqSocket,
           zmqSocketPath: options.zmqSocketPath,
+          worktree: options.worktree,
           ...socketOptions,
         })
 

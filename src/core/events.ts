@@ -67,6 +67,15 @@ export type EventName =
   | 'find-all-worktrees:start'
   | 'find-all-worktrees:end'
   | 'find-all-worktrees:fail'
+  | 'find-worktree:start'
+  | 'find-worktree:end'
+  | 'find-worktree:fail'
+  | 'check-session-exists:start'
+  | 'check-session-exists:end'
+  | 'switch-to-existing-session:start'
+  | 'switch-to-existing-session:end'
+  | 'create-new-session:start'
+  | 'create-new-session:end'
   | 'display-menu:start'
   | 'display-menu:end'
   | 'display-menu:fail'
@@ -370,11 +379,15 @@ export interface ResumeSessionStartData {
     terminalWidth?: number
     terminalHeight?: number
     attach?: boolean
+    worktree?: string
   }
 }
 
 export interface ResumeSessionEndData extends BaseEventData {
   cancelled?: boolean
+  sessionName?: string
+  action?: 'switched' | 'created'
+  worktreePath?: string
 }
 
 export interface FindAllWorktreesEndData extends BaseEventData {
@@ -570,6 +583,51 @@ export interface KillSessionFailData extends ErrorEventData {
   sessionName: string
 }
 
+export interface FindWorktreeStartData {
+  worktreeInput: string
+}
+
+export interface FindWorktreeEndData extends BaseEventData {
+  worktreeInput: string
+  worktree: {
+    number: number
+    path: string
+    branch?: string
+    projectName: string
+  }
+}
+
+export interface FindWorktreeFailData extends ErrorEventData {
+  worktreeInput?: string
+}
+
+export interface CheckSessionExistsStartData {
+  sessionName: string
+}
+
+export interface CheckSessionExistsEndData extends BaseEventData {
+  sessionName: string
+  exists: boolean
+}
+
+export interface SwitchToExistingSessionStartData {
+  sessionName: string
+}
+
+export interface SwitchToExistingSessionEndData extends BaseEventData {
+  sessionName: string
+}
+
+export interface CreateNewSessionStartData {
+  sessionName: string
+  worktreePath: string
+}
+
+export interface CreateNewSessionEndData extends BaseEventData {
+  sessionName: string
+  worktreePath: string
+}
+
 export type EventDataMap = {
   'session-changed': SessionChangedData
   'pane-changed': PaneChangedData
@@ -637,6 +695,15 @@ export type EventDataMap = {
   'find-all-worktrees:start': undefined
   'find-all-worktrees:end': FindAllWorktreesEndData
   'find-all-worktrees:fail': ErrorEventData
+  'find-worktree:start': FindWorktreeStartData
+  'find-worktree:end': FindWorktreeEndData
+  'find-worktree:fail': FindWorktreeFailData
+  'check-session-exists:start': CheckSessionExistsStartData
+  'check-session-exists:end': CheckSessionExistsEndData
+  'switch-to-existing-session:start': SwitchToExistingSessionStartData
+  'switch-to-existing-session:end': SwitchToExistingSessionEndData
+  'create-new-session:start': CreateNewSessionStartData
+  'create-new-session:end': CreateNewSessionEndData
   'display-menu:start': DisplayMenuStartData
   'display-menu:end': BaseEventData
   'display-menu:fail': ErrorEventData
