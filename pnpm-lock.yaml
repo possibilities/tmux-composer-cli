@@ -19,9 +19,6 @@ importers:
       zeromq:
         specifier: ^6.1.2
         version: 6.4.2
-      zod:
-        specifier: ^3.25.67
-        version: 3.25.67
     devDependencies:
       '@types/js-yaml':
         specifier: ^4.0.9
@@ -1365,12 +1362,6 @@ packages:
       }
     engines: { node: '>= 12' }
 
-  zod@3.25.67:
-    resolution:
-      {
-        integrity: sha512-idA2YXwpCdqUSKRCACDE6ItZD9TZzy3OZMtpfLoh6oPR47lipysRrJfjzMqFxQ3uJuUPyUeWe1r9vLH33xO/Qw==,
-      }
-
 snapshots:
   '@esbuild/aix-ppc64@0.25.5':
     optional: true
@@ -2033,5 +2024,3 @@ snapshots:
     dependencies:
       cmake-ts: 0.6.1
       node-addon-api: 8.4.0
-
-  zod@3.25.67: {}
