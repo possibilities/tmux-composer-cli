@@ -11,7 +11,6 @@
   "scripts": {
     "build": "tsup",
     "build:watch": "nodemon --verbose --watch src/ --ext ts --exec tsup",
-    "dev": "nodemon --verbose --watch dist/cli.js --exec 'node ./dist/cli.js'",
     "format": "prettier --write \"**/*.{js,mjs,jsx,ts,tsx,json,md,mdx,css,yml,yaml}\""
   },
   "dependencies": {
