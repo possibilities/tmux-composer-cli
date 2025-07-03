@@ -151,6 +151,7 @@ Creates a new tmux session with multiple windows based on project configuration.
 - **`analyze-project-scripts:start`** - Analyzing package.json scripts
 
 - **`analyze-project-scripts:end`** - Scripts analysis complete
+
   ```json
   {
     "event": "analyze-project-scripts:end",
@@ -168,6 +169,12 @@ Creates a new tmux session with multiple windows based on project configuration.
     }
   }
   ```
+
+  Note: The `plannedWindows` array is dynamically generated:
+
+  - Includes "server" only if a `dev` script exists
+  - Includes a window for each script ending in `:watch` (window name = script name without `:watch`)
+  - Always includes "control" as the last window
 
 ##### Repository Events
 
@@ -271,7 +278,13 @@ Creates a new tmux session with multiple windows based on project configuration.
 
 ##### Window Creation Events
 
-- **`create-tmux-window:{windowName}:start`** - Creating specific window (server, lint, types, test, control)
+Windows are created dynamically based on the project's package.json scripts:
+
+- **`server`** - Created only if a `dev` script exists in package.json
+- **Dynamic windows** - Created for any script ending with `:watch` (e.g., `lint:watch` creates a `lint` window, `foo:watch` creates a `foo` window)
+- **`control`** - Always created as the last window for monitoring
+
+- **`create-tmux-window:{windowName}:start`** - Creating specific window where `{windowName}` is dynamically determined
 
 - **`create-tmux-window:{windowName}:end`** - Window created successfully
 
@@ -349,6 +362,8 @@ Creates a new tmux session with multiple windows based on project configuration.
   }
   ```
 
+  Note: The `windows` array contains the actual windows created, which depends on the scripts in package.json
+
 - **`create-worktree-session:fail`** - Overall session creation failed
 
 ##### Attachment Events
@@ -406,24 +421,21 @@ Creates a new tmux session with multiple windows based on project configuration.
 14. `analyze-project-scripts:start`
 15. `analyze-project-scripts:end`
 16. `create-tmux-session:start`
-17. `create-tmux-window:server:start`
+17. `create-tmux-window:server:start` (if `dev` script exists)
 18. `find-open-port:start` (for server window)
 19. `find-open-port:end`
 20. `create-tmux-window:server:end`
 21. `create-tmux-session:end`
-22. `create-tmux-window:lint:start` (if lint:watch exists)
-23. `create-tmux-window:lint:end`
-24. `create-tmux-window:types:start` (if types:watch exists)
-25. `create-tmux-window:types:end`
-26. `create-tmux-window:test:start` (if test:watch exists)
-27. `create-tmux-window:test:end`
-28. `create-tmux-window:control:start`
-29. `create-tmux-window:control:end`
-30. `finalize-tmux-session:start`
-31. `finalize-tmux-session:end`
-32. `create-worktree-session:end`
-33. `attach-tmux-session:start` (if --attach)
-34. `switch-tmux-session:start` or `attach-tmux-session:end`
+22. `create-tmux-window:{name}:start` (for each script ending in `:watch`)
+23. `create-tmux-window:{name}:end`
+24. (Repeat for each `:watch` script found)
+25. `create-tmux-window:control:start`
+26. `create-tmux-window:control:end`
+27. `finalize-tmux-session:start`
+28. `finalize-tmux-session:end`
+29. `create-worktree-session:end`
+30. `attach-tmux-session:start` (if --attach)
+31. `switch-tmux-session:start` or `attach-tmux-session:end`
 
 ## Error Handling
 
