@@ -19,8 +19,6 @@ export class EventObserver {
       zmqSocketPath?: string
     } = {},
   ): Promise<void> {
-    // No need to check for --no-zmq here since observe-events doesn't have that option
-
     try {
       await ensureZmqSocketDirectory()
 

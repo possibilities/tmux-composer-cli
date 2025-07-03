@@ -429,17 +429,12 @@ export class SessionCreator extends EventEmitter {
         windows.push('server')
       }
 
-      if (scripts['lint:watch']) {
-        windows.push('lint')
-      }
-
-      if (scripts['types:watch']) {
-        windows.push('types')
-      }
-
-      if (scripts['test:watch']) {
-        windows.push('test')
-      }
+      Object.keys(scripts).forEach(scriptName => {
+        if (scriptName.endsWith(':watch')) {
+          const windowName = scriptName.slice(0, -6)
+          windows.push(windowName)
+        }
+      })
 
       windows.push('control')
 
@@ -651,58 +646,28 @@ export class SessionCreator extends EventEmitter {
       windowIndex++
     }
 
-    if (scripts['lint:watch'] && expectedWindows.includes('lint')) {
-      const command = 'pnpm run lint:watch'
+    for (const scriptName of Object.keys(scripts)) {
+      if (scriptName.endsWith(':watch')) {
+        const windowName = scriptName.slice(0, -6)
 
-      if (!firstWindowCreated) {
-        await createSession('lint', command)
-      } else {
-        await createWindow(
-          'lint',
-          command,
-          windowIndex,
-          undefined,
-          'lint:watch',
-        )
+        if (expectedWindows.includes(windowName)) {
+          const command = `pnpm run ${scriptName}`
+
+          if (!firstWindowCreated) {
+            await createSession(windowName, command)
+          } else {
+            await createWindow(
+              windowName,
+              command,
+              windowIndex,
+              undefined,
+              scriptName,
+            )
+          }
+
+          windowIndex++
+        }
       }
-
-      windowIndex++
-    }
-
-    if (scripts['types:watch'] && expectedWindows.includes('types')) {
-      const command = 'pnpm run types:watch'
-
-      if (!firstWindowCreated) {
-        await createSession('types', command)
-      } else {
-        await createWindow(
-          'types',
-          command,
-          windowIndex,
-          undefined,
-          'types:watch',
-        )
-      }
-
-      windowIndex++
-    }
-
-    if (scripts['test:watch'] && expectedWindows.includes('test')) {
-      const command = 'pnpm run test:watch'
-
-      if (!firstWindowCreated) {
-        await createSession('test', command)
-      } else {
-        await createWindow(
-          'test',
-          command,
-          windowIndex,
-          undefined,
-          'test:watch',
-        )
-      }
-
-      windowIndex++
     }
 
     if (expectedWindows.includes('control')) {
