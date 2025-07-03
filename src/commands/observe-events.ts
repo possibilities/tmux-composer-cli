@@ -3,7 +3,6 @@ import WebSocket, { WebSocketServer } from 'ws'
 import {
   getZmqSocketPath,
   ensureZmqSocketDirectory,
-  type ZmqSocketOptions,
 } from '../core/zmq-socket.js'
 
 export class EventObserver {
@@ -41,8 +40,8 @@ export class EventObserver {
         console.error(
           `[INFO] WebSocket server listening on ws://localhost:${wsPort}`,
         )
-        this.wsServer.on('connection', socket => {
-          socket.on('error', err => {
+        this.wsServer.on('connection', (socket: WebSocket) => {
+          socket.on('error', (err: Error) => {
             console.error('[WS] client error:', err)
           })
         })

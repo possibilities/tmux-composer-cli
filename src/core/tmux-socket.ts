@@ -1,6 +1,3 @@
-import path from 'path'
-import os from 'os'
-
 export interface TmuxSocketOptions {
   socketName?: string
   socketPath?: string

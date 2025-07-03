@@ -1,4 +1,4 @@
-import { Command, Option } from 'commander'
+import { Command } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
 import { TmuxSessionWatcher } from './commands/watch-session.js'
 import { TmuxPaneWatcher } from './commands/watch-panes.js'
@@ -109,6 +109,6 @@ async function main() {
   }
 }
 
-main().catch(error => {
+main().catch(() => {
   process.exit(1)
 })

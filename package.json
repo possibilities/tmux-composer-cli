@@ -11,7 +11,9 @@
   "scripts": {
     "build": "tsup",
     "build:watch": "nodemon --verbose --watch src/ --ext ts --exec tsup",
-    "format": "prettier --write \"**/*.{js,mjs,jsx,ts,tsx,json,md,mdx,css,yml,yaml}\""
+    "format": "prettier --write \"**/*.{js,mjs,jsx,ts,tsx,json,md,mdx,css,yml,yaml}\"",
+    "typecheck": "tsc --noEmit",
+    "typecheck:watch": "tsc --noEmit --watch"
   },
   "dependencies": {
     "commander": "^12.0.0",
@@ -22,6 +24,7 @@
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
+    "@types/ws": "^8.18.1",
     "nodemon": "^3.1.10",
     "prettier": "^3.5.3",
     "prompts": "^2.4.2",

@@ -49,8 +49,6 @@ export class TmuxSessionWatcher extends EventEmitter {
   private controlModeProcess: ChildProcess | null = null
   private currentSessionName: string | null = null
   private currentSessionId: string | null = null
-  private isConnected = false
-  private isShuttingDown = false
   private panes = new Map<string, PaneInfo>()
   private windowIdMap = new Map<string, WindowInfo>()
   private paneToKeyMap = new Map<string, string>()
@@ -229,13 +227,12 @@ export class TmuxSessionWatcher extends EventEmitter {
       }
     }
 
-    const closeHandler = (code: number) => {
+    const closeHandler = () => {
       this.cleanupControlMode()
     }
 
     const errorHandler = (error: NodeError) => {
       console.error('Control mode process error:', error)
-      this.isConnected = false
 
       if (error.code === 'ENOENT') {
         console.error(
@@ -250,8 +247,6 @@ export class TmuxSessionWatcher extends EventEmitter {
     this.controlModeProcess!.stderr!.on('data', stderrHandler)
     this.controlModeProcess!.on('close', closeHandler)
     this.controlModeProcess!.on('error', errorHandler)
-
-    this.isConnected = true
 
     await sleep(100)
 
@@ -269,16 +264,17 @@ export class TmuxSessionWatcher extends EventEmitter {
   }
 
   private async writeToControlMode(data: string): Promise<void> {
-    if (!this.controlModeProcess || !this.controlModeProcess.stdin) {
+    const process = this.controlModeProcess
+    if (!process || !process.stdin) {
       throw new TmuxControlModeError('Control mode process not available')
     }
 
-    if (this.controlModeProcess.stdin.destroyed) {
+    if (process.stdin.destroyed) {
       throw new TmuxControlModeError('Control mode stdin is destroyed')
     }
 
     return new Promise((resolve, reject) => {
-      this.controlModeProcess.stdin!.write(data, (error?: Error | null) => {
+      process.stdin!.write(data, (error?: Error | null) => {
         if (error) {
           const nodeError = error as NodeError
           if (nodeError.code === 'EPIPE') {
@@ -294,8 +290,6 @@ export class TmuxSessionWatcher extends EventEmitter {
   }
 
   private cleanupControlMode() {
-    this.isConnected = false
-
     if (this.controlModeProcess) {
       this.controlModeProcess.stdout?.removeAllListeners()
       this.controlModeProcess.stderr?.removeAllListeners()
@@ -352,13 +346,11 @@ export class TmuxSessionWatcher extends EventEmitter {
       }
 
       if (parts[0] === '%window-add') {
-        const windowId = parts[1]
         if (this.hasDisplayedInitialList) {
           this.throttledRefreshPaneList()
         }
       } else if (parts[0] === '%window-close') {
-        const windowId = parts[1]
-        const info = this.windowIdMap.get(windowId)
+        const info = this.windowIdMap.get(parts[1])
         if (info && info.session === this.currentSessionId) {
           const panesToRemove: string[] = []
           for (const [paneId, pane] of this.panes) {
@@ -375,7 +367,7 @@ export class TmuxSessionWatcher extends EventEmitter {
             this.paneToKeyMap.delete(paneId)
           }
 
-          this.windowIdMap.delete(windowId)
+          this.windowIdMap.delete(parts[1])
         }
       } else if (parts[0] === '%window-renamed') {
         const windowId = parts[1]
@@ -402,7 +394,6 @@ export class TmuxSessionWatcher extends EventEmitter {
           const [_, width, height] = layoutMatch
           const info = this.windowIdMap.get(windowId)
           if (info && info.session === this.currentSessionId) {
-            const key = `${info.session}:${info.index}`
             const widthNum = parseInt(width, 10)
             const heightNum = parseInt(height, 10)
             let hasChanges = false
@@ -430,8 +421,6 @@ export class TmuxSessionWatcher extends EventEmitter {
         }
         this.throttledRefreshPaneList()
       } else if (parts[0] === '%session-window-changed') {
-        const sessionId = parts[1]
-        const windowId = parts[2]
       } else if (parts[0] === '%session-changed') {
         const sessionId = normalizeSessionId(parts[1])
         if (sessionId === this.currentSessionId) {
@@ -492,7 +481,6 @@ export class TmuxSessionWatcher extends EventEmitter {
 
       if (parts[0] === '%window-pane-changed') {
         const windowId = parts[1]
-        const paneId = parts[2]
         const windowInfo = this.windowIdMap.get(windowId)
         if (windowInfo && windowInfo.session === this.currentSessionId) {
           this.throttledRefreshPaneList()
@@ -552,7 +540,6 @@ export class TmuxSessionWatcher extends EventEmitter {
         const windowKey = `${pane.sessionName}:${pane.windowIndex}`
 
         if (!windowsMap.has(windowKey)) {
-          const windowInfo = this.windowIdMap.values().next().value
           const windowId = Array.from(this.windowIdMap.entries()).find(
             ([_, info]) =>
               info.session === pane.sessionName &&
@@ -576,14 +563,17 @@ export class TmuxSessionWatcher extends EventEmitter {
           focusedPaneId = paneId
         }
 
-        windowsMap.get(windowKey).panes.push({
-          paneId,
-          paneIndex: pane.paneIndex,
-          command: pane.command,
-          width: pane.width,
-          height: pane.height,
-          isActive: pane.isActive,
-        })
+        const window = windowsMap.get(windowKey)
+        if (window) {
+          window.panes.push({
+            paneId,
+            paneIndex: pane.paneIndex,
+            command: pane.command,
+            width: pane.width,
+            height: pane.height,
+            isActive: pane.isActive,
+          })
+        }
       }
 
       const windows = Array.from(windowsMap.values()).sort(
@@ -635,8 +625,6 @@ export class TmuxSessionWatcher extends EventEmitter {
   }
 
   private shutdown() {
-    this.isShuttingDown = true
-
     if (this.controlModeProcess) {
       this.controlModeProcess.stdout?.removeAllListeners()
       this.controlModeProcess.stderr?.removeAllListeners()

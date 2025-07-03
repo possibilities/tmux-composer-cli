@@ -19,29 +19,7 @@ import type {
   TmuxEventWithOptionalData,
   EventName,
   EventDataMap,
-  InitializeSessionCreationStartData,
-  BaseEventData,
-  AnalyzeProjectMetadataEndData,
-  EnsureCleanRepositoryEndData,
-  EnsureCleanRepositoryFailData,
-  ErrorEventData,
-  CreateProjectWorktreeEndData,
-  CreateProjectWorktreeFailData,
-  InstallProjectDependenciesEndData,
-  InstallProjectDependenciesFailData,
-  AnalyzeProjectStructureEndData,
-  AnalyzeProjectScriptsEndData,
-  CreateTmuxSessionEndData,
   CreateTmuxWindowEndData,
-  CreateTmuxWindowFailData,
-  FindOpenPortEndData,
-  FindOpenPortFailData,
-  FinalizeTmuxSessionEndData,
-  CreateWorktreeSessionEndData,
-  AttachTmuxSessionEndData,
-  AttachTmuxSessionFailData,
-  SwitchTmuxSessionStartData,
-  SelectWindowFailData,
 } from '../core/events.js'
 
 interface CreateSessionOptions extends TmuxSocketOptions {
@@ -55,7 +33,6 @@ interface CreateSessionOptions extends TmuxSocketOptions {
 
 export class SessionCreator extends EventEmitter {
   private socketOptions: TmuxSocketOptions
-  private lastEvent: TmuxEventWithOptionalData | null = null
   private readonly sessionId = randomUUID()
 
   constructor(options: CreateSessionOptions = {}) {
@@ -67,7 +44,6 @@ export class SessionCreator extends EventEmitter {
 
     this.on('event', (event: TmuxEventWithOptionalData) => {
       console.log(JSON.stringify(event))
-      this.lastEvent = event
     })
   }
 
@@ -396,7 +372,10 @@ export class SessionCreator extends EventEmitter {
         }
       }
     } catch (error) {
-      if (!error?.message?.includes('Repository has uncommitted changes')) {
+      if (
+        !(error instanceof Error) ||
+        !error.message.includes('Repository has uncommitted changes')
+      ) {
         this.emitEvent('create-worktree-session:fail', {
           error: error instanceof Error ? error.message : String(error),
           duration: Date.now() - sessionStartTime,
@@ -485,7 +464,7 @@ export class SessionCreator extends EventEmitter {
 
     const createSession = async (windowName: string, command: string) => {
       const windowStart = Date.now()
-      this.emitEvent(`create-tmux-window:${windowName}:start`)
+      this.emitEvent(`create-tmux-window:${windowName}:start` as EventName)
 
       const socketArgs = getTmuxSocketArgs(this.socketOptions)
       const tmuxProcess = spawn(
@@ -521,7 +500,7 @@ export class SessionCreator extends EventEmitter {
       }
 
       if (!socketExists(this.socketOptions)) {
-        this.emitEvent(`create-tmux-window:${windowName}:fail`, {
+        this.emitEvent(`create-tmux-window:${windowName}:fail` as EventName, {
           windowName,
           error: 'Tmux server failed to start',
           errorCode: 'TMUX_SERVER_FAILED',
@@ -552,7 +531,7 @@ export class SessionCreator extends EventEmitter {
       const paneReady = await this.waitForPaneReady(sessionName, windowName)
 
       if (!paneReady) {
-        this.emitEvent(`create-tmux-window:${windowName}:fail`, {
+        this.emitEvent(`create-tmux-window:${windowName}:fail` as EventName, {
           windowName,
           error: 'Pane did not become ready within timeout',
           errorCode: 'PANE_NOT_READY',
@@ -579,7 +558,7 @@ export class SessionCreator extends EventEmitter {
       script?: string,
     ) => {
       const windowStart = Date.now()
-      this.emitEvent(`create-tmux-window:${windowName}:start`)
+      this.emitEvent(`create-tmux-window:${windowName}:start` as EventName)
 
       const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
       execSync(
@@ -589,7 +568,7 @@ export class SessionCreator extends EventEmitter {
       const paneReady = await this.waitForPaneReady(sessionName, windowName)
 
       if (!paneReady) {
-        this.emitEvent(`create-tmux-window:${windowName}:fail`, {
+        this.emitEvent(`create-tmux-window:${windowName}:fail` as EventName, {
           windowName,
           error: 'Pane did not become ready within timeout',
           errorCode: 'PANE_NOT_READY',
@@ -622,7 +601,10 @@ export class SessionCreator extends EventEmitter {
       if (port) eventData.port = port
       if (script) eventData.script = script
 
-      this.emitEvent(`create-tmux-window:${windowName}:end`, eventData)
+      this.emitEvent(
+        `create-tmux-window:${windowName}:end` as EventName,
+        eventData,
+      )
     }
 
     if (scripts.dev && expectedWindows.includes('server')) {
@@ -732,6 +714,7 @@ export class SessionCreator extends EventEmitter {
           windowName: 'control',
           windowIndex,
           windowId,
+          command: `tmux-composer watch-session${zmqSocketArgs} | jq .`,
           commands: [
             `tmux-composer watch-session${zmqSocketArgs} | jq .`,
             `tmux-composer watch-panes${zmqSocketArgs} | jq .`,

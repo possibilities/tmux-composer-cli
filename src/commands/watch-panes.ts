@@ -6,15 +6,6 @@ import { enableZmqPublishing } from '../core/zmq-publisher.js'
 import { getTmuxSocketPath, getTmuxSocketArgs } from '../core/tmux-socket.js'
 import type { PaneChangedData, TmuxEvent } from '../core/events.js'
 
-interface PaneInfo {
-  sessionId: string
-  sessionName: string
-  windowIndex: string
-  windowName: string
-  paneIndex: string
-  paneId: string
-}
-
 interface NodeError extends Error {
   code?: string
 }
@@ -29,8 +20,6 @@ export class TmuxPaneWatcher extends EventEmitter {
   private currentSessionName: string | null = null
   private ownPaneId: string | null = null
   private ownWindowId: string | null = null
-  private isConnected = false
-  private isShuttingDown = false
   private paneThrottlers = new Map<string, (data: PaneChangedData) => void>()
   private paneContents = new Map<string, string>()
   private readonly sessionId = randomUUID()
@@ -205,13 +194,12 @@ export class TmuxPaneWatcher extends EventEmitter {
       }
     }
 
-    const closeHandler = (code: number) => {
+    const closeHandler = () => {
       this.cleanupControlMode()
     }
 
     const errorHandler = (error: NodeError) => {
       console.error('Control mode process error:', error)
-      this.isConnected = false
 
       if (error.code === 'ENOENT') {
         console.error(
@@ -227,31 +215,9 @@ export class TmuxPaneWatcher extends EventEmitter {
     this.controlModeProcess!.on('close', closeHandler)
     this.controlModeProcess!.on('error', errorHandler)
 
-    this.isConnected = true
-
     await new Promise(resolve => setTimeout(resolve, 100))
 
     return true
-  }
-
-  private async writeToControlMode(data: string): Promise<void> {
-    if (!this.controlModeProcess || !this.controlModeProcess.stdin) {
-      throw new Error('Control mode process not available')
-    }
-
-    if (this.controlModeProcess.stdin.destroyed) {
-      throw new Error('Control mode stdin is destroyed')
-    }
-
-    return new Promise((resolve, reject) => {
-      this.controlModeProcess.stdin!.write(data, (error?: Error | null) => {
-        if (error) {
-          reject(error)
-        } else {
-          resolve()
-        }
-      })
-    })
   }
 
   private async getPaneInfo(paneId: string): Promise<{
@@ -259,25 +225,25 @@ export class TmuxPaneWatcher extends EventEmitter {
     windowName: string
     windowId: string
     sessionId: string
+    paneIndex: string
   } | null> {
     try {
       const result = await this.runCommand(
-        `tmux display-message -t ${paneId} -p "#{session_id} #{window_index} #{window_name} #{window_id}"`,
+        `tmux display-message -t ${paneId} -p "#{session_id} #{window_index} #{window_name} #{window_id} #{pane_index}"`,
       )
       const parts = result.trim().split(' ')
       const sessionId = parts[0]
       const windowIndex = parts[1]
-      const windowId = parts[parts.length - 1]
-      const windowName = parts.slice(2, -1).join(' ')
-      return { sessionId, windowIndex, windowName, windowId }
+      const paneIndex = parts[parts.length - 1]
+      const windowId = parts[parts.length - 2]
+      const windowName = parts.slice(2, -2).join(' ')
+      return { sessionId, windowIndex, windowName, windowId, paneIndex }
     } catch (error) {
       return null
     }
   }
 
   private cleanupControlMode() {
-    this.isConnected = false
-
     if (this.controlModeProcess) {
       this.controlModeProcess.stdout?.removeAllListeners()
       this.controlModeProcess.stderr?.removeAllListeners()
@@ -324,6 +290,8 @@ export class TmuxPaneWatcher extends EventEmitter {
             paneId: paneId,
             windowName: paneInfo.windowName,
             windowIndex: paneInfo.windowIndex,
+            paneIndex: paneInfo.paneIndex,
+            content: '',
           }
 
           let throttledEmitter = this.paneThrottlers.get(paneId)
@@ -353,8 +321,6 @@ export class TmuxPaneWatcher extends EventEmitter {
   }
 
   private shutdown() {
-    this.isShuttingDown = true
-
     this.paneThrottlers.clear()
     this.paneContents.clear()
 
