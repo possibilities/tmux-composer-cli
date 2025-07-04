@@ -1,4 +1,4 @@
-import { execSync, spawn } from 'child_process'
+import { execSync } from 'child_process'
 import { loadConfig } from '../core/config.js'
 import {
   syncWorktreeToMain,
@@ -163,69 +163,25 @@ export class SessionFinisher extends BaseSessionCommand {
       this.emitEvent('run-before-finish-command:start')
 
       try {
-        const child = spawn(command, {
-          shell: true,
-          cwd: process.cwd(),
-          detached: true,
+        execSync(command, {
           stdio: 'inherit',
+          encoding: 'utf-8',
+          cwd: process.cwd(),
         })
-
-        await new Promise<void>((resolve, reject) => {
-          child.on('exit', code => {
-            if (code === 0) {
-              this.emitEvent('run-before-finish-command:end', {
-                command,
-                exitCode: 0,
-                duration: Date.now() - beforeFinishStart,
-              })
-              resolve()
-            } else {
-              const exitCode = code || 1
-              this.emitEvent('run-before-finish-command:fail', {
-                error: 'Before-finish command failed',
-                errorCode: 'BEFORE_FINISH_FAILED',
-                command,
-                exitCode,
-                duration: Date.now() - beforeFinishStart,
-              })
-              reject(
-                new Error(`Before-finish command exited with code ${exitCode}`),
-              )
-            }
-          })
-
-          child.on('error', error => {
-            this.emitEvent('run-before-finish-command:fail', {
-              error: error.message,
-              errorCode: 'BEFORE_FINISH_FAILED',
-              command,
-              exitCode: 1,
-              duration: Date.now() - beforeFinishStart,
-            })
-            reject(error)
-          })
+        this.emitEvent('run-before-finish-command:end', {
+          command,
+          exitCode: 0,
+          duration: Date.now() - beforeFinishStart,
         })
-
-        await new Promise(resolve => setTimeout(resolve, 500))
-
-        try {
-          const gitStatus = execSync('git status --porcelain', {
-            cwd: process.cwd(),
-            encoding: 'utf-8',
-          }).trim()
-
-          this.emitEvent('verify-before-finish-completion', {
-            gitStatus: gitStatus || '(clean)',
-            hasUncommittedChanges: gitStatus.length > 0,
-          })
-        } catch (gitError) {
-          this.emitEvent('verify-before-finish-completion:warning', {
-            warning: 'Could not verify git status after before-finish command',
-            error:
-              gitError instanceof Error ? gitError.message : String(gitError),
-          })
-        }
       } catch (error: any) {
+        const exitCode = error.status || 1
+        this.emitEvent('run-before-finish-command:fail', {
+          error: 'Before-finish command failed',
+          errorCode: 'BEFORE_FINISH_FAILED',
+          command,
+          exitCode,
+          duration: Date.now() - beforeFinishStart,
+        })
         this.emitEvent('finish-session:fail', {
           error: 'Before-finish command failed',
           errorCode: 'BEFORE_FINISH_FAILED',
