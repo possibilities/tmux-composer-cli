@@ -3,6 +3,7 @@ import { SessionContinuer } from './continue-session.js'
 import { getAllProjectWorktrees } from '../core/git-utils.js'
 import { getTmuxSocketArgs, getTmuxSocketPath } from '../core/tmux-socket.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
+import { loadConfig } from '../core/config.js'
 import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 
 interface ResumeSessionOptions extends TmuxSocketOptions {
@@ -49,6 +50,32 @@ export class SessionResumer extends SessionContinuer {
       },
     })
 
+    const socketPath = getTmuxSocketPath(this.socketOptions)
+
+    await enableZmqPublishing(this, {
+      zmq: options.zmq,
+      socketName: options.zmqSocket,
+      socketPath: options.zmqSocketPath,
+      source: {
+        script: 'resume-session',
+        socketPath,
+      },
+    })
+
+    const config = loadConfig(projectPath)
+
+    if (config['no-worktree']) {
+      this.emitEvent('resume-session:fail', {
+        error:
+          'Resume session is not available when no-worktree is configured. Use create-session instead.',
+        errorCode: 'NO_WORKTREE_MODE',
+        duration: Date.now() - startTime,
+      })
+      throw new Error(
+        'Resume session is not available when no-worktree is configured. Use create-session instead.',
+      )
+    }
+
     const findWorktreesStart = Date.now()
     this.emitEvent('find-all-worktrees:start')
 
@@ -77,7 +104,6 @@ export class SessionResumer extends SessionContinuer {
     })
 
     const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
-    const socketPath = getTmuxSocketPath(this.socketOptions)
 
     if (options.worktree) {
       const worktreeInput = options.worktree.trim()

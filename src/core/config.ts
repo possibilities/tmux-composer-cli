@@ -5,6 +5,7 @@ import yaml from 'js-yaml'
 import { z } from 'zod'
 
 const ConfigSchema = z.object({
+  'no-worktree': z.boolean().optional(),
   commands: z
     .object({
       'run-agent': z.string().optional(),

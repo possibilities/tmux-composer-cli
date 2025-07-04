@@ -48,6 +48,32 @@ export class SessionContinuer extends SessionCreator {
       duration: Date.now() - startTime,
     })
 
+    const socketPath = getTmuxSocketPath(this.socketOptions)
+
+    await enableZmqPublishing(this, {
+      zmq: options.zmq,
+      socketName: options.zmqSocket,
+      socketPath: options.zmqSocketPath,
+      source: {
+        script: 'continue-session',
+        socketPath,
+      },
+    })
+
+    const config = loadConfig(projectPath)
+
+    if (config['no-worktree']) {
+      this.emitEvent('continue-session:fail', {
+        error:
+          'Continue session is not available when no-worktree is configured. Use create-session instead.',
+        errorCode: 'NO_WORKTREE_MODE',
+        duration: Date.now() - startTime,
+      })
+      throw new Error(
+        'Continue session is not available when no-worktree is configured. Use create-session instead.',
+      )
+    }
+
     const findWorktreeStart = Date.now()
     this.emitEvent('find-latest-worktree:start')
 
@@ -146,20 +172,6 @@ export class SessionContinuer extends SessionCreator {
         throw error
       }
     }
-
-    const socketPath = getTmuxSocketPath(this.socketOptions)
-
-    await enableZmqPublishing(this, {
-      zmq: options.zmq,
-      socketName: options.zmqSocket,
-      socketPath: options.zmqSocketPath,
-      source: {
-        script: 'continue-session',
-        socketPath,
-      },
-    })
-
-    const config = loadConfig(projectPath)
 
     try {
       let expectedWindows: string[]
