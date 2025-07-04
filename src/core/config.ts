@@ -34,13 +34,16 @@ export function loadConfig(projectPath?: string): Config {
         const fileContent = fs.readFileSync(configPath, 'utf-8')
         const parsedYaml = yaml.load(fileContent)
         const validatedConfig = ConfigSchema.parse(parsedYaml)
+
+        const newCommands = {
+          ...(mergedConfig.commands || {}),
+          ...(validatedConfig.commands || {}),
+        }
+
         mergedConfig = { ...mergedConfig, ...validatedConfig }
 
-        if (validatedConfig.commands) {
-          mergedConfig.commands = {
-            ...mergedConfig.commands,
-            ...validatedConfig.commands,
-          }
+        if (mergedConfig.commands || validatedConfig.commands) {
+          mergedConfig.commands = newCommands
         }
       }
     } catch (error) {
