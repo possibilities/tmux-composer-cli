@@ -782,6 +782,9 @@ export class SessionCreator extends EventEmitter {
         execSync(
           `tmux ${socketArgs} send-keys -t ${sessionName}:control 'claude-chat-stream ~/.claude/chats.db | jq .' Enter`,
         )
+        execSync(
+          `tmux ${socketArgs} select-layout -t ${sessionName}:control even-horizontal`,
+        )
 
         const windowId = execSync(
           `tmux ${socketArgs} display-message -t ${sessionName}:control -p '#{window_id}'`,
