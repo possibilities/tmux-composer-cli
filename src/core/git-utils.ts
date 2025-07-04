@@ -43,35 +43,31 @@ export function getNextWorktreeNumber(projectPath: string): string {
   const projectName = path.basename(projectPath)
   const usedNumbers = new Set<number>()
 
-  try {
-    const branches = execSync('git branch --list "worktree-*"', {
-      cwd: projectPath,
-      encoding: 'utf-8',
-    }).trim()
+  const branches = execSync('git branch --list "worktree-*"', {
+    cwd: projectPath,
+    encoding: 'utf-8',
+  }).trim()
 
-    if (branches) {
-      const branchNumbers = branches
-        .split('\n')
-        .map(branch => branch.trim().replace(/^\*?\s*/, ''))
-        .filter(branch => /^worktree-\d{5}$/.test(branch))
-        .map(branch => parseInt(branch.substring(9), 10))
+  if (branches) {
+    const branchNumbers = branches
+      .split('\n')
+      .map(branch => branch.trim().replace(/^\*?\s*/, ''))
+      .filter(branch => /^worktree-\d{5}$/.test(branch))
+      .map(branch => parseInt(branch.substring(9), 10))
 
-      branchNumbers.forEach(num => usedNumbers.add(num))
-    }
-  } catch {}
+    branchNumbers.forEach(num => usedNumbers.add(num))
+  }
 
   if (fs.existsSync(WORKTREES_PATH)) {
-    try {
-      const dirs = fs.readdirSync(WORKTREES_PATH)
-      const pattern = new RegExp(`^${projectName}-worktree-(\\d{5})$`)
+    const dirs = fs.readdirSync(WORKTREES_PATH)
+    const pattern = new RegExp(`^${projectName}-worktree-(\\d{5})$`)
 
-      dirs.forEach(dir => {
-        const match = dir.match(pattern)
-        if (match) {
-          usedNumbers.add(parseInt(match[1], 10))
-        }
-      })
-    } catch {}
+    dirs.forEach(dir => {
+      const match = dir.match(pattern)
+      if (match) {
+        usedNumbers.add(parseInt(match[1], 10))
+      }
+    })
   }
 
   for (let i = 1; i < 1000; i++) {
