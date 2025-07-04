@@ -45,7 +45,7 @@ export function getNextWorktreeNumber(projectPath: string): string {
   const usedNumbers = new Set<number>()
 
   const branches = execSync(
-    `git -C "${projectPath}" branch --list "worktree-*"`,
+    `git -C "${projectPath}" for-each-ref --format='%(refname:short)' refs/heads/worktree-*`,
     {
       encoding: 'utf-8',
     },
@@ -59,6 +59,19 @@ export function getNextWorktreeNumber(projectPath: string): string {
       .map(branch => parseInt(branch.substring(9), 10))
 
     branchNumbers.forEach(num => usedNumbers.add(num))
+  }
+
+  // Also check existing worktrees to find used branch numbers
+  try {
+    const worktrees = getExistingWorktrees(projectPath)
+    worktrees.forEach(wt => {
+      if (wt.branch && /^worktree-\d{5}$/.test(wt.branch)) {
+        const num = parseInt(wt.branch.substring(9), 10)
+        usedNumbers.add(num)
+      }
+    })
+  } catch {
+    // Ignore errors when checking worktrees
   }
 
   if (fs.existsSync(WORKTREES_PATH)) {
@@ -93,12 +106,35 @@ export function createWorktree(
   )
   const branchName = `worktree-${worktreeNum}`
 
-  execSync(
-    `git -C "${projectPath}" worktree add -q "${worktreePath}" -b "${branchName}"`,
-    {
-      encoding: 'utf-8',
-    },
-  )
+  try {
+    execSync(
+      `git -C "${projectPath}" worktree add -q "${worktreePath}" -b "${branchName}"`,
+      {
+        encoding: 'utf-8',
+      },
+    )
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+
+    // If branch already exists, try to use it without -b flag
+    if (errorMessage.includes('already exists')) {
+      try {
+        execSync(
+          `git -C "${projectPath}" worktree add -q "${worktreePath}" "${branchName}"`,
+          {
+            encoding: 'utf-8',
+          },
+        )
+      } catch (retryError) {
+        throw new Error(
+          `Failed to create worktree: Branch '${branchName}' already exists and may be in use by another worktree. ` +
+            `Run 'git worktree list' in ${projectPath} to check existing worktrees.`,
+        )
+      }
+    } else {
+      throw error
+    }
+  }
 
   return worktreePath
 }
