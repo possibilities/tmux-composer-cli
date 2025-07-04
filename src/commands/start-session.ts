@@ -780,7 +780,7 @@ export class SessionCreator extends EventEmitter {
           `tmux ${socketArgs} split-window -t ${sessionName}:control -h -c ${worktreePath}`,
         )
         execSync(
-          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'claude-chat-stream ~/.claude/chats.db && jq .' Enter`,
+          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'claude-chat-stream ~/.claude/chats.db | jq .' Enter`,
         )
 
         const windowId = execSync(
