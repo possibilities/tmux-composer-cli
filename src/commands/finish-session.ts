@@ -20,8 +20,11 @@ interface FinishSessionOptions extends BaseSessionOptions {
 }
 
 export class SessionFinisher extends BaseSessionCommand {
+  private keepSession: boolean
+
   constructor(options: FinishSessionOptions = {}) {
     super(options)
+    this.keepSession = options.keepSession ?? false
   }
 
   async finish(): Promise<void> {
@@ -293,7 +296,7 @@ export class SessionFinisher extends BaseSessionCommand {
       }
     }
 
-    if (!options.keepSession) {
+    if (!this.keepSession) {
       const findAltStart = Date.now()
       this.emitEvent('find-alternative-session:start')
 
@@ -364,7 +367,7 @@ export class SessionFinisher extends BaseSessionCommand {
     this.emitEvent('finish-session:end', {
       sessionName: currentSession,
       mode: mode as 'worktree' | 'project',
-      sessionKept: !!options.keepSession,
+      sessionKept: this.keepSession,
       duration: Date.now() - startTime,
     })
   }
