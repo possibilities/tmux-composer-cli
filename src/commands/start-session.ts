@@ -776,6 +776,12 @@ export class SessionCreator extends EventEmitter {
         execSync(
           `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer observe-panes${zmqSocketArgs} | jq .' Enter`,
         )
+        execSync(
+          `tmux ${socketArgs} split-window -t ${sessionName}:control -h -c ${worktreePath}`,
+        )
+        execSync(
+          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'claude-chat-stream ~/.claude/chats.db && jq .' Enter`,
+        )
 
         const windowId = execSync(
           `tmux ${socketArgs} display-message -t ${sessionName}:control -p '#{window_id}'`,
@@ -790,6 +796,7 @@ export class SessionCreator extends EventEmitter {
           commands: [
             `tmux-composer observe-session${zmqSocketArgs} | jq .`,
             `tmux-composer observe-panes${zmqSocketArgs} | jq .`,
+            `claude-chat-stream ~/.claude/chats.db && jq .`,
           ],
           duration: Date.now() - controlStart,
         })
