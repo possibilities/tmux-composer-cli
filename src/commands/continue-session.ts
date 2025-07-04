@@ -242,16 +242,17 @@ export class SessionContinuer extends SessionCreator {
       }
 
       try {
-        const firstWindow = windows[0]
-        if (firstWindow) {
+        const firstNonControlWindow =
+          windows.find(w => w !== 'control') || windows[0]
+        if (firstNonControlWindow) {
           execSync(
-            `tmux ${socketArgs} select-window -t ${sessionName}:${firstWindow}`,
+            `tmux ${socketArgs} select-window -t ${sessionName}:${firstNonControlWindow}`,
           )
         }
       } catch (error) {
         this.emitEvent('select-window:fail', {
           sessionName,
-          window: windows[0] || 'none',
+          window: windows.find(w => w !== 'control') || windows[0] || 'none',
           error: error instanceof Error ? error.message : String(error),
         })
       }

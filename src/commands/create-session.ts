@@ -326,7 +326,8 @@ export class SessionCreator extends EventEmitter {
       this.emitEvent('finalize-tmux-session:start')
       this.emitEvent('finalize-tmux-session:end', {
         sessionName,
-        selectedWindow: windows[0] || 'none',
+        selectedWindow:
+          windows.find(w => w !== 'control') || windows[0] || 'none',
         totalWindows: windows.length,
         worktreePath,
         worktreeMode: isWorktreeMode,
@@ -344,16 +345,17 @@ export class SessionCreator extends EventEmitter {
       })
 
       try {
-        const firstWindow = windows[0]
-        if (firstWindow) {
+        const firstNonControlWindow =
+          windows.find(w => w !== 'control') || windows[0]
+        if (firstNonControlWindow) {
           execSync(
-            `tmux ${socketArgs} select-window -t ${sessionName}:${firstWindow}`,
+            `tmux ${socketArgs} select-window -t ${sessionName}:${firstNonControlWindow}`,
           )
         }
       } catch (error) {
         this.emitEvent('select-window:fail', {
           sessionName,
-          window: windows[0] || 'none',
+          window: windows.find(w => w !== 'control') || windows[0] || 'none',
           error: error instanceof Error ? error.message : String(error),
         })
       }
@@ -531,6 +533,7 @@ export class SessionCreator extends EventEmitter {
     let firstWindowCreated = false
     let windowIndex = 0
     const createdWindows: string[] = []
+    const windowOrder: string[] = []
 
     const createSession = async (windowName: string, command: string) => {
       const windowStart = Date.now()
@@ -562,6 +565,7 @@ export class SessionCreator extends EventEmitter {
       tmuxProcess.unref()
 
       createdWindows.push(windowName)
+      windowOrder.push(windowName)
 
       let attempts = 0
       while (!socketExists(this.socketOptions) && attempts < 50) {
@@ -589,7 +593,7 @@ export class SessionCreator extends EventEmitter {
         `tmux ${socketArgs.join(' ')} set-environment -t ${sessionName} TMUX_COMPOSER_MODE ${mode}`,
       )
 
-      if (windowName === 'work') {
+      if (windowName === 'control') {
         this.emitEvent('create-tmux-session:end', {
           sessionName,
           sessionId,
@@ -659,6 +663,7 @@ export class SessionCreator extends EventEmitter {
       )
 
       createdWindows.push(windowName)
+      windowOrder.push(windowName)
 
       const windowId = execSync(
         `tmux ${socketArgs} display-message -t ${sessionName}:${windowName} -p '#{window_id}'`,
@@ -680,6 +685,59 @@ export class SessionCreator extends EventEmitter {
         `create-tmux-window:${windowName}:end` as EventName,
         eventData,
       )
+    }
+
+    if (expectedWindows.includes('control')) {
+      const controlStart = Date.now()
+      this.emitEvent('create-tmux-window:control:start')
+
+      try {
+        const zmqSocketArgs = options.zmqSocket
+          ? ` --zmq-socket ${options.zmqSocket}`
+          : options.zmqSocketPath
+            ? ` --zmq-socket-path ${options.zmqSocketPath}`
+            : ''
+
+        await createSession('control', 'echo "Starting control window..."')
+
+        const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
+
+        execSync(
+          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer observe-session${zmqSocketArgs} | jq .' Enter`,
+        )
+        execSync(
+          `tmux ${socketArgs} split-window -t ${sessionName}:control -h -c ${worktreePath}`,
+        )
+        execSync(
+          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer observe-panes${zmqSocketArgs} | jq .' Enter`,
+        )
+
+        const windowId = execSync(
+          `tmux ${socketArgs} display-message -t ${sessionName}:control -p '#{window_id}'`,
+          { encoding: 'utf-8' },
+        ).trim()
+
+        this.emitEvent('create-tmux-window:control:end', {
+          windowName: 'control',
+          windowIndex: 0,
+          windowId,
+          command: `tmux-composer observe-session${zmqSocketArgs} | jq .`,
+          commands: [
+            `tmux-composer observe-session${zmqSocketArgs} | jq .`,
+            `tmux-composer observe-panes${zmqSocketArgs} | jq .`,
+          ],
+          duration: Date.now() - controlStart,
+        })
+
+        windowIndex++
+      } catch (error) {
+        this.emitEvent('create-tmux-window:control:fail', {
+          windowName: 'control',
+          error: error instanceof Error ? error.message : String(error),
+          duration: Date.now() - controlStart,
+        })
+        throw error
+      }
     }
 
     if (config.commands?.['run-agent'] && expectedWindows.includes('agent')) {
@@ -739,88 +797,19 @@ export class SessionCreator extends EventEmitter {
       }
     }
 
-    if (expectedWindows.includes('control')) {
-      const controlStart = Date.now()
-      this.emitEvent('create-tmux-window:control:start')
+    const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
 
-      try {
-        const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
-        execSync(
-          `tmux ${socketArgs} new-window -t ${sessionName} -n 'control' -c ${worktreePath}`,
-        )
+    if (expectedWindows.includes('control') && windowOrder.length > 1) {
+      const lastIndex = windowOrder.length - 1
+      execSync(
+        `tmux ${socketArgs} move-window -s ${sessionName}:control -t ${sessionName}:${lastIndex}`,
+      )
 
-        let controlWindowCreated = false
-        let attempts = 0
-        const maxAttempts = 30
-
-        while (!controlWindowCreated && attempts < maxAttempts) {
-          try {
-            const windows = execSync(
-              `tmux ${socketArgs} list-windows -t ${sessionName} -F '#{window_name}'`,
-              { encoding: 'utf-8' },
-            )
-              .trim()
-              .split('\n')
-
-            if (windows.includes('control')) {
-              controlWindowCreated = true
-              break
-            }
-          } catch {}
-
-          execSync('sleep 0.1')
-          attempts++
-        }
-
-        if (!controlWindowCreated) {
-          throw new Error('Control window failed to create within timeout')
-        }
-
-        const zmqSocketArgs = options.zmqSocket
-          ? ` --zmq-socket ${options.zmqSocket}`
-          : options.zmqSocketPath
-            ? ` --zmq-socket-path ${options.zmqSocketPath}`
-            : ''
-
-        execSync(
-          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer observe-session${zmqSocketArgs} | jq .' Enter`,
-        )
-        execSync(
-          `tmux ${socketArgs} split-window -t ${sessionName}:control -h -c ${worktreePath}`,
-        )
-        execSync(
-          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'tmux-composer observe-panes${zmqSocketArgs} | jq .' Enter`,
-        )
-
-        const windowId = execSync(
-          `tmux ${socketArgs} display-message -t ${sessionName}:control -p '#{window_id}'`,
-          { encoding: 'utf-8' },
-        ).trim()
-
-        this.emitEvent('create-tmux-window:control:end', {
-          windowName: 'control',
-          windowIndex,
-          windowId,
-          command: `tmux-composer observe-session${zmqSocketArgs} | jq .`,
-          commands: [
-            `tmux-composer observe-session${zmqSocketArgs} | jq .`,
-            `tmux-composer observe-panes${zmqSocketArgs} | jq .`,
-          ],
-          duration: Date.now() - controlStart,
-        })
-
-        createdWindows.push('control')
-      } catch (error) {
-        this.emitEvent('create-tmux-window:control:fail', {
-          windowName: 'control',
-          error: error instanceof Error ? error.message : String(error),
-          duration: Date.now() - controlStart,
-        })
-        throw error
-      }
+      windowOrder.splice(0, 1)
+      windowOrder.push('control')
     }
 
-    return createdWindows
+    return windowOrder
   }
 
   protected findAvailablePort(): number {
