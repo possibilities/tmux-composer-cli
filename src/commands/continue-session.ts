@@ -62,15 +62,15 @@ export class SessionContinuer extends SessionCreator {
 
     const config = loadConfig(projectPath)
 
-    if (config['no-worktree']) {
+    if (config.worktree === false) {
       this.emitEvent('continue-session:fail', {
         error:
-          'Continue session is not available when no-worktree is configured. Use create-session instead.',
+          'Continue session is not available when worktree is disabled. Use create-session instead.',
         errorCode: 'NO_WORKTREE_MODE',
         duration: Date.now() - startTime,
       })
       throw new Error(
-        'Continue session is not available when no-worktree is configured. Use create-session instead.',
+        'Continue session is not available when worktree is disabled. Use create-session instead.',
       )
     }
 

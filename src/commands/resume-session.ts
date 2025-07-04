@@ -64,15 +64,15 @@ export class SessionResumer extends SessionContinuer {
 
     const config = loadConfig(projectPath)
 
-    if (config['no-worktree']) {
+    if (config.worktree === false) {
       this.emitEvent('resume-session:fail', {
         error:
-          'Resume session is not available when no-worktree is configured. Use create-session instead.',
+          'Resume session is not available when worktree is disabled. Use create-session instead.',
         errorCode: 'NO_WORKTREE_MODE',
         duration: Date.now() - startTime,
       })
       throw new Error(
-        'Resume session is not available when no-worktree is configured. Use create-session instead.',
+        'Resume session is not available when worktree is disabled. Use create-session instead.',
       )
     }
 

@@ -110,7 +110,7 @@ export class SessionCreator extends EventEmitter {
     this.emitEvent('analyze-project-metadata:start')
     const projectName = path.basename(projectPath)
 
-    const isWorktreeMode = options.worktree ?? !config['no-worktree'] ?? true
+    const isWorktreeMode = options.worktree ?? config.worktree ?? true
     let worktreeNum: string | undefined
     let sessionName: string
 

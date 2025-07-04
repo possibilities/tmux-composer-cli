@@ -4,15 +4,17 @@ import os from 'os'
 import yaml from 'js-yaml'
 import { z } from 'zod'
 
-const ConfigSchema = z.object({
-  'no-worktree': z.boolean().optional(),
-  commands: z
-    .object({
-      'run-agent': z.string().optional(),
-      'before-finish': z.string().optional(),
-    })
-    .optional(),
-})
+const ConfigSchema = z
+  .object({
+    worktree: z.boolean().optional(),
+    commands: z
+      .object({
+        'run-agent': z.string().optional(),
+        'before-finish': z.string().optional(),
+      })
+      .optional(),
+  })
+  .strict()
 
 export type Config = z.infer<typeof ConfigSchema>
 
