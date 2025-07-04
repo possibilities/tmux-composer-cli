@@ -25,6 +25,26 @@ export function syncWorktreeToMain(worktreePath: string): void {
   })
 
   console.log(`Successfully merged ${currentBranch} into ${mainBranch}`)
+
+  execSync('git push', {
+    cwd: mainRepoPath,
+    encoding: 'utf-8',
+  })
+  console.log(`Successfully pushed ${mainBranch} to remote`)
+
+  const packageJsonPath = path.join(mainRepoPath, 'package.json')
+  if (fs.existsSync(packageJsonPath)) {
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
+    if (packageJson.scripts?.build) {
+      console.log('Running build in main project...')
+      execSync('pnpm run build', {
+        cwd: mainRepoPath,
+        encoding: 'utf-8',
+        stdio: 'inherit',
+      })
+      console.log('Build completed successfully')
+    }
+  }
 }
 
 export function checkAndInstallDependencies(worktreePath: string): void {
