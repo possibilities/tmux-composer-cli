@@ -117,6 +117,8 @@ export type EventName =
   | 'run-before-finish-command:start'
   | 'run-before-finish-command:end'
   | 'run-before-finish-command:fail'
+  | 'verify-before-finish-completion'
+  | 'verify-before-finish-completion:warning'
   | 'sync-worktree-to-main:start'
   | 'sync-worktree-to-main:end'
   | 'sync-worktree-to-main:fail'
@@ -496,6 +498,16 @@ export interface RunBeforeFinishCommandFailData extends ErrorEventData {
   exitCode?: number
 }
 
+export interface VerifyBeforeFinishCompletionData {
+  gitStatus: string
+  hasUncommittedChanges: boolean
+}
+
+export interface VerifyBeforeFinishCompletionWarningData {
+  warning: string
+  error: string
+}
+
 export interface SyncWorktreeToMainEndData extends BaseEventData {
   worktreePath: string
   mainBranch: string
@@ -745,6 +757,8 @@ export type EventDataMap = {
   'run-before-finish-command:start': undefined
   'run-before-finish-command:end': RunBeforeFinishCommandEndData
   'run-before-finish-command:fail': RunBeforeFinishCommandFailData
+  'verify-before-finish-completion': VerifyBeforeFinishCompletionData
+  'verify-before-finish-completion:warning': VerifyBeforeFinishCompletionWarningData
   'sync-worktree-to-main:start': undefined
   'sync-worktree-to-main:end': SyncWorktreeToMainEndData
   'sync-worktree-to-main:fail': SyncWorktreeToMainFailData

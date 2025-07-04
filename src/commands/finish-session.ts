@@ -1,4 +1,4 @@
-import { execSync } from 'child_process'
+import { execSync, spawn } from 'child_process'
 import { loadConfig } from '../core/config.js'
 import {
   syncWorktreeToMain,
@@ -158,39 +158,85 @@ export class SessionFinisher extends BaseSessionCommand {
       this.emitEvent('run-before-finish-command:start')
 
       try {
-        execSync(command, {
-          stdio: 'inherit',
-          encoding: 'utf-8',
+        // Use spawn with shell:true and detached:true to ensure the command completes
+        // even if the parent process (tmux session) is killed
+        const child = spawn(command, {
+          shell: true,
           cwd: projectPath,
+          detached: true,
+          stdio: 'inherit',
         })
-        this.emitEvent('run-before-finish-command:end', {
-          command,
-          exitCode: 0,
-          duration: Date.now() - beforeFinishStart,
+
+        // Wait for the process to complete
+        await new Promise<void>((resolve, reject) => {
+          child.on('exit', code => {
+            if (code === 0) {
+              this.emitEvent('run-before-finish-command:end', {
+                command,
+                exitCode: 0,
+                duration: Date.now() - beforeFinishStart,
+              })
+              resolve()
+            } else {
+              const exitCode = code || 1
+              this.emitEvent('run-before-finish-command:fail', {
+                error: 'Before-finish command failed',
+                errorCode: 'BEFORE_FINISH_FAILED',
+                command,
+                exitCode,
+                duration: Date.now() - beforeFinishStart,
+              })
+              reject(
+                new Error(`Before-finish command exited with code ${exitCode}`),
+              )
+            }
+          })
+
+          child.on('error', error => {
+            this.emitEvent('run-before-finish-command:fail', {
+              error: error.message,
+              errorCode: 'BEFORE_FINISH_FAILED',
+              command,
+              exitCode: 1,
+              duration: Date.now() - beforeFinishStart,
+            })
+            reject(error)
+          })
         })
+
+        // Give a small delay to ensure all file operations complete
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // Verify the command completed by checking git status
+        try {
+          const gitStatus = execSync('git status --porcelain', {
+            cwd: projectPath,
+            encoding: 'utf-8',
+          }).trim()
+
+          // Log the git status for debugging
+          this.emitEvent('verify-before-finish-completion', {
+            gitStatus: gitStatus || '(clean)',
+            hasUncommittedChanges: gitStatus.length > 0,
+          })
+        } catch (gitError) {
+          // Git status check failed, but we don't want to fail the whole operation
+          this.emitEvent('verify-before-finish-completion:warning', {
+            warning: 'Could not verify git status after before-finish command',
+            error:
+              gitError instanceof Error ? gitError.message : String(gitError),
+          })
+        }
       } catch (error: any) {
-        const exitCode = error.status || 1
-        this.emitEvent('run-before-finish-command:fail', {
-          error: 'Before-finish command failed',
-          errorCode: 'BEFORE_FINISH_FAILED',
-          command,
-          exitCode,
-          duration: Date.now() - beforeFinishStart,
-        })
         this.emitEvent('finish-session:fail', {
           error: 'Before-finish command failed',
           errorCode: 'BEFORE_FINISH_FAILED',
           duration: Date.now() - startTime,
         })
         console.error('Error: Before-finish command failed')
+        console.error(error.message || error)
         process.exit(1)
       }
-
-      execSync('git status', {
-        cwd: projectPath,
-        encoding: 'utf-8',
-        stdio: 'ignore',
-      })
     }
 
     if (mode === 'worktree') {
