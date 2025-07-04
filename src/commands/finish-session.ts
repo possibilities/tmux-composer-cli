@@ -291,73 +291,73 @@ export class SessionFinisher extends BaseSessionCommand {
         console.error(error instanceof Error ? error.message : String(error))
         process.exit(1)
       }
+    }
 
-      if (!options.keepSession) {
-        const findAltStart = Date.now()
-        this.emitEvent('find-alternative-session:start')
+    if (!options.keepSession) {
+      const findAltStart = Date.now()
+      this.emitEvent('find-alternative-session:start')
 
-        const allSessions = listSessions(this.socketOptions)
-        const attachedSession = getAttachedSession(this.socketOptions)
-        const isAttachedToCurrentSession = attachedSession === currentSession
-        const hasOtherSessions = allSessions.length > 1
-        const alternativeSession = allSessions.find(s => s !== currentSession)
+      const allSessions = listSessions(this.socketOptions)
+      const attachedSession = getAttachedSession(this.socketOptions)
+      const isAttachedToCurrentSession = attachedSession === currentSession
+      const hasOtherSessions = allSessions.length > 1
+      const alternativeSession = allSessions.find(s => s !== currentSession)
 
-        this.emitEvent('find-alternative-session:end', {
-          currentSession,
-          alternativeSession,
-          hasAlternative: hasOtherSessions,
-          duration: Date.now() - findAltStart,
-        })
+      this.emitEvent('find-alternative-session:end', {
+        currentSession,
+        alternativeSession,
+        hasAlternative: hasOtherSessions,
+        duration: Date.now() - findAltStart,
+      })
 
-        if (
-          isAttachedToCurrentSession &&
-          hasOtherSessions &&
-          alternativeSession
-        ) {
-          const switchStart = Date.now()
-          this.emitEvent('switch-before-kill:start')
-
-          try {
-            switchToSession(alternativeSession, this.socketOptions)
-            this.emitEvent('switch-before-kill:end', {
-              fromSession: currentSession,
-              toSession: alternativeSession,
-              duration: Date.now() - switchStart,
-            })
-          } catch (error) {
-            this.emitEvent('switch-before-kill:fail', {
-              error: error instanceof Error ? error.message : String(error),
-              errorCode: 'SWITCH_FAILED',
-              fromSession: currentSession,
-              toSession: alternativeSession,
-              duration: Date.now() - switchStart,
-            })
-          }
-        }
-
-        const killStart = Date.now()
-        this.emitEvent('kill-current-session:start')
+      if (
+        isAttachedToCurrentSession &&
+        hasOtherSessions &&
+        alternativeSession
+      ) {
+        const switchStart = Date.now()
+        this.emitEvent('switch-before-kill:start')
 
         try {
-          execSync(`tmux ${socketArgs} kill-session -t ${currentSession}`)
-          this.emitEvent('kill-current-session:end', {
-            sessionName: currentSession,
-            duration: Date.now() - killStart,
+          switchToSession(alternativeSession, this.socketOptions)
+          this.emitEvent('switch-before-kill:end', {
+            fromSession: currentSession,
+            toSession: alternativeSession,
+            duration: Date.now() - switchStart,
           })
         } catch (error) {
-          this.emitEvent('kill-current-session:fail', {
+          this.emitEvent('switch-before-kill:fail', {
             error: error instanceof Error ? error.message : String(error),
-            errorCode: 'KILL_FAILED',
-            sessionName: currentSession,
-            duration: Date.now() - killStart,
+            errorCode: 'SWITCH_FAILED',
+            fromSession: currentSession,
+            toSession: alternativeSession,
+            duration: Date.now() - switchStart,
           })
-          this.emitEvent('finish-session:fail', {
-            error: 'Failed to kill session',
-            errorCode: 'KILL_FAILED',
-            duration: Date.now() - startTime,
-          })
-          throw error
         }
+      }
+
+      const killStart = Date.now()
+      this.emitEvent('kill-current-session:start')
+
+      try {
+        execSync(`tmux ${socketArgs} kill-session -t ${currentSession}`)
+        this.emitEvent('kill-current-session:end', {
+          sessionName: currentSession,
+          duration: Date.now() - killStart,
+        })
+      } catch (error) {
+        this.emitEvent('kill-current-session:fail', {
+          error: error instanceof Error ? error.message : String(error),
+          errorCode: 'KILL_FAILED',
+          sessionName: currentSession,
+          duration: Date.now() - killStart,
+        })
+        this.emitEvent('finish-session:fail', {
+          error: 'Failed to kill session',
+          errorCode: 'KILL_FAILED',
+          duration: Date.now() - startTime,
+        })
+        throw error
       }
     }
 
