@@ -464,6 +464,7 @@ export interface FinishSessionStartData {
 export interface FinishSessionEndData extends BaseEventData {
   sessionName: string
   mode: 'worktree' | 'project'
+  sessionKept: boolean
 }
 
 export interface LoadConfigurationEndData extends BaseEventData {

@@ -147,6 +147,7 @@ async function main() {
     .option('--no-zmq', 'Disable ZeroMQ publishing')
     .option('--zmq-socket <name>', 'ZeroMQ socket name')
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
+    .option('--keep-session', 'Do not kill the session (useful for debugging)')
     .action(async options => {
       const socketOptions: TmuxSocketOptions = {
         socketName: options.tmuxSocket,
@@ -158,6 +159,7 @@ async function main() {
         zmq: options.zmq,
         zmqSocket: options.zmqSocket,
         zmqSocketPath: options.zmqSocketPath,
+        keepSession: options.keepSession,
       })
 
       try {

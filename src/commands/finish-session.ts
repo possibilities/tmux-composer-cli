@@ -15,7 +15,9 @@ import {
   switchToSession,
 } from '../core/tmux-utils.js'
 
-interface FinishSessionOptions extends BaseSessionOptions {}
+interface FinishSessionOptions extends BaseSessionOptions {
+  keepSession?: boolean
+}
 
 export class SessionFinisher extends BaseSessionCommand {
   constructor(options: FinishSessionOptions = {}) {
@@ -158,8 +160,6 @@ export class SessionFinisher extends BaseSessionCommand {
       this.emitEvent('run-before-finish-command:start')
 
       try {
-        // Use spawn with shell:true and detached:true to ensure the command completes
-        // even if the parent process (tmux session) is killed
         const child = spawn(command, {
           shell: true,
           cwd: projectPath,
@@ -167,7 +167,6 @@ export class SessionFinisher extends BaseSessionCommand {
           stdio: 'inherit',
         })
 
-        // Wait for the process to complete
         await new Promise<void>((resolve, reject) => {
           child.on('exit', code => {
             if (code === 0) {
@@ -204,23 +203,19 @@ export class SessionFinisher extends BaseSessionCommand {
           })
         })
 
-        // Give a small delay to ensure all file operations complete
         await new Promise(resolve => setTimeout(resolve, 500))
 
-        // Verify the command completed by checking git status
         try {
           const gitStatus = execSync('git status --porcelain', {
             cwd: projectPath,
             encoding: 'utf-8',
           }).trim()
 
-          // Log the git status for debugging
           this.emitEvent('verify-before-finish-completion', {
             gitStatus: gitStatus || '(clean)',
             hasUncommittedChanges: gitStatus.length > 0,
           })
         } catch (gitError) {
-          // Git status check failed, but we don't want to fail the whole operation
           this.emitEvent('verify-before-finish-completion:warning', {
             warning: 'Could not verify git status after before-finish command',
             error:
@@ -297,76 +292,79 @@ export class SessionFinisher extends BaseSessionCommand {
         process.exit(1)
       }
 
-      const findAltStart = Date.now()
-      this.emitEvent('find-alternative-session:start')
+      if (!options.keepSession) {
+        const findAltStart = Date.now()
+        this.emitEvent('find-alternative-session:start')
 
-      const allSessions = listSessions(this.socketOptions)
-      const attachedSession = getAttachedSession(this.socketOptions)
-      const isAttachedToCurrentSession = attachedSession === currentSession
-      const hasOtherSessions = allSessions.length > 1
-      const alternativeSession = allSessions.find(s => s !== currentSession)
+        const allSessions = listSessions(this.socketOptions)
+        const attachedSession = getAttachedSession(this.socketOptions)
+        const isAttachedToCurrentSession = attachedSession === currentSession
+        const hasOtherSessions = allSessions.length > 1
+        const alternativeSession = allSessions.find(s => s !== currentSession)
 
-      this.emitEvent('find-alternative-session:end', {
-        currentSession,
-        alternativeSession,
-        hasAlternative: hasOtherSessions,
-        duration: Date.now() - findAltStart,
-      })
+        this.emitEvent('find-alternative-session:end', {
+          currentSession,
+          alternativeSession,
+          hasAlternative: hasOtherSessions,
+          duration: Date.now() - findAltStart,
+        })
 
-      if (
-        isAttachedToCurrentSession &&
-        hasOtherSessions &&
-        alternativeSession
-      ) {
-        const switchStart = Date.now()
-        this.emitEvent('switch-before-kill:start')
+        if (
+          isAttachedToCurrentSession &&
+          hasOtherSessions &&
+          alternativeSession
+        ) {
+          const switchStart = Date.now()
+          this.emitEvent('switch-before-kill:start')
+
+          try {
+            switchToSession(alternativeSession, this.socketOptions)
+            this.emitEvent('switch-before-kill:end', {
+              fromSession: currentSession,
+              toSession: alternativeSession,
+              duration: Date.now() - switchStart,
+            })
+          } catch (error) {
+            this.emitEvent('switch-before-kill:fail', {
+              error: error instanceof Error ? error.message : String(error),
+              errorCode: 'SWITCH_FAILED',
+              fromSession: currentSession,
+              toSession: alternativeSession,
+              duration: Date.now() - switchStart,
+            })
+          }
+        }
+
+        const killStart = Date.now()
+        this.emitEvent('kill-current-session:start')
 
         try {
-          switchToSession(alternativeSession, this.socketOptions)
-          this.emitEvent('switch-before-kill:end', {
-            fromSession: currentSession,
-            toSession: alternativeSession,
-            duration: Date.now() - switchStart,
+          execSync(`tmux ${socketArgs} kill-session -t ${currentSession}`)
+          this.emitEvent('kill-current-session:end', {
+            sessionName: currentSession,
+            duration: Date.now() - killStart,
           })
         } catch (error) {
-          this.emitEvent('switch-before-kill:fail', {
+          this.emitEvent('kill-current-session:fail', {
             error: error instanceof Error ? error.message : String(error),
-            errorCode: 'SWITCH_FAILED',
-            fromSession: currentSession,
-            toSession: alternativeSession,
-            duration: Date.now() - switchStart,
+            errorCode: 'KILL_FAILED',
+            sessionName: currentSession,
+            duration: Date.now() - killStart,
           })
+          this.emitEvent('finish-session:fail', {
+            error: 'Failed to kill session',
+            errorCode: 'KILL_FAILED',
+            duration: Date.now() - startTime,
+          })
+          throw error
         }
-      }
-
-      const killStart = Date.now()
-      this.emitEvent('kill-current-session:start')
-
-      try {
-        execSync(`tmux ${socketArgs} kill-session -t ${currentSession}`)
-        this.emitEvent('kill-current-session:end', {
-          sessionName: currentSession,
-          duration: Date.now() - killStart,
-        })
-      } catch (error) {
-        this.emitEvent('kill-current-session:fail', {
-          error: error instanceof Error ? error.message : String(error),
-          errorCode: 'KILL_FAILED',
-          sessionName: currentSession,
-          duration: Date.now() - killStart,
-        })
-        this.emitEvent('finish-session:fail', {
-          error: 'Failed to kill session',
-          errorCode: 'KILL_FAILED',
-          duration: Date.now() - startTime,
-        })
-        throw error
       }
     }
 
     this.emitEvent('finish-session:end', {
       sessionName: currentSession,
       mode: mode as 'worktree' | 'project',
+      sessionKept: !!options.keepSession,
       duration: Date.now() - startTime,
     })
   }
