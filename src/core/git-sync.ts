@@ -12,12 +12,7 @@ export function syncWorktreeToMain(worktreePath: string): void {
     encoding: 'utf-8',
   }).trim()
 
-  const mainBranch = execSync('git symbolic-ref refs/remotes/origin/HEAD', {
-    cwd: mainRepoPath,
-    encoding: 'utf-8',
-  })
-    .trim()
-    .replace('refs/remotes/origin/', '')
+  const mainBranch = 'main'
 
   execSync(`git checkout ${mainBranch}`, {
     cwd: mainRepoPath,
