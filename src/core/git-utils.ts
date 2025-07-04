@@ -136,6 +136,19 @@ export function createWorktree(
     }
   }
 
+  const envFilePath = path.join(projectPath, '.env')
+  const worktreeEnvPath = path.join(worktreePath, '.env')
+
+  if (fs.existsSync(envFilePath)) {
+    try {
+      fs.copyFileSync(envFilePath, worktreeEnvPath)
+    } catch (copyError) {
+      console.error(
+        `Warning: Failed to copy .env file to worktree: ${copyError instanceof Error ? copyError.message : String(copyError)}`,
+      )
+    }
+  }
+
   return worktreePath
 }
 
