@@ -4,6 +4,7 @@ import {
   syncWorktreeToMain,
   checkAndInstallDependencies,
 } from '../core/git-sync.js'
+import { getMainRepositoryPath } from '../core/git-utils.js'
 import { getTmuxSocketArgs, getTmuxSocketPath } from '../core/tmux-socket.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
 import { BaseSessionCommand } from '../core/base-session-command.js'
@@ -55,8 +56,10 @@ export class SessionFinisher extends BaseSessionCommand {
     this.emitEvent('load-configuration:start')
 
     let config
+    let projectPath: string
     try {
-      config = loadConfig()
+      projectPath = getMainRepositoryPath(process.cwd())
+      config = loadConfig(projectPath)
       this.emitEvent('load-configuration:end', {
         hasBeforeFinishCommand: !!config.commands?.['before-finish'],
         duration: Date.now() - loadConfigStart,
@@ -158,6 +161,7 @@ export class SessionFinisher extends BaseSessionCommand {
         execSync(command, {
           stdio: 'inherit',
           encoding: 'utf-8',
+          cwd: projectPath,
         })
         this.emitEvent('run-before-finish-command:end', {
           command,

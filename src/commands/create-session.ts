@@ -88,7 +88,7 @@ export class SessionCreator extends EventEmitter {
       },
     })
 
-    const config = loadConfig()
+    const config = loadConfig(projectPath)
 
     this.emitEvent('initialize-session-creation:start', {
       projectPath,

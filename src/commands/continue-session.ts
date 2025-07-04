@@ -159,7 +159,7 @@ export class SessionContinuer extends SessionCreator {
       },
     })
 
-    const config = loadConfig()
+    const config = loadConfig(projectPath)
 
     try {
       let expectedWindows: string[]

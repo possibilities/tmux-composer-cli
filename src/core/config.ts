@@ -15,14 +15,16 @@ const ConfigSchema = z.object({
 
 export type Config = z.infer<typeof ConfigSchema>
 
-const CONFIG_FILE_LOCATIONS = [
-  path.join(os.homedir(), '.config', 'tmux-composer', 'config.yaml'),
-  path.join(os.homedir(), '.tmux-composer', 'config.yaml'),
-  path.join(process.cwd(), '.tmux-composer.yaml'),
-  path.join(process.cwd(), 'tmux-composer.yaml'),
-]
+export function loadConfig(projectPath?: string): Config {
+  const configBaseDir = projectPath || process.cwd()
 
-export function loadConfig(): Config {
+  const CONFIG_FILE_LOCATIONS = [
+    path.join(os.homedir(), '.config', 'tmux-composer', 'config.yaml'),
+    path.join(os.homedir(), '.tmux-composer', 'config.yaml'),
+    path.join(configBaseDir, '.tmux-composer.yaml'),
+    path.join(configBaseDir, 'tmux-composer.yaml'),
+  ]
+
   let mergedConfig: Config = {}
 
   for (const configPath of CONFIG_FILE_LOCATIONS) {
