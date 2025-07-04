@@ -2,7 +2,7 @@ import { Command } from 'commander'
 import packageJson from '../package.json' assert { type: 'json' }
 import { TmuxSessionWatcher } from './commands/observe-session.js'
 import { TmuxPaneWatcher } from './commands/observe-panes.js'
-import { SessionCreator } from './commands/create-session.js'
+import { SessionCreator } from './commands/start-session.js'
 import { SessionContinuer } from './commands/continue-session.js'
 import { SessionResumer } from './commands/resume-session.js'
 import { EventObserver } from './commands/observe-observers.js'
@@ -19,8 +19,8 @@ async function main() {
     .version(packageJson.version)
 
   program
-    .command('create-session [project-path]')
-    .description('create session')
+    .command('start-session [project-path]')
+    .description('start session')
     .option('--tmux-socket <socket-name>', 'Tmux socket name')
     .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
     .option('--terminal-width <width>', 'Terminal width', parseInt)

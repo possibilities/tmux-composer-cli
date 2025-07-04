@@ -78,7 +78,7 @@ Monitors pane content changes within the current tmux session.
   }
   ```
 
-### 3. create-session
+### 3. start-session
 
 Creates a new tmux session with multiple windows based on project configuration. Supports two modes:
 
@@ -453,7 +453,7 @@ Windows are created dynamically based on the project's package.json scripts and 
 
 ### 4. continue-session
 
-Continues the latest worktree session, creating it if it doesn't exist. Similar to create-session but uses an existing worktree.
+Continues the latest worktree session, creating it if it doesn't exist. Similar to start-session but uses an existing worktree.
 
 #### Events
 
@@ -1110,7 +1110,7 @@ Closes the current tmux session, switching to another if available.
 
 ## Event Flow
 
-### Typical create-session flow:
+### Typical start-session flow:
 
 1. `initialize-session-creation:start`
 2. `initialize-session-creation:end`
@@ -1160,7 +1160,7 @@ Closes the current tmux session, switching to another if available.
 10. `analyze-project-scripts:start`
 11. `analyze-project-scripts:end`
 12. `create-tmux-session:start`
-13. Create windows (similar to create-session)
+13. Create windows (similar to start-session)
 14. `create-tmux-session:end`
 15. `continue-session:end`
 16. `set-tmux-composer-mode:start`

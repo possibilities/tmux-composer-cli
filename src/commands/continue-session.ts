@@ -1,6 +1,6 @@
 import { execSync, spawnSync } from 'child_process'
 import path from 'path'
-import { SessionCreator } from './create-session.js'
+import { SessionCreator } from './start-session.js'
 import { getLatestWorktree } from '../core/git-utils.js'
 import { getTmuxSocketArgs, getTmuxSocketPath } from '../core/tmux-socket.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'

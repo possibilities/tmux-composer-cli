@@ -83,7 +83,7 @@ export class SessionCreator extends EventEmitter {
       socketName: options.zmqSocket,
       socketPath: options.zmqSocketPath,
       source: {
-        script: 'create-session',
+        script: 'start-session',
         socketPath,
       },
     })
