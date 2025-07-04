@@ -185,6 +185,12 @@ export class SessionFinisher extends BaseSessionCommand {
         console.error('Error: Before-finish command failed')
         process.exit(1)
       }
+
+      execSync('git status', {
+        cwd: projectPath,
+        encoding: 'utf-8',
+        stdio: 'ignore',
+      })
     }
 
     if (mode === 'worktree') {
