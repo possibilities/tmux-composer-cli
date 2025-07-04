@@ -8,9 +8,8 @@ export const WORKTREES_PATH = path.join(os.homedir(), 'code', 'worktrees')
 export function getMainRepositoryPath(worktreePath: string): string {
   try {
     const gitCommonDir = execSync(
-      'git rev-parse --path-format=absolute --git-common-dir',
+      `git -C "${worktreePath}" rev-parse --path-format=absolute --git-common-dir`,
       {
-        cwd: worktreePath,
         encoding: 'utf-8',
       },
     ).trim()
@@ -29,10 +28,12 @@ export function getMainRepositoryPath(worktreePath: string): string {
 
 export function isGitRepositoryClean(projectPath: string): boolean {
   try {
-    execSync('git diff --quiet && git diff --cached --quiet', {
-      cwd: projectPath,
-      encoding: 'utf-8',
-    })
+    execSync(
+      `git -C "${projectPath}" diff --quiet && git -C "${projectPath}" diff --cached --quiet`,
+      {
+        encoding: 'utf-8',
+      },
+    )
     return true
   } catch {
     return false
@@ -43,10 +44,12 @@ export function getNextWorktreeNumber(projectPath: string): string {
   const projectName = path.basename(projectPath)
   const usedNumbers = new Set<number>()
 
-  const branches = execSync('git branch --list "worktree-*"', {
-    cwd: projectPath,
-    encoding: 'utf-8',
-  }).trim()
+  const branches = execSync(
+    `git -C "${projectPath}" branch --list "worktree-*"`,
+    {
+      encoding: 'utf-8',
+    },
+  ).trim()
 
   if (branches) {
     const branchNumbers = branches
@@ -90,10 +93,12 @@ export function createWorktree(
   )
   const branchName = `worktree-${worktreeNum}`
 
-  execSync(`git worktree add -q "${worktreePath}" -b "${branchName}"`, {
-    cwd: projectPath,
-    encoding: 'utf-8',
-  })
+  execSync(
+    `git -C "${projectPath}" worktree add -q "${worktreePath}" -b "${branchName}"`,
+    {
+      encoding: 'utf-8',
+    },
+  )
 
   return worktreePath
 }
@@ -120,10 +125,12 @@ export interface WorktreeInfo {
 
 export function getExistingWorktrees(projectPath: string): WorktreeInfo[] {
   try {
-    const output = execSync('git worktree list --porcelain', {
-      cwd: projectPath,
-      encoding: 'utf-8',
-    }).trim()
+    const output = execSync(
+      `git -C "${projectPath}" worktree list --porcelain`,
+      {
+        encoding: 'utf-8',
+      },
+    ).trim()
 
     if (!output) return []
 
@@ -223,8 +230,7 @@ export function getAllProjectWorktrees(
       }
 
       try {
-        execSync('git rev-parse --is-inside-work-tree', {
-          cwd: wt.path,
+        execSync(`git -C "${wt.path}" rev-parse --is-inside-work-tree`, {
           encoding: 'utf-8',
           stdio: ['pipe', 'pipe', 'ignore'],
         })
