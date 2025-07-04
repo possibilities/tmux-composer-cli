@@ -165,7 +165,7 @@ export class SessionFinisher extends BaseSessionCommand {
       try {
         const child = spawn(command, {
           shell: true,
-          cwd: projectPath,
+          cwd: process.cwd(),
           detached: true,
           stdio: 'inherit',
         })
@@ -210,7 +210,7 @@ export class SessionFinisher extends BaseSessionCommand {
 
         try {
           const gitStatus = execSync('git status --porcelain', {
-            cwd: projectPath,
+            cwd: process.cwd(),
             encoding: 'utf-8',
           }).trim()
 
