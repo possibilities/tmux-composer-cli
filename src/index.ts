@@ -8,6 +8,7 @@ import { SessionResumer } from './commands/resume-session.js'
 import { EventObserver } from './commands/observe-observers.js'
 import { SessionFinisher } from './commands/finish-session.js'
 import { SessionCloser } from './commands/close-session.js'
+import { ProjectShower } from './commands/show-project.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
 
 async function main() {
@@ -235,6 +236,15 @@ async function main() {
     .action(async options => {
       const observer = new EventObserver()
       await observer.start(options)
+    })
+
+  program
+    .command('show-project [project-path]')
+    .description('show project configuration and information')
+    .option('--json', 'Output as JSON')
+    .action(async (projectPath, options) => {
+      const shower = new ProjectShower()
+      await shower.show(projectPath, options)
     })
 
   try {
