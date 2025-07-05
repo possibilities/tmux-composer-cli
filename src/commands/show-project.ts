@@ -2,10 +2,7 @@ import { execSync } from 'child_process'
 import path from 'path'
 import { EventEmitter } from 'events'
 import { loadConfigWithSources } from '../core/config.js'
-import {
-  isGitRepositoryClean,
-  getNextWorktreeNumber,
-} from '../core/git-utils.js'
+import { isGitRepositoryClean } from '../core/git-utils.js'
 import type { ConfigWithSources } from '../core/config.js'
 
 interface ShowProjectOptions {
@@ -20,7 +17,7 @@ interface ProjectInfo {
     commit: string
     status: 'clean' | 'dirty'
   }
-  nextWorktreeNumber?: string
+  lastActivity: string
 }
 
 export class ProjectShower extends EventEmitter {
@@ -32,11 +29,6 @@ export class ProjectShower extends EventEmitter {
       const configWithSources = loadConfigWithSources(resolvedPath)
 
       const resolvedConfigWithSources = this.applyDefaults(configWithSources)
-
-      const resolvedWorktree = resolvedConfigWithSources.worktree?.value ?? true
-      if (resolvedWorktree) {
-        projectInfo.nextWorktreeNumber = getNextWorktreeNumber(resolvedPath)
-      }
 
       if (options.json) {
         this.outputJson(projectInfo, resolvedConfigWithSources)
@@ -83,6 +75,11 @@ export class ProjectShower extends EventEmitter {
 
     const isClean = isGitRepositoryClean(projectPath)
 
+    const lastActivity = execSync('git log -1 --format=%cd --date=iso-strict', {
+      cwd: projectPath,
+      encoding: 'utf-8',
+    }).trim()
+
     return {
       name: projectName,
       path: projectPath,
@@ -91,6 +88,7 @@ export class ProjectShower extends EventEmitter {
         commit,
         status: isClean ? 'clean' : 'dirty',
       },
+      lastActivity,
     }
   }
 
@@ -99,16 +97,14 @@ export class ProjectShower extends EventEmitter {
     configWithSources: ConfigWithSources,
   ) {
     const output: {
-      project: ProjectInfo & { nextWorktreeNumber?: string }
+      project: ProjectInfo
       config: Partial<ConfigWithSources>
     } = {
       project: {
         name: projectInfo.name,
         path: projectInfo.path,
         git: projectInfo.git,
-        ...(projectInfo.nextWorktreeNumber && {
-          nextWorktreeNumber: projectInfo.nextWorktreeNumber,
-        }),
+        lastActivity: projectInfo.lastActivity,
       },
       config: {},
     }
@@ -169,14 +165,11 @@ export class ProjectShower extends EventEmitter {
       value: projectInfo.git.status,
       source: '-',
     })
-
-    if (projectInfo.nextWorktreeNumber) {
-      rows.push({
-        property: 'Next Worktree Number',
-        value: projectInfo.nextWorktreeNumber,
-        source: '-',
-      })
-    }
+    rows.push({
+      property: 'Last Activity',
+      value: this.formatLastActivity(projectInfo.lastActivity),
+      source: '-',
+    })
 
     if (configWithSources.worktree) {
       rows.push({
@@ -278,5 +271,27 @@ export class ProjectShower extends EventEmitter {
         '─'.repeat(sourceWidth + 2) +
         '┘',
     )
+  }
+
+  private formatLastActivity(isoDate: string): string {
+    const date = new Date(isoDate)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffSeconds = Math.floor(diffMs / 1000)
+    const diffMinutes = Math.floor(diffSeconds / 60)
+    const diffHours = Math.floor(diffMinutes / 60)
+    const diffDays = Math.floor(diffHours / 24)
+
+    if (diffSeconds < 60) {
+      return 'just now'
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes} minute${diffMinutes === 1 ? '' : 's'} ago`
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`
+    } else if (diffDays < 7) {
+      return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
+    } else {
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString()
+    }
   }
 }
