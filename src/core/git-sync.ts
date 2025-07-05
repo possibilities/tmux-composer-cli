@@ -14,12 +14,25 @@ export function syncWorktreeToMain(worktreePath: string): void {
 
   const mainBranch = 'main'
 
+  console.log('Fetching latest changes from remote...')
+  execSync('git fetch origin', {
+    cwd: mainRepoPath,
+    encoding: 'utf-8',
+  })
+
+  console.log(`Rebasing ${currentBranch} against ${mainBranch}...`)
+  execSync(`git rebase origin/${mainBranch}`, {
+    cwd: worktreePath,
+    encoding: 'utf-8',
+  })
+
   execSync(`git checkout ${mainBranch}`, {
     cwd: mainRepoPath,
     encoding: 'utf-8',
   })
 
-  execSync(`git merge ${currentBranch} --no-edit`, {
+  console.log(`Merging ${currentBranch} into ${mainBranch} with --ff-only...`)
+  execSync(`git merge ${currentBranch} --ff-only`, {
     cwd: mainRepoPath,
     encoding: 'utf-8',
   })
