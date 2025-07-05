@@ -7,6 +7,7 @@ import { z } from 'zod'
 const ConfigSchema = z
   .object({
     worktree: z.boolean().optional(),
+    'worktrees-path': z.string().optional(),
     commands: z
       .object({
         'run-agent': z.string().optional(),

@@ -2,8 +2,21 @@ import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import { loadConfig } from './config.js'
 
-export const WORKTREES_PATH = path.join(os.homedir(), 'code', 'worktrees')
+export function getWorktreesPath(projectPath?: string): string {
+  const envPath = process.env.TMUX_COMPOSER_WORKTREES_PATH
+  if (envPath) {
+    return path.resolve(envPath.replace(/^~/, os.homedir()))
+  }
+
+  const config = loadConfig(projectPath)
+  if (config['worktrees-path']) {
+    return path.resolve(config['worktrees-path'].replace(/^~/, os.homedir()))
+  }
+
+  return path.join(os.homedir(), 'worktrees')
+}
 
 export function getMainRepositoryPath(worktreePath: string): string {
   try {
@@ -61,7 +74,6 @@ export function getNextWorktreeNumber(projectPath: string): string {
     branchNumbers.forEach(num => usedNumbers.add(num))
   }
 
-  // Also check existing worktrees to find used branch numbers
   try {
     const worktrees = getExistingWorktrees(projectPath)
     worktrees.forEach(wt => {
@@ -70,12 +82,11 @@ export function getNextWorktreeNumber(projectPath: string): string {
         usedNumbers.add(num)
       }
     })
-  } catch {
-    // Ignore errors when checking worktrees
-  }
+  } catch {}
 
-  if (fs.existsSync(WORKTREES_PATH)) {
-    const dirs = fs.readdirSync(WORKTREES_PATH)
+  const worktreesPath = getWorktreesPath(projectPath)
+  if (fs.existsSync(worktreesPath)) {
+    const dirs = fs.readdirSync(worktreesPath)
     const pattern = new RegExp(`^${projectName}-worktree-(\\d{5})$`)
 
     dirs.forEach(dir => {
@@ -101,7 +112,7 @@ export function createWorktree(
   worktreeNum: string,
 ): string {
   const worktreePath = path.join(
-    WORKTREES_PATH,
+    getWorktreesPath(projectPath),
     `${projectName}-worktree-${worktreeNum}`,
   )
   const branchName = `worktree-${worktreeNum}`
@@ -116,7 +127,6 @@ export function createWorktree(
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
 
-    // If branch already exists, try to use it without -b flag
     if (errorMessage.includes('already exists')) {
       try {
         execSync(
@@ -225,11 +235,12 @@ export function getExistingWorktrees(projectPath: string): WorktreeInfo[] {
 
 export function getLatestWorktree(projectPath: string): WorktreeInfo | null {
   const worktrees = getExistingWorktrees(projectPath)
+  const worktreesPath = getWorktreesPath(projectPath)
 
   const projectWorktrees = worktrees.filter(wt => {
     const wtBasename = path.basename(wt.path)
     return (
-      /-worktree-\d{5}$/.test(wtBasename) && wt.path.startsWith(WORKTREES_PATH)
+      /-worktree-\d{5}$/.test(wtBasename) && wt.path.startsWith(worktreesPath)
     )
   })
 
@@ -259,11 +270,12 @@ export function getAllProjectWorktrees(
   projectPath: string,
 ): WorktreeInfoWithNumber[] {
   const worktrees = getExistingWorktrees(projectPath)
+  const worktreesPath = getWorktreesPath(projectPath)
 
   const projectWorktrees = worktrees.filter(wt => {
     const wtBasename = path.basename(wt.path)
     return (
-      /-worktree-\d{5}$/.test(wtBasename) && wt.path.startsWith(WORKTREES_PATH)
+      /-worktree-\d{5}$/.test(wtBasename) && wt.path.startsWith(worktreesPath)
     )
   })
 

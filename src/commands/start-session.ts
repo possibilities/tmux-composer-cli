@@ -10,7 +10,7 @@ import {
   getNextWorktreeNumber,
   createWorktree,
   installDependencies,
-  WORKTREES_PATH,
+  getWorktreesPath,
 } from '../core/git-utils.js'
 import { socketExists, listWindows } from '../core/tmux-utils.js'
 import { TERMINAL_SIZES } from '../core/constants.js'
@@ -207,7 +207,8 @@ export class SessionCreator extends EventEmitter {
       let worktreePath: string
 
       if (isWorktreeMode) {
-        await fs.promises.mkdir(WORKTREES_PATH, { recursive: true })
+        const worktreesPath = getWorktreesPath(projectPath)
+        await fs.promises.mkdir(worktreesPath, { recursive: true })
 
         const worktreeStart = Date.now()
         this.emitEvent('create-project-worktree:start')
