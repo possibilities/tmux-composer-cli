@@ -777,7 +777,7 @@ export class SessionCreator extends EventEmitter {
           `tmux ${socketArgs} split-window -t ${sessionName}:control -h -c ${worktreePath}`,
         )
         execSync(
-          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'claude-code-chat-stream ~/.claude/chats.db | jq .' Enter`,
+          `tmux ${socketArgs} send-keys -t ${sessionName}:control 'claude-code-chat-stream --to-db ~/.claude/chats.db | jq .' Enter`,
         )
         execSync(
           `tmux ${socketArgs} select-layout -t ${sessionName}:control even-horizontal`,
@@ -796,7 +796,7 @@ export class SessionCreator extends EventEmitter {
           commands: [
             `tmux-composer observe-session${zmqSocketArgs} | jq .`,
             `tmux-composer observe-panes${zmqSocketArgs} | jq .`,
-            `claude-code-chat-stream ~/.claude/chats.db && jq .`,
+            `claude-code-chat-stream --to-db ~/.claude/chats.db | jq .`,
           ],
           duration: Date.now() - controlStart,
         })
