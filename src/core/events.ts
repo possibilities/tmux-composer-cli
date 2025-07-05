@@ -16,7 +16,6 @@ export type EventName =
   | 'ensure-clean-repository:start'
   | 'ensure-clean-repository:end'
   | 'ensure-clean-repository:fail'
-  | 'ensure-clean-repository:warn'
   | 'skip-worktree-creation'
   | 'create-worktree-session:start'
   | 'create-worktree-session:end'
@@ -30,24 +29,9 @@ export type EventName =
   | 'create-tmux-session:start'
   | 'create-tmux-session:end'
   | 'create-tmux-session:fail'
-  | 'create-tmux-window:server:start'
-  | 'create-tmux-window:server:end'
-  | 'create-tmux-window:server:fail'
-  | 'create-tmux-window:lint:start'
-  | 'create-tmux-window:lint:end'
-  | 'create-tmux-window:lint:fail'
-  | 'create-tmux-window:types:start'
-  | 'create-tmux-window:types:end'
-  | 'create-tmux-window:types:fail'
-  | 'create-tmux-window:test:start'
-  | 'create-tmux-window:test:end'
-  | 'create-tmux-window:test:fail'
-  | 'create-tmux-window:control:start'
-  | 'create-tmux-window:control:end'
-  | 'create-tmux-window:control:fail'
-  | 'create-tmux-window:agent:start'
-  | 'create-tmux-window:agent:end'
-  | 'create-tmux-window:agent:fail'
+  | 'create-tmux-window:start'
+  | 'create-tmux-window:end'
+  | 'create-tmux-window:fail'
   | 'find-open-port:start'
   | 'find-open-port:end'
   | 'find-open-port:fail'
@@ -93,14 +77,10 @@ export type EventName =
   | 'set-tmux-composer-mode:fail'
   | 'check-existing-sessions:start'
   | 'check-existing-sessions:end'
-  | 'check-existing-sessions:fail'
   | 'analyze-worktree-sessions:start'
   | 'analyze-worktree-sessions:end'
   | 'prepare-menu-items:start'
   | 'prepare-menu-items:end'
-  | 'prepare-menu-items:fail'
-  | 'select-worktree-session:start'
-  | 'select-worktree-session:end'
   | 'select-worktree-session:fail'
   | 'finish-session:start'
   | 'finish-session:end'
@@ -125,7 +105,6 @@ export type EventName =
   | 'check-install-dependencies:fail'
   | 'find-alternative-session:start'
   | 'find-alternative-session:end'
-  | 'find-alternative-session:fail'
   | 'switch-before-kill:start'
   | 'switch-before-kill:end'
   | 'switch-before-kill:fail'
@@ -233,11 +212,6 @@ export interface EnsureCleanRepositoryFailData extends ErrorEventData {
   isClean: boolean
 }
 
-export interface EnsureCleanRepositoryWarnData extends BaseEventData {
-  isClean: boolean
-  warning: string
-}
-
 export interface SkipWorktreeCreationData extends BaseEventData {
   reason: string
   currentPath: string
@@ -276,6 +250,10 @@ export interface CreateTmuxSessionEndData extends BaseEventData {
     width: number
     height: number
   }
+}
+
+export interface CreateTmuxWindowStartData {
+  windowName: string
 }
 
 export interface CreateTmuxWindowEndData extends BaseEventData {
@@ -440,12 +418,6 @@ export interface AnalyzeWorktreeSessionsEndData extends BaseEventData {
 
 export interface PrepareMenuItemsEndData extends BaseEventData {
   menuItemCount: number
-}
-
-export interface SelectWorktreeSessionEndData extends BaseEventData {
-  selectedWorktree: string
-  sessionName: string
-  action: 'switch' | 'create'
 }
 
 export interface SelectWorktreeSessionFailData extends ErrorEventData {
@@ -648,7 +620,6 @@ export type EventDataMap = {
   'ensure-clean-repository:start': undefined
   'ensure-clean-repository:end': EnsureCleanRepositoryEndData
   'ensure-clean-repository:fail': EnsureCleanRepositoryFailData
-  'ensure-clean-repository:warn': EnsureCleanRepositoryWarnData
   'skip-worktree-creation': SkipWorktreeCreationData
   'create-worktree-session:start': undefined
   'create-worktree-session:end': CreateWorktreeSessionEndData
@@ -662,21 +633,9 @@ export type EventDataMap = {
   'create-tmux-session:start': undefined
   'create-tmux-session:end': CreateTmuxSessionEndData
   'create-tmux-session:fail': ErrorEventData
-  'create-tmux-window:server:start': undefined
-  'create-tmux-window:server:end': CreateTmuxWindowEndData
-  'create-tmux-window:server:fail': CreateTmuxWindowFailData
-  'create-tmux-window:lint:start': undefined
-  'create-tmux-window:lint:end': CreateTmuxWindowEndData
-  'create-tmux-window:lint:fail': CreateTmuxWindowFailData
-  'create-tmux-window:types:start': undefined
-  'create-tmux-window:types:end': CreateTmuxWindowEndData
-  'create-tmux-window:types:fail': CreateTmuxWindowFailData
-  'create-tmux-window:test:start': undefined
-  'create-tmux-window:test:end': CreateTmuxWindowEndData
-  'create-tmux-window:test:fail': CreateTmuxWindowFailData
-  'create-tmux-window:control:start': undefined
-  'create-tmux-window:control:end': CreateTmuxWindowEndData
-  'create-tmux-window:control:fail': CreateTmuxWindowFailData
+  'create-tmux-window:start': CreateTmuxWindowStartData
+  'create-tmux-window:end': CreateTmuxWindowEndData
+  'create-tmux-window:fail': CreateTmuxWindowFailData
   'find-open-port:start': undefined
   'find-open-port:end': FindOpenPortEndData
   'find-open-port:fail': FindOpenPortFailData
@@ -722,14 +681,10 @@ export type EventDataMap = {
   'set-tmux-composer-mode:fail': SetTmuxComposerModeFailData
   'check-existing-sessions:start': undefined
   'check-existing-sessions:end': CheckExistingSessionsEndData
-  'check-existing-sessions:fail': ErrorEventData
   'analyze-worktree-sessions:start': undefined
   'analyze-worktree-sessions:end': AnalyzeWorktreeSessionsEndData
   'prepare-menu-items:start': undefined
   'prepare-menu-items:end': PrepareMenuItemsEndData
-  'prepare-menu-items:fail': ErrorEventData
-  'select-worktree-session:start': undefined
-  'select-worktree-session:end': SelectWorktreeSessionEndData
   'select-worktree-session:fail': SelectWorktreeSessionFailData
   'finish-session:start': FinishSessionStartData
   'finish-session:end': FinishSessionEndData
@@ -754,7 +709,6 @@ export type EventDataMap = {
   'check-install-dependencies:fail': CheckInstallDependenciesFailData
   'find-alternative-session:start': undefined
   'find-alternative-session:end': FindAlternativeSessionEndData
-  'find-alternative-session:fail': ErrorEventData
   'switch-before-kill:start': undefined
   'switch-before-kill:end': SwitchBeforeKillEndData
   'switch-before-kill:fail': SwitchBeforeKillFailData

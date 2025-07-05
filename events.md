@@ -317,13 +317,24 @@ Windows are created dynamically based on the project's package.json scripts and 
 - **Dynamic windows** - Created for any script ending with `:watch` (e.g., `lint:watch` creates a `lint` window, `foo:watch` creates a `foo` window)
 - **`control`** - Always created as the last window for monitoring
 
-- **`create-tmux-window:{windowName}:start`** - Creating specific window where `{windowName}` is dynamically determined
+Window events now use a generic structure to support unlimited dynamic window names:
 
-- **`create-tmux-window:{windowName}:end`** - Window created successfully
+- **`create-tmux-window:start`** - Creating a specific window
 
   ```json
   {
-    "event": "create-tmux-window:server:end",
+    "event": "create-tmux-window:start",
+    "data": {
+      "windowName": "server"
+    }
+  }
+  ```
+
+- **`create-tmux-window:end`** - Window created successfully
+
+  ```json
+  {
+    "event": "create-tmux-window:end",
     "data": {
       "windowName": "server",
       "windowIndex": 1,
@@ -336,18 +347,31 @@ Windows are created dynamically based on the project's package.json scripts and 
   }
   ```
 
-- **`create-tmux-window:{windowName}:fail`** - Window creation failed
-
-  Example for agent window:
+- **`create-tmux-window:fail`** - Window creation failed
 
   ```json
   {
-    "event": "create-tmux-window:agent:end",
+    "event": "create-tmux-window:fail",
     "data": {
       "windowName": "agent",
-      "windowIndex": 0,
-      "windowId": "@1",
-      "command": "claude",
+      "error": "Pane did not become ready within timeout",
+      "errorCode": "PANE_NOT_READY",
+      "duration": 5000
+    }
+  }
+  ```
+
+  Example for a dynamic window created from `foo:watch` script:
+
+  ```json
+  {
+    "event": "create-tmux-window:end",
+    "data": {
+      "windowName": "foo",
+      "windowIndex": 3,
+      "windowId": "@4",
+      "command": "pnpm run foo:watch",
+      "script": "foo:watch",
       "duration": 100
     }
   }
@@ -508,6 +532,29 @@ Continues the latest worktree session, creating it if it doesn't exist. Similar 
 
 - **`validate-existing-session:fail`** - Session validation failed
 
+##### Worktree Discovery Events
+
+- **`find-latest-worktree:start`** - Searching for latest worktree
+
+- **`find-latest-worktree:end`** - Latest worktree found
+
+  ```json
+  {
+    "event": "find-latest-worktree:end",
+    "data": {
+      "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00001",
+      "projectName": "my-project",
+      "worktreeNumber": "00001",
+      "sessionName": "my-project-worktree-00001",
+      "branch": "main",
+      "commit": "abc123...",
+      "duration": 10
+    }
+  }
+  ```
+
+- **`find-latest-worktree:fail`** - No worktrees found
+
 ##### Session Mode Events
 
 - **`set-tmux-composer-mode:start`** - Setting TMUX_COMPOSER_MODE environment variable
@@ -526,6 +573,26 @@ Continues the latest worktree session, creating it if it doesn't exist. Similar 
   ```
 
 - **`set-tmux-composer-mode:fail`** - Failed to set mode
+
+##### Completion Events
+
+- **`continue-session:end`** - Session continuation complete
+
+  ```json
+  {
+    "event": "continue-session:end",
+    "data": {
+      "sessionName": "my-project-worktree-00001",
+      "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00001",
+      "windows": ["server", "lint", "types", "test", "control"],
+      "worktreeNumber": "00001",
+      "branch": "main",
+      "duration": 100
+    }
+  }
+  ```
+
+- **`continue-session:fail`** - Session continuation failed
 
 ### 5. resume-session
 
@@ -674,6 +741,24 @@ Displays an interactive menu to select and resume or create worktree sessions. S
     }
   }
   ```
+
+##### Worktree Discovery Events
+
+- **`find-all-worktrees:start`** - Discovering all worktrees
+
+- **`find-all-worktrees:end`** - Worktree discovery complete
+
+  ```json
+  {
+    "event": "find-all-worktrees:end",
+    "data": {
+      "worktreeCount": 3,
+      "duration": 15
+    }
+  }
+  ```
+
+- **`find-all-worktrees:fail`** - Worktree discovery failed
 
 ##### Session Discovery Events
 
@@ -1128,18 +1213,18 @@ Closes the current tmux session, switching to another if available.
 14. `analyze-project-scripts:start`
 15. `analyze-project-scripts:end`
 16. `create-tmux-session:start`
-17. `create-tmux-window:agent:start` (if `commands.run-agent` is configured)
-18. `create-tmux-window:agent:end`
+17. `create-tmux-window:start` (with windowName: "agent" if `commands.run-agent` is configured)
+18. `create-tmux-window:end`
 19. `create-tmux-session:end` (emitted after first window creation)
-20. `create-tmux-window:server:start` (if `dev` script exists)
+20. `create-tmux-window:start` (with windowName: "server" if `dev` script exists)
 21. `find-open-port:start` (for server window)
 22. `find-open-port:end`
-23. `create-tmux-window:server:end`
-24. `create-tmux-window:{name}:start` (for each script ending in `:watch`)
-25. `create-tmux-window:{name}:end`
+23. `create-tmux-window:end`
+24. `create-tmux-window:start` (for each script ending in `:watch`)
+25. `create-tmux-window:end`
 26. (Repeat for each `:watch` script found)
-27. `create-tmux-window:control:start`
-28. `create-tmux-window:control:end`
+27. `create-tmux-window:start` (with windowName: "control")
+28. `create-tmux-window:end`
 29. `finalize-tmux-session:start`
 30. `finalize-tmux-session:end`
 31. `create-worktree-session:end`
@@ -1251,6 +1336,30 @@ All `:fail` events include:
 - `error`: Human-readable error message
 - `errorCode`: Machine-readable error code (when applicable)
 - `duration`: Time elapsed before failure (in milliseconds)
+
+### Additional Fail Events
+
+In addition to the explicitly documented fail events above, the following operations can also emit fail events with the standard error structure:
+
+- `analyze-project-metadata:fail` - Project metadata analysis failed
+- `analyze-project-scripts:fail` - Package.json scripts analysis failed
+- `check-install-dependencies:fail` - Dependency installation check failed
+- `close-session:fail` - Session closing failed
+- `continue-session:fail` - Session continuation failed
+- `find-all-worktrees:fail` - Worktree discovery failed
+- `find-latest-worktree:fail` - Latest worktree lookup failed
+- `finish-session:fail` - Session finishing failed
+- `get-current-session:fail` - Current session retrieval failed
+- `get-session-mode:fail` - Session mode retrieval failed
+- `kill-current-session:fail` - Current session termination failed
+- `kill-session:fail` - Session termination failed
+- `list-all-sessions:fail` - Session listing failed
+- `load-configuration:fail` - Configuration loading failed
+- `run-before-finish-command:fail` - Before-finish hook execution failed
+- `switch-before-close:fail` - Pre-close session switch failed
+- `switch-before-kill:fail` - Pre-kill session switch failed
+- `sync-worktree-to-main:fail` - Worktree sync failed
+- `validate-composer-session:fail` - Composer session validation failed
 
 Common error codes:
 
