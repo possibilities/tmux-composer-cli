@@ -1,7 +1,7 @@
 import { execSync, spawnSync } from 'child_process'
 import path from 'path'
 import { SessionCreator } from './start-session.js'
-import { getLatestWorktree } from '../core/git-utils.js'
+import { getAllProjectWorktrees } from '../core/git-utils.js'
 import { getTmuxSocketArgs, getTmuxSocketPath } from '../core/tmux-socket.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
 import { loadConfig } from '../core/config.js'
@@ -75,12 +75,12 @@ export class SessionContinuer extends SessionCreator {
     }
 
     const findWorktreeStart = Date.now()
-    this.emitEvent('find-latest-worktree:start')
+    this.emitEvent('find-highest-worktree:start')
 
-    const latestWorktree = getLatestWorktree(projectPath)
+    const allWorktrees = getAllProjectWorktrees(projectPath)
 
-    if (!latestWorktree) {
-      this.emitEvent('find-latest-worktree:fail', {
+    if (allWorktrees.length === 0) {
+      this.emitEvent('find-highest-worktree:fail', {
         error: 'No worktrees found for this repository',
         errorCode: 'NO_WORKTREES',
         duration: Date.now() - findWorktreeStart,
@@ -96,31 +96,33 @@ export class SessionContinuer extends SessionCreator {
       )
     }
 
-    const worktreePath = latestWorktree.path
+    const highestWorktree = allWorktrees[0]
+
+    const worktreePath = highestWorktree.path
     const worktreeBasename = path.basename(worktreePath)
     const worktreeMatch = worktreeBasename.match(/^(.+)-worktree-(\d{5})$/)
 
     if (!worktreeMatch) {
-      this.emitEvent('find-latest-worktree:fail', {
-        error: 'Latest worktree does not match expected naming pattern',
+      this.emitEvent('find-highest-worktree:fail', {
+        error: 'Highest worktree does not match expected naming pattern',
         errorCode: 'INVALID_WORKTREE_NAME',
         worktreePath,
         duration: Date.now() - findWorktreeStart,
       })
-      throw new Error('Latest worktree does not match expected naming pattern')
+      throw new Error('Highest worktree does not match expected naming pattern')
     }
 
     const projectName = worktreeMatch[1]
     const worktreeNum = worktreeMatch[2]
     const sessionName = `${projectName}-worktree-${worktreeNum}`
 
-    this.emitEvent('find-latest-worktree:end', {
+    this.emitEvent('find-highest-worktree:end', {
       worktreePath,
       projectName,
       worktreeNumber: worktreeNum,
       sessionName,
-      branch: latestWorktree.branch,
-      commit: latestWorktree.commit,
+      branch: highestWorktree.branch,
+      commit: highestWorktree.commit,
       duration: Date.now() - findWorktreeStart,
     })
 
@@ -216,7 +218,7 @@ export class SessionContinuer extends SessionCreator {
         worktreePath,
         windows,
         worktreeNumber: worktreeNum,
-        branch: latestWorktree.branch,
+        branch: highestWorktree.branch,
         duration: Date.now() - startTime,
       })
 

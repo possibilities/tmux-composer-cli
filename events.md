@@ -477,7 +477,7 @@ Window events now use a generic structure to support unlimited dynamic window na
 
 ### 4. continue-session
 
-Continues the latest worktree session, creating it if it doesn't exist. Similar to start-session but uses an existing worktree.
+Continues the highest numbered worktree session, creating it if it doesn't exist. Similar to start-session but uses an existing worktree.
 
 #### Events
 
@@ -534,13 +534,13 @@ Continues the latest worktree session, creating it if it doesn't exist. Similar 
 
 ##### Worktree Discovery Events
 
-- **`find-latest-worktree:start`** - Searching for latest worktree
+- **`find-highest-worktree:start`** - Searching for highest numbered worktree
 
-- **`find-latest-worktree:end`** - Latest worktree found
+- **`find-highest-worktree:end`** - Highest numbered worktree found
 
   ```json
   {
-    "event": "find-latest-worktree:end",
+    "event": "find-highest-worktree:end",
     "data": {
       "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00001",
       "projectName": "my-project",
@@ -553,7 +553,7 @@ Continues the latest worktree session, creating it if it doesn't exist. Similar 
   }
   ```
 
-- **`find-latest-worktree:fail`** - No worktrees found
+- **`find-highest-worktree:fail`** - No worktrees found
 
 ##### Session Mode Events
 
@@ -1236,8 +1236,8 @@ Closes the current tmux session, switching to another if available.
 1. `initialize-continue-session:start`
 2. `initialize-continue-session:end`
 3. `continue-session:start`
-4. `find-latest-worktree:start`
-5. `find-latest-worktree:end`
+4. `find-highest-worktree:start`
+5. `find-highest-worktree:end`
 6. `validate-existing-session:start`
 7. `validate-existing-session:end`
 8. `analyze-project-structure:start`
@@ -1347,7 +1347,7 @@ In addition to the explicitly documented fail events above, the following operat
 - `close-session:fail` - Session closing failed
 - `continue-session:fail` - Session continuation failed
 - `find-all-worktrees:fail` - Worktree discovery failed
-- `find-latest-worktree:fail` - Latest worktree lookup failed
+- `find-highest-worktree:fail` - Highest numbered worktree lookup failed
 - `finish-session:fail` - Session finishing failed
 - `get-current-session:fail` - Current session retrieval failed
 - `get-session-mode:fail` - Session mode retrieval failed

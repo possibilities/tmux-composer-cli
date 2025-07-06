@@ -45,9 +45,9 @@ export type EventName =
   | 'continue-session:start'
   | 'continue-session:end'
   | 'continue-session:fail'
-  | 'find-latest-worktree:start'
-  | 'find-latest-worktree:end'
-  | 'find-latest-worktree:fail'
+  | 'find-highest-worktree:start'
+  | 'find-highest-worktree:end'
+  | 'find-highest-worktree:fail'
   | 'resume-session:start'
   | 'resume-session:end'
   | 'resume-session:fail'
@@ -331,7 +331,7 @@ export interface ContinueSessionStartData {
   }
 }
 
-export interface FindLatestWorktreeEndData extends BaseEventData {
+export interface FindHighestWorktreeEndData extends BaseEventData {
   worktreePath: string
   projectName: string
   worktreeNumber: string
@@ -340,7 +340,7 @@ export interface FindLatestWorktreeEndData extends BaseEventData {
   commit: string
 }
 
-export interface FindLatestWorktreeFailData extends ErrorEventData {
+export interface FindHighestWorktreeFailData extends ErrorEventData {
   worktreePath?: string
 }
 
@@ -649,9 +649,9 @@ export type EventDataMap = {
   'continue-session:start': ContinueSessionStartData
   'continue-session:end': ContinueSessionEndData
   'continue-session:fail': ErrorEventData
-  'find-latest-worktree:start': undefined
-  'find-latest-worktree:end': FindLatestWorktreeEndData
-  'find-latest-worktree:fail': FindLatestWorktreeFailData
+  'find-highest-worktree:start': undefined
+  'find-highest-worktree:end': FindHighestWorktreeEndData
+  'find-highest-worktree:fail': FindHighestWorktreeFailData
   'resume-session:start': ResumeSessionStartData
   'resume-session:end': ResumeSessionEndData
   'resume-session:fail': ErrorEventData
