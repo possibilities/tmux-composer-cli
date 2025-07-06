@@ -174,8 +174,8 @@ export class SessionCreator extends EventEmitter {
       this.emitEvent('ensure-clean-repository:start')
 
       let isClean = true
-      let branch = ''
-      let commitHash = ''
+      let branch = 'none'
+      let commitHash = 'none'
 
       if (!inProjectsDir) {
         isClean = isGitRepositoryClean(projectPath)
@@ -206,9 +206,6 @@ export class SessionCreator extends EventEmitter {
           cwd: projectPath,
           encoding: 'utf-8',
         }).trim()
-      } else {
-        branch = 'none'
-        commitHash = 'none'
       }
 
       this.emitEvent('ensure-clean-repository:end', {

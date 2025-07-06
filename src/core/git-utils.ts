@@ -5,13 +5,13 @@ import os from 'os'
 import { loadConfig } from './config.js'
 
 export function isInProjectsDir(projectPath: string): boolean {
-  const projectsDir = process.env.PROJECTS_DIR
-  if (!projectsDir) return false
+  const projectsPath = process.env.PROJECTS_PATH
+  if (!projectsPath) return false
 
   const normalizedProjectPath = path.resolve(projectPath)
-  const normalizedProjectsDir = path.resolve(projectsDir)
+  const normalizedProjectsPath = path.resolve(projectsPath)
 
-  return normalizedProjectPath.startsWith(normalizedProjectsDir)
+  return normalizedProjectPath === normalizedProjectsPath
 }
 
 export function getWorktreesPath(projectPath?: string): string {
