@@ -4,6 +4,16 @@ import path from 'path'
 import os from 'os'
 import { loadConfig } from './config.js'
 
+export function isInProjectsDir(projectPath: string): boolean {
+  const projectsDir = process.env.PROJECTS_DIR
+  if (!projectsDir) return false
+
+  const normalizedProjectPath = path.resolve(projectPath)
+  const normalizedProjectsDir = path.resolve(projectsDir)
+
+  return normalizedProjectPath.startsWith(normalizedProjectsDir)
+}
+
 export function getWorktreesPath(projectPath?: string): string {
   const envPath = process.env.TMUX_COMPOSER_WORKTREES_PATH
   if (envPath) {

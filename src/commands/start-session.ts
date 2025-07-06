@@ -11,6 +11,7 @@ import {
   createWorktree,
   installDependencies,
   getWorktreesPath,
+  isInProjectsDir,
 } from '../core/git-utils.js'
 import { socketExists, listWindows } from '../core/tmux-utils.js'
 import { TERMINAL_SIZES } from '../core/constants.js'
@@ -90,6 +91,9 @@ export class SessionCreator extends EventEmitter {
 
     const config = loadConfig(projectPath)
 
+    const inProjectsDir = isInProjectsDir(projectPath)
+    const forceNonWorktreeMode = inProjectsDir && options.worktree !== true
+
     this.emitEvent('initialize-session-creation:start', {
       projectPath,
       options: {
@@ -98,7 +102,7 @@ export class SessionCreator extends EventEmitter {
         terminalWidth: options.terminalWidth,
         terminalHeight: options.terminalHeight,
         attach: options.attach,
-        worktreeMode: options.worktree !== false,
+        worktreeMode: forceNonWorktreeMode ? false : options.worktree !== false,
       },
     })
 
@@ -110,7 +114,9 @@ export class SessionCreator extends EventEmitter {
     this.emitEvent('analyze-project-metadata:start')
     const projectName = path.basename(projectPath)
 
-    const isWorktreeMode = options.worktree ?? config.worktree ?? true
+    const isWorktreeMode = forceNonWorktreeMode
+      ? false
+      : (options.worktree ?? config.worktree ?? true)
     let worktreeNum: string | undefined
     let sessionName: string
 
@@ -166,34 +172,55 @@ export class SessionCreator extends EventEmitter {
     try {
       const repoCheckStart = Date.now()
       this.emitEvent('ensure-clean-repository:start')
-      const isClean = isGitRepositoryClean(projectPath)
 
-      if (!isClean) {
-        this.emitEvent('ensure-clean-repository:fail', {
-          isClean: false,
-          error: 'Repository has uncommitted changes',
-          errorCode: 'DIRTY_REPOSITORY',
-          duration: Date.now() - repoCheckStart,
-        })
-        this.emitEvent('create-worktree-session:fail', {
-          error:
+      let isClean = true
+      let branch = ''
+      let commitHash = ''
+
+      if (!inProjectsDir) {
+        isClean = isGitRepositoryClean(projectPath)
+
+        if (!isClean) {
+          this.emitEvent('ensure-clean-repository:fail', {
+            isClean: false,
+            error: 'Repository has uncommitted changes',
+            errorCode: 'DIRTY_REPOSITORY',
+            duration: Date.now() - repoCheckStart,
+          })
+          this.emitEvent('create-worktree-session:fail', {
+            error:
+              'Repository has uncommitted changes. Please commit or stash them first.',
+            errorCode: 'DIRTY_REPOSITORY',
+            duration: Date.now() - sessionStartTime,
+          })
+          throw new Error(
             'Repository has uncommitted changes. Please commit or stash them first.',
-          errorCode: 'DIRTY_REPOSITORY',
-          duration: Date.now() - sessionStartTime,
-        })
-        throw new Error(
-          'Repository has uncommitted changes. Please commit or stash them first.',
-        )
-      }
+          )
+        }
 
-      const branch = execSync('git branch --show-current', {
-        cwd: projectPath,
-        encoding: 'utf-8',
-      }).trim()
-      const commitHash = execSync('git rev-parse HEAD', {
-        cwd: projectPath,
-        encoding: 'utf-8',
-      }).trim()
+        branch = execSync('git branch --show-current', {
+          cwd: projectPath,
+          encoding: 'utf-8',
+        }).trim()
+        commitHash = execSync('git rev-parse HEAD', {
+          cwd: projectPath,
+          encoding: 'utf-8',
+        }).trim()
+      } else {
+        try {
+          branch = execSync('git branch --show-current', {
+            cwd: projectPath,
+            encoding: 'utf-8',
+          }).trim()
+          commitHash = execSync('git rev-parse HEAD', {
+            cwd: projectPath,
+            encoding: 'utf-8',
+          }).trim()
+        } catch {
+          branch = 'none'
+          commitHash = 'none'
+        }
+      }
 
       this.emitEvent('ensure-clean-repository:end', {
         isClean: true,
@@ -311,6 +338,7 @@ export class SessionCreator extends EventEmitter {
           options.terminalHeight,
           options,
           config,
+          inProjectsDir,
         )
       } catch (error) {
         this.emitEvent('create-worktree-session:fail', {
@@ -462,6 +490,16 @@ export class SessionCreator extends EventEmitter {
     try {
       const packageJsonPath = path.join(worktreePath, 'package.json')
       if (!fs.existsSync(packageJsonPath)) {
+        if (config.commands?.['run-agent']) {
+          windows.push('agent')
+        }
+        windows.push('control')
+
+        this.emitEvent('analyze-project-scripts:end', {
+          availableScripts,
+          plannedWindows: windows,
+          duration: Date.now() - scriptsStart,
+        })
         return windows
       }
 
@@ -515,21 +553,27 @@ export class SessionCreator extends EventEmitter {
     terminalHeight?: number,
     options: CreateSessionOptions = {},
     config: ReturnType<typeof loadConfig> = {},
+    inProjectsDir: boolean = false,
   ): Promise<string[]> {
     const sessionStart = Date.now()
     this.emitEvent('create-tmux-session:start')
     const packageJsonPath = path.join(worktreePath, 'package.json')
-    if (!fs.existsSync(packageJsonPath)) {
-      this.emitEvent('create-tmux-session:fail', {
-        error: 'package.json not found in worktree',
-        errorCode: 'MISSING_PACKAGE_JSON',
-        duration: Date.now() - sessionStart,
-      })
-      throw new Error('package.json not found in worktree')
-    }
 
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
-    const scripts = packageJson.scripts || {}
+    let scripts: Record<string, string> = {}
+
+    if (!fs.existsSync(packageJsonPath)) {
+      if (!inProjectsDir) {
+        this.emitEvent('create-tmux-session:fail', {
+          error: 'package.json not found in worktree',
+          errorCode: 'MISSING_PACKAGE_JSON',
+          duration: Date.now() - sessionStart,
+        })
+        throw new Error('package.json not found in worktree')
+      }
+    } else {
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
+      scripts = packageJson.scripts || {}
+    }
 
     let firstWindowCreated = false
     let windowIndex = 0

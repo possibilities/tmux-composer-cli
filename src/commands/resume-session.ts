@@ -1,6 +1,7 @@
 import { execSync, spawnSync } from 'child_process'
+import path from 'path'
 import { SessionContinuer } from './continue-session.js'
-import { getAllProjectWorktrees } from '../core/git-utils.js'
+import { getAllProjectWorktrees, isInProjectsDir } from '../core/git-utils.js'
 import { getTmuxSocketArgs, getTmuxSocketPath } from '../core/tmux-socket.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
 import { loadConfig } from '../core/config.js'
@@ -63,8 +64,9 @@ export class SessionResumer extends SessionContinuer {
     })
 
     const config = loadConfig(projectPath)
+    const inProjectsDir = isInProjectsDir(projectPath)
 
-    if (config.worktree === false) {
+    if (config.worktree === false && !inProjectsDir) {
       this.emitEvent('resume-session:fail', {
         error:
           'Resume session is not available when worktree is disabled. Use create-session instead.',
@@ -81,7 +83,7 @@ export class SessionResumer extends SessionContinuer {
 
     const worktrees = getAllProjectWorktrees(projectPath)
 
-    if (worktrees.length === 0) {
+    if (worktrees.length === 0 && !inProjectsDir) {
       this.emitEvent('find-all-worktrees:fail', {
         error: 'No worktrees found for this repository',
         errorCode: 'NO_WORKTREES',
@@ -104,6 +106,192 @@ export class SessionResumer extends SessionContinuer {
     })
 
     const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
+
+    if (inProjectsDir && worktrees.length === 0) {
+      const projectName = path.basename(projectPath)
+      const sessionName = projectName
+
+      let sessionExists = false
+      try {
+        const sessions = execSync(
+          `tmux ${socketArgs} list-sessions -F '#{session_name}'`,
+          {
+            encoding: 'utf-8',
+            stdio: ['pipe', 'pipe', 'ignore'],
+          },
+        )
+          .trim()
+          .split('\n')
+
+        sessionExists = sessions.includes(sessionName)
+      } catch {}
+
+      if (sessionExists) {
+        if (options.attach !== false) {
+          const switchSessionStart = Date.now()
+          this.emitEvent('switch-to-existing-session:start', {
+            sessionName,
+          })
+
+          execSync(`tmux ${socketArgs} switch-client -t ${sessionName}`, {
+            stdio: 'inherit',
+          })
+
+          this.emitEvent('switch-to-existing-session:end', {
+            sessionName,
+            duration: Date.now() - switchSessionStart,
+          })
+        }
+
+        this.emitEvent('resume-session:end', {
+          sessionName,
+          action: 'switched',
+          worktreePath: projectPath,
+          duration: Date.now() - startTime,
+        })
+      } else {
+        const createSessionStart = Date.now()
+        this.emitEvent('create-new-session:start', {
+          sessionName,
+          worktreePath: projectPath,
+        })
+
+        try {
+          let expectedWindows: string[]
+          try {
+            expectedWindows = await this.getExpectedWindows(projectPath, config)
+          } catch (error) {
+            this.emitEvent('analyze-project-scripts:fail', {
+              error: error instanceof Error ? error.message : String(error),
+              duration: 0,
+            })
+            this.emitEvent('resume-session:fail', {
+              error: `Failed to analyze project: ${error instanceof Error ? error.message : String(error)}`,
+              duration: Date.now() - startTime,
+            })
+            throw error
+          }
+
+          let windows: string[]
+          try {
+            windows = await this.createTmuxSession(
+              sessionName,
+              projectPath,
+              expectedWindows,
+              options.terminalWidth,
+              options.terminalHeight,
+              { ...options, worktree: false },
+              config,
+              inProjectsDir,
+            )
+          } catch (error) {
+            this.emitEvent('resume-session:fail', {
+              error: `Failed to create tmux session: ${error instanceof Error ? error.message : String(error)}`,
+              duration: Date.now() - startTime,
+            })
+            throw error
+          }
+
+          const socketArgsArr = getTmuxSocketArgs(this.socketOptions)
+          const socketArgs = socketArgsArr.join(' ')
+
+          try {
+            execSync(
+              `tmux ${socketArgs} set-environment -t ${sessionName} TMUX_COMPOSER_MODE project`,
+            )
+          } catch (error) {
+            this.emitEvent('set-tmux-composer-mode:fail', {
+              error: error instanceof Error ? error.message : String(error),
+              errorCode: 'SET_MODE_FAILED',
+              sessionName,
+            })
+          }
+
+          try {
+            const firstNonControlWindow =
+              windows.find(w => w !== 'control') || windows[0]
+            if (firstNonControlWindow) {
+              execSync(
+                `tmux ${socketArgs} select-window -t ${sessionName}:${firstNonControlWindow}`,
+              )
+            }
+          } catch (error) {
+            this.emitEvent('select-window:fail', {
+              sessionName,
+              window:
+                windows.find(w => w !== 'control') || windows[0] || 'none',
+              error: error instanceof Error ? error.message : String(error),
+            })
+          }
+
+          if (options.attach !== false) {
+            await this.waitForWindows(sessionName, windows)
+
+            const insideTmux = !!process.env.TMUX
+
+            try {
+              let result
+              if (insideTmux) {
+                result = spawnSync(
+                  'tmux',
+                  [...socketArgsArr, 'switch-client', '-t', sessionName],
+                  {
+                    stdio: 'inherit',
+                  },
+                )
+              } else {
+                result = spawnSync(
+                  'tmux',
+                  [...socketArgsArr, 'attach', '-t', sessionName],
+                  {
+                    stdio: 'inherit',
+                  },
+                )
+              }
+
+              if (result.error) {
+                throw result.error
+              }
+
+              if (result.status !== 0) {
+                throw new Error(
+                  `tmux ${insideTmux ? 'switch-client' : 'attach'} exited with status ${result.status}`,
+                )
+              }
+            } catch (error) {
+              const attachCommand = insideTmux
+                ? `tmux ${socketArgs} switch-client -t ${sessionName}`
+                : `tmux ${socketArgs} attach -t ${sessionName}`
+
+              console.error(
+                `\nFailed to ${insideTmux ? 'switch to' : 'attach to'} session: ${error instanceof Error ? error.message : String(error)}`,
+              )
+              console.error(`Session created: ${sessionName}`)
+              console.error(
+                `To ${insideTmux ? 'switch' : 'attach'} manually, use: ${attachCommand}`,
+              )
+            }
+          }
+        } catch (error) {
+          throw error
+        }
+
+        this.emitEvent('create-new-session:end', {
+          sessionName,
+          worktreePath: projectPath,
+          duration: Date.now() - createSessionStart,
+        })
+
+        this.emitEvent('resume-session:end', {
+          sessionName,
+          action: 'created',
+          worktreePath: projectPath,
+          duration: Date.now() - startTime,
+        })
+      }
+
+      return
+    }
 
     if (options.worktree) {
       const worktreeInput = options.worktree.trim()
