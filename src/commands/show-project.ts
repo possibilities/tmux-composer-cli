@@ -12,12 +12,12 @@ interface ShowProjectOptions {
 interface ProjectInfo {
   name: string
   path: string
-  git: {
+  git?: {
     branch: string
     commit: string
     status: 'clean' | 'dirty'
   }
-  lastActivity: string
+  lastActivity?: string
 }
 
 export class ProjectShower extends EventEmitter {
@@ -60,36 +60,56 @@ export class ProjectShower extends EventEmitter {
     return result
   }
 
+  private isGitRepository(projectPath: string): boolean {
+    try {
+      execSync('git rev-parse --git-dir', {
+        cwd: projectPath,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'ignore'],
+      })
+      return true
+    } catch {
+      return false
+    }
+  }
+
   private getProjectInfo(projectPath: string): ProjectInfo {
     const projectName = path.basename(projectPath)
-
-    const branch = execSync('git branch --show-current', {
-      cwd: projectPath,
-      encoding: 'utf-8',
-    }).trim()
-
-    const commit = execSync('git rev-parse --short HEAD', {
-      cwd: projectPath,
-      encoding: 'utf-8',
-    }).trim()
-
-    const isClean = isGitRepositoryClean(projectPath)
-
-    const lastActivity = execSync('git log -1 --format=%cd --date=iso-strict', {
-      cwd: projectPath,
-      encoding: 'utf-8',
-    }).trim()
-
-    return {
+    const projectInfo: ProjectInfo = {
       name: projectName,
       path: projectPath,
-      git: {
+    }
+
+    if (this.isGitRepository(projectPath)) {
+      const branch = execSync('git branch --show-current', {
+        cwd: projectPath,
+        encoding: 'utf-8',
+      }).trim()
+
+      const commit = execSync('git rev-parse --short HEAD', {
+        cwd: projectPath,
+        encoding: 'utf-8',
+      }).trim()
+
+      const isClean = isGitRepositoryClean(projectPath)
+
+      const lastActivity = execSync(
+        'git log -1 --format=%cd --date=iso-strict',
+        {
+          cwd: projectPath,
+          encoding: 'utf-8',
+        },
+      ).trim()
+
+      projectInfo.git = {
         branch,
         commit,
         status: isClean ? 'clean' : 'dirty',
-      },
-      lastActivity,
+      }
+      projectInfo.lastActivity = lastActivity
     }
+
+    return projectInfo
   }
 
   private outputJson(
@@ -103,10 +123,16 @@ export class ProjectShower extends EventEmitter {
       project: {
         name: projectInfo.name,
         path: projectInfo.path,
-        git: projectInfo.git,
-        lastActivity: projectInfo.lastActivity,
       },
       config: {},
+    }
+
+    if (projectInfo.git) {
+      output.project.git = projectInfo.git
+    }
+
+    if (projectInfo.lastActivity) {
+      output.project.lastActivity = projectInfo.lastActivity
     }
 
     if (configWithSources.worktree) {
@@ -150,26 +176,32 @@ export class ProjectShower extends EventEmitter {
       value: projectInfo.path,
       source: '-',
     })
-    rows.push({
-      property: 'Git Branch',
-      value: projectInfo.git.branch,
-      source: '-',
-    })
-    rows.push({
-      property: 'Git Commit',
-      value: projectInfo.git.commit,
-      source: '-',
-    })
-    rows.push({
-      property: 'Git Status',
-      value: projectInfo.git.status,
-      source: '-',
-    })
-    rows.push({
-      property: 'Last Activity',
-      value: this.formatLastActivity(projectInfo.lastActivity),
-      source: '-',
-    })
+
+    if (projectInfo.git) {
+      rows.push({
+        property: 'Git Branch',
+        value: projectInfo.git.branch,
+        source: '-',
+      })
+      rows.push({
+        property: 'Git Commit',
+        value: projectInfo.git.commit,
+        source: '-',
+      })
+      rows.push({
+        property: 'Git Status',
+        value: projectInfo.git.status,
+        source: '-',
+      })
+    }
+
+    if (projectInfo.lastActivity) {
+      rows.push({
+        property: 'Last Activity',
+        value: this.formatLastActivity(projectInfo.lastActivity),
+        source: '-',
+      })
+    }
 
     if (configWithSources.worktree) {
       rows.push({
