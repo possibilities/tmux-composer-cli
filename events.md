@@ -1084,7 +1084,87 @@ Finishes a tmux-composer session, syncing changes and cleaning up.
   }
   ```
 
-### 7. close-session
+### 7. sync-session
+
+Syncs a tmux-composer session (same as finish-session but keeps the session alive).
+
+#### Events
+
+##### Initialization Events
+
+- **`sync-session:start`** - Session syncing process begins
+  ```json
+  {
+    "event": "sync-session:start",
+    "data": {
+      "options": {
+        "socketName": null,
+        "socketPath": null
+      }
+    }
+  }
+  ```
+
+##### Configuration Events
+
+Same as finish-session:
+
+- **`load-configuration:start`** - Loading tmux-composer configuration
+- **`load-configuration:end`** - Configuration loaded
+
+##### Validation Events
+
+Same as finish-session:
+
+- **`validate-composer-session:start`** - Validating this is a composer session
+- **`validate-composer-session:end`** - Validation complete
+- **`get-session-mode:start`** - Getting session mode (worktree/project)
+- **`get-session-mode:end`** - Mode retrieved
+
+##### Hook Events
+
+Same as finish-session:
+
+- **`run-before-finish-command:start`** - Running before-finish hook
+- **`run-before-finish-command:end`** - Hook completed
+
+##### Worktree Sync Events
+
+Same as finish-session:
+
+- **`sync-worktree-to-main:start`** - Syncing worktree changes to main branch
+- **`sync-worktree-to-main:end`** - Sync complete
+- **`check-install-dependencies:start`** - Checking and installing dependencies
+- **`check-install-dependencies:end`** - Dependencies check complete
+
+##### Completion Events
+
+- **`sync-session:end`** - Session syncing complete
+
+  ```json
+  {
+    "event": "sync-session:end",
+    "data": {
+      "sessionName": "my-project-worktree-00001",
+      "mode": "worktree",
+      "duration": 10500
+    }
+  }
+  ```
+
+- **`sync-session:fail`** - Session syncing failed
+  ```json
+  {
+    "event": "sync-session:fail",
+    "data": {
+      "error": "Failed to sync worktree to main branch",
+      "errorCode": "SYNC_FAILED",
+      "duration": 5000
+    }
+  }
+  ```
+
+### 8. close-session
 
 Closes the current tmux session, switching to another if available.
 
@@ -1314,6 +1394,24 @@ Closes the current tmux session, switching to another if available.
 16. `kill-current-session:end`
 17. `finish-session:end`
 
+### Typical sync-session flow:
+
+1. `sync-session:start`
+2. `load-configuration:start`
+3. `load-configuration:end`
+4. `validate-composer-session:start`
+5. `validate-composer-session:end`
+6. `get-session-mode:start`
+7. `get-session-mode:end`
+8. `run-before-finish-command:start` (if configured)
+9. `run-before-finish-command:end`
+10. For worktree mode:
+    - `sync-worktree-to-main:start`
+    - `sync-worktree-to-main:end`
+    - `check-install-dependencies:start`
+    - `check-install-dependencies:end`
+11. `sync-session:end`
+
 ### Typical close-session flow:
 
 1. `close-session:start`
@@ -1358,6 +1456,7 @@ In addition to the explicitly documented fail events above, the following operat
 - `run-before-finish-command:fail` - Before-finish hook execution failed
 - `switch-before-close:fail` - Pre-close session switch failed
 - `switch-before-kill:fail` - Pre-kill session switch failed
+- `sync-session:fail` - Session syncing failed
 - `sync-worktree-to-main:fail` - Worktree sync failed
 - `validate-composer-session:fail` - Composer session validation failed
 

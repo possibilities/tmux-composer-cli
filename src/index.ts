@@ -7,6 +7,7 @@ import { SessionContinuer } from './commands/continue-session.js'
 import { SessionResumer } from './commands/resume-session.js'
 import { EventObserver } from './commands/observe-observers.js'
 import { SessionFinisher } from './commands/finish-session.js'
+import { SessionSyncer } from './commands/sync-session.js'
 import { SessionCloser } from './commands/close-session.js'
 import { ProjectShower } from './commands/show-project.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
@@ -166,6 +167,35 @@ async function main() {
 
       try {
         await finisher.finish()
+        process.exit(0)
+      } catch (error) {
+        process.exit(1)
+      }
+    })
+
+  program
+    .command('sync-session')
+    .description('sync session')
+    .option('--tmux-socket <socket-name>', 'Tmux socket name')
+    .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
+    .option('--no-zmq', 'Disable ZeroMQ publishing')
+    .option('--zmq-socket <name>', 'ZeroMQ socket name')
+    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
+    .action(async options => {
+      const socketOptions: TmuxSocketOptions = {
+        socketName: options.tmuxSocket,
+        socketPath: options.tmuxSocketPath,
+      }
+
+      const syncer = new SessionSyncer({
+        ...socketOptions,
+        zmq: options.zmq,
+        zmqSocket: options.zmqSocket,
+        zmqSocketPath: options.zmqSocketPath,
+      })
+
+      try {
+        await syncer.sync()
         process.exit(0)
       } catch (error) {
         process.exit(1)

@@ -128,6 +128,9 @@ export type EventName =
   | 'kill-session:start'
   | 'kill-session:end'
   | 'kill-session:fail'
+  | 'sync-session:start'
+  | 'sync-session:end'
+  | 'sync-session:fail'
 
 export interface BaseEventData {
   duration?: number
@@ -559,6 +562,18 @@ export interface KillSessionFailData extends ErrorEventData {
   sessionName: string
 }
 
+export interface SyncSessionStartData {
+  options: {
+    socketName?: string | null
+    socketPath?: string | null
+  }
+}
+
+export interface SyncSessionEndData extends BaseEventData {
+  sessionName: string
+  mode: 'worktree' | 'project'
+}
+
 export interface FindWorktreeStartData {
   worktreeInput: string
 }
@@ -732,6 +747,9 @@ export type EventDataMap = {
   'kill-session:start': undefined
   'kill-session:end': KillSessionEndData
   'kill-session:fail': KillSessionFailData
+  'sync-session:start': SyncSessionStartData
+  'sync-session:end': SyncSessionEndData
+  'sync-session:fail': ErrorEventData
 }
 
 export interface TmuxEvent<T extends EventName = EventName> {
