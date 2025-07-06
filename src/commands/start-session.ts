@@ -207,19 +207,8 @@ export class SessionCreator extends EventEmitter {
           encoding: 'utf-8',
         }).trim()
       } else {
-        try {
-          branch = execSync('git branch --show-current', {
-            cwd: projectPath,
-            encoding: 'utf-8',
-          }).trim()
-          commitHash = execSync('git rev-parse HEAD', {
-            cwd: projectPath,
-            encoding: 'utf-8',
-          }).trim()
-        } catch {
-          branch = 'none'
-          commitHash = 'none'
-        }
+        branch = 'none'
+        commitHash = 'none'
       }
 
       this.emitEvent('ensure-clean-repository:end', {
