@@ -1,5 +1,6 @@
 import { execSync } from 'child_process'
 import path from 'path'
+import fs from 'fs'
 import { EventEmitter } from 'events'
 import { loadConfigWithSources } from '../core/config.js'
 import { isGitRepositoryClean } from '../core/git-utils.js'
@@ -16,6 +17,11 @@ interface ProjectInfo {
     branch: string
     commit: string
     status: 'clean' | 'dirty'
+  }
+  files?: {
+    dotGit: boolean
+    packageJson: boolean
+    tmuxComposerConfig: boolean
   }
   lastActivity?: string
 }
@@ -73,6 +79,20 @@ export class ProjectShower extends EventEmitter {
     }
   }
 
+  private getFileIndicators(projectPath: string): ProjectInfo['files'] {
+    const dotGit = fs.existsSync(path.join(projectPath, '.git'))
+    const packageJson = fs.existsSync(path.join(projectPath, 'package.json'))
+    const tmuxComposerConfig =
+      fs.existsSync(path.join(projectPath, 'tmux-composer.yaml')) ||
+      fs.existsSync(path.join(projectPath, '.tmux-composer.yaml'))
+
+    return {
+      dotGit,
+      packageJson,
+      tmuxComposerConfig,
+    }
+  }
+
   private getProjectInfo(projectPath: string): ProjectInfo {
     const projectName = path.basename(projectPath)
     const projectInfo: ProjectInfo = {
@@ -109,6 +129,8 @@ export class ProjectShower extends EventEmitter {
       projectInfo.lastActivity = lastActivity
     }
 
+    projectInfo.files = this.getFileIndicators(projectPath)
+
     return projectInfo
   }
 
@@ -133,6 +155,10 @@ export class ProjectShower extends EventEmitter {
 
     if (projectInfo.lastActivity) {
       output.project.lastActivity = projectInfo.lastActivity
+    }
+
+    if (projectInfo.files) {
+      output.project.files = projectInfo.files
     }
 
     if (configWithSources.worktree) {
