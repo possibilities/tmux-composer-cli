@@ -10,6 +10,7 @@ import { SessionFinisher } from './commands/finish-session.js'
 import { SessionSyncer } from './commands/sync-session.js'
 import { SessionCloser } from './commands/close-session.js'
 import { ProjectShower } from './commands/show-project.js'
+import { ProjectLister } from './commands/list-projects.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
 
 async function main() {
@@ -271,10 +272,17 @@ async function main() {
   program
     .command('show-project [project-path]')
     .description('show project configuration and information')
-    .option('--json', 'Output as JSON')
-    .action(async (projectPath, options) => {
+    .action(async projectPath => {
       const shower = new ProjectShower()
-      await shower.show(projectPath, options)
+      await shower.show(projectPath)
+    })
+
+  program
+    .command('list-projects')
+    .description('list all projects in current directory')
+    .action(async () => {
+      const lister = new ProjectLister()
+      await lister.list()
     })
 
   try {
