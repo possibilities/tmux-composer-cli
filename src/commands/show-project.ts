@@ -5,7 +5,7 @@ export class ProjectShower {
     const resolvedPath = projectPath || process.cwd()
 
     try {
-      const output = getProjectData(resolvedPath)
+      const output = await getProjectData(resolvedPath)
       console.log(JSON.stringify(output, null, 2))
     } catch (error) {
       console.error(

@@ -11,7 +11,8 @@ export interface ProjectInfo {
     packageJson: boolean
     tmuxComposerConfig: boolean
   }
-  lastActivity?: string
+  latestCommit?: string
+  latestChat?: string
 }
 
 export interface ProjectsMap {

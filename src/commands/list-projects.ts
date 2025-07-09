@@ -31,19 +31,32 @@ export class ProjectLister {
 
     const currentDirName = path.basename(projectsPath)
     try {
-      projectsMap[currentDirName] = getProjectData(projectsPath)
-    } catch (error) {}
+      projectsMap[currentDirName] = await getProjectData(projectsPath)
+    } catch (error) {
+      console.error(`Error processing ${currentDirName}:`, error)
+    }
 
     const entries = fs.readdirSync(projectsPath, { withFileTypes: true })
 
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue
+    const projectPromises = entries
+      .filter(entry => entry.isDirectory())
+      .map(async entry => {
+        const projectPath = path.join(projectsPath, entry.name)
+        try {
+          const data = await getProjectData(projectPath)
+          return { name: entry.name, data }
+        } catch (error) {
+          console.error(`Error processing ${entry.name}:`, error)
+          return null
+        }
+      })
 
-      const projectPath = path.join(projectsPath, entry.name)
+    const results = await Promise.all(projectPromises)
 
-      try {
-        projectsMap[entry.name] = getProjectData(projectPath)
-      } catch (error) {}
+    for (const result of results) {
+      if (result) {
+        projectsMap[result.name] = result.data
+      }
     }
 
     return projectsMap

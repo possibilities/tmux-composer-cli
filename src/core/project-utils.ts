@@ -1,12 +1,17 @@
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
+import os from 'os'
 import { isGitRepositoryClean } from './git-utils.js'
 import { loadConfigWithSources } from './config.js'
+import { getLatestChatTimestamp } from './claude-chats.js'
 import type { ConfigWithSources } from './config.js'
 import type { ProjectInfo } from '../types/project.js'
 
-export function getProjectInfo(projectPath: string): ProjectInfo {
+export async function getProjectInfo(
+  projectPath: string,
+  worktreesPath?: string,
+): Promise<ProjectInfo> {
   const projectName = path.basename(projectPath)
   const projectInfo: ProjectInfo = {
     name: projectName,
@@ -26,7 +31,7 @@ export function getProjectInfo(projectPath: string): ProjectInfo {
 
     const isClean = isGitRepositoryClean(projectPath)
 
-    const lastActivity = execSync('git log -1 --format=%cd --date=iso-strict', {
+    const latestCommit = execSync('git log -1 --format=%cd --date=iso-strict', {
       cwd: projectPath,
       encoding: 'utf-8',
     }).trim()
@@ -36,10 +41,15 @@ export function getProjectInfo(projectPath: string): ProjectInfo {
       commit,
       status: isClean ? 'clean' : 'dirty',
     }
-    projectInfo.lastActivity = lastActivity
+    projectInfo.latestCommit = latestCommit
   }
 
   projectInfo.files = getFileIndicators(projectPath)
+
+  const latestChat = getLatestChatTimestamp(projectPath, worktreesPath)
+  if (latestChat) {
+    projectInfo.latestChat = latestChat
+  }
 
   return projectInfo
 }
@@ -84,6 +94,22 @@ export function applyDefaults(
     }
   }
 
+  if (!result['projects-path']) {
+    result['projects-path'] = {
+      value: path.join(os.homedir(), 'code'),
+      source: 'default',
+      sourcePath: 'default',
+    }
+  }
+
+  if (!result['worktrees-path']) {
+    result['worktrees-path'] = {
+      value: path.join(os.homedir(), 'worktrees'),
+      source: 'default',
+      sourcePath: 'default',
+    }
+  }
+
   return result
 }
 
@@ -114,10 +140,12 @@ export function extractRelevantConfig(
   }
 }
 
-export function getProjectData(projectPath: string) {
-  const projectInfo = getProjectInfo(projectPath)
+export async function getProjectData(projectPath: string) {
   const configWithSources = loadConfigWithSources(projectPath)
   const resolvedConfigWithSources = applyDefaults(configWithSources)
+  const worktreesPath = resolvedConfigWithSources['worktrees-path']?.value
+
+  const projectInfo = await getProjectInfo(projectPath, worktreesPath)
 
   return {
     project: projectInfo,
