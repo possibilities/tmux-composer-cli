@@ -5,6 +5,7 @@ import os from 'os'
 import { isGitRepositoryClean } from './git-utils.js'
 import { loadConfigWithSources } from './config.js'
 import { getLatestChatTimestamp } from './claude-chats.js'
+import { getProjectSessions } from './tmux-utils.js'
 import type { ConfigWithSources } from './config.js'
 import type { ProjectInfo } from '../types/project.js'
 
@@ -18,6 +19,7 @@ const RELEASE_SCRIPT_NAMES = [
 export async function getProjectInfo(
   projectPath: string,
   worktreesPath?: string,
+  isProjectsPath: boolean = false,
 ): Promise<ProjectInfo> {
   const projectName = path.basename(projectPath)
   const projectInfo: ProjectInfo = {
@@ -25,6 +27,7 @@ export async function getProjectInfo(
     path: projectPath,
     hasReleaseScript: false,
     isGitRepositoryClean: true,
+    isProjectsPath,
   }
 
   projectInfo.files = getFileIndicators(projectPath)
@@ -69,6 +72,11 @@ export async function getProjectInfo(
   const latestChat = getLatestChatTimestamp(projectPath, worktreesPath)
   if (latestChat) {
     projectInfo.latestChat = latestChat
+  }
+
+  const activeSessions = getProjectSessions(projectName)
+  if (activeSessions.length > 0) {
+    projectInfo.activeSessions = activeSessions
   }
 
   return projectInfo
@@ -235,7 +243,11 @@ export async function getProjectData(projectPath: string) {
     }
   }
 
-  const projectInfo = await getProjectInfo(projectPath, worktreesPath)
+  const projectInfo = await getProjectInfo(
+    projectPath,
+    worktreesPath,
+    !!isAtProjectsPath,
+  )
 
   return {
     project: projectInfo,

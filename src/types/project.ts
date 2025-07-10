@@ -1,3 +1,8 @@
+export interface SessionInfo {
+  name: string
+  mode: 'worktree' | 'project'
+}
+
 export interface ProjectInfo {
   name: string
   path: string
@@ -17,6 +22,8 @@ export interface ProjectInfo {
   lastReleaseVersion?: string
   commitsSinceLastRelease?: number
   isGitRepositoryClean: boolean
+  activeSessions?: SessionInfo[]
+  isProjectsPath: boolean
 }
 
 export interface ProjectsMap {

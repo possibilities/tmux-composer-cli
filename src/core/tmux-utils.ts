@@ -77,3 +77,48 @@ export function switchToSession(
     return false
   }
 }
+
+export function getAllTmuxSessions(): string[] {
+  try {
+    const stdout = execSync(`tmux list-sessions -F "#{session_name}"`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'ignore'],
+    })
+    return stdout.trim() ? stdout.trim().split('\n') : []
+  } catch {
+    return []
+  }
+}
+
+export function getSessionMode(sessionName: string): 'worktree' | 'project' {
+  try {
+    const mode = execSync(
+      `tmux show-environment -t ${sessionName} TMUX_COMPOSER_MODE 2>/dev/null | cut -d= -f2`,
+      { encoding: 'utf-8' },
+    ).trim()
+
+    return mode === 'worktree' ? 'worktree' : 'project'
+  } catch {
+    return 'project'
+  }
+}
+
+export function getProjectSessions(
+  projectName: string,
+): Array<{ name: string; mode: 'worktree' | 'project' }> {
+  const allSessions = getAllTmuxSessions()
+
+  const matchingSessions = allSessions.filter(session => {
+    if (session === projectName) {
+      return true
+    }
+
+    const worktreePattern = new RegExp(`^${projectName}-worktree-\\d+$`)
+    return worktreePattern.test(session)
+  })
+
+  return matchingSessions.map(sessionName => ({
+    name: sessionName,
+    mode: getSessionMode(sessionName),
+  }))
+}
