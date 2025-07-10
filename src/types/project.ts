@@ -2,11 +2,13 @@ export interface SessionInfo {
   name: string
   mode: 'worktree' | 'project'
   port?: number
+  startTime?: string
 }
 
 export interface ProjectInfo {
   name: string
   path: string
+  projectType?: 'nextjs' | 'commanderjs' | 'unknown'
   git?: {
     branch: string
     commit: string

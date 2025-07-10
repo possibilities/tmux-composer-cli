@@ -4,7 +4,7 @@ import path from 'path'
 import os from 'os'
 import { isGitRepositoryClean } from './git-utils.js'
 import { loadConfigWithSources } from './config.js'
-import { getLatestChatTimestamp } from './claude-chats.js'
+import { getLatestChatTimestamp, getSessionStartTime } from './claude-chats.js'
 import { getProjectSessions } from './tmux-utils.js'
 import type { ConfigWithSources } from './config.js'
 import type { ProjectInfo } from '../types/project.js'
@@ -32,6 +32,7 @@ export async function getProjectInfo(
 
   projectInfo.files = getFileIndicators(projectPath)
   projectInfo.hasReleaseScript = checkHasReleaseScript(projectPath)
+  projectInfo.projectType = detectProjectType(projectPath)
 
   if (isGitRepository(projectPath)) {
     const branch = execSync('git branch --show-current', {
@@ -76,7 +77,10 @@ export async function getProjectInfo(
 
   const activeSessions = getProjectSessions(projectName)
   if (activeSessions.length > 0) {
-    projectInfo.activeSessions = activeSessions
+    projectInfo.activeSessions = activeSessions.map(session => ({
+      ...session,
+      startTime: getSessionStartTime(session.name, projectPath, worktreesPath),
+    }))
   }
 
   return projectInfo
@@ -218,6 +222,36 @@ function checkHasReleaseScript(projectPath: string): boolean {
     return RELEASE_SCRIPT_NAMES.some(scriptName => scriptName in scripts)
   } catch {
     return false
+  }
+}
+
+function detectProjectType(
+  projectPath: string,
+): 'nextjs' | 'commanderjs' | 'unknown' {
+  const packageJsonPath = path.join(projectPath, 'package.json')
+  if (!fs.existsSync(packageJsonPath)) {
+    return 'unknown'
+  }
+
+  try {
+    const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf-8')
+    const packageJson = JSON.parse(packageJsonContent)
+    const dependencies = {
+      ...packageJson.dependencies,
+      ...packageJson.devDependencies,
+    }
+
+    if (dependencies.next) {
+      return 'nextjs'
+    }
+
+    if (dependencies.commander) {
+      return 'commanderjs'
+    }
+
+    return 'unknown'
+  } catch {
+    return 'unknown'
   }
 }
 

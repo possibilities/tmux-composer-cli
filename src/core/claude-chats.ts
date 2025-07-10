@@ -94,3 +94,55 @@ export function getLatestChatTimestamps(
     }
   }
 }
+
+export function getSessionStartTime(
+  sessionName: string,
+  projectPath: string,
+  worktreesPath?: string,
+): string | undefined {
+  if (!fs.existsSync(CLAUDE_CHATS_DB_PATH)) {
+    return undefined
+  }
+
+  let db: Database.Database | undefined
+  try {
+    db = new Database(CLAUDE_CHATS_DB_PATH, { readonly: true })
+
+    let searchPath: string
+
+    if (sessionName.includes('-worktree-')) {
+      const actualWorktreesPath =
+        worktreesPath || path.join(os.homedir(), 'worktrees')
+      searchPath = path.join(actualWorktreesPath, sessionName)
+    } else {
+      searchPath = projectPath
+    }
+
+    const query = `
+      SELECT MIN(created) as first_created
+      FROM entries
+      WHERE cwd = ?
+    `
+
+    const row = db.prepare(query).get(searchPath) as
+      | { first_created: number }
+      | undefined
+
+    if (!row || !row.first_created) {
+      return undefined
+    }
+
+    const timestamp = new Date(row.first_created * 1000).toISOString()
+    return timestamp
+  } catch (error) {
+    console.error(
+      'Error reading session start time from claude chats database:',
+      error,
+    )
+    return undefined
+  } finally {
+    if (db) {
+      db.close()
+    }
+  }
+}
