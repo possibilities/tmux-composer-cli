@@ -8,6 +8,13 @@ import { getLatestChatTimestamp } from './claude-chats.js'
 import type { ConfigWithSources } from './config.js'
 import type { ProjectInfo } from '../types/project.js'
 
+const RELEASE_SCRIPT_NAMES = [
+  'release',
+  'release:patch',
+  'release:minor',
+  'release:major',
+] as const
+
 export async function getProjectInfo(
   projectPath: string,
   worktreesPath?: string,
@@ -16,7 +23,12 @@ export async function getProjectInfo(
   const projectInfo: ProjectInfo = {
     name: projectName,
     path: projectPath,
+    hasReleaseScript: false,
+    isGitRepositoryClean: true,
   }
+
+  projectInfo.files = getFileIndicators(projectPath)
+  projectInfo.hasReleaseScript = checkHasReleaseScript(projectPath)
 
   if (isGitRepository(projectPath)) {
     const branch = execSync('git branch --show-current', {
@@ -30,6 +42,7 @@ export async function getProjectInfo(
     }).trim()
 
     const isClean = isGitRepositoryClean(projectPath)
+    projectInfo.isGitRepositoryClean = isClean
 
     const latestCommit = execSync('git log -1 --format=%cd --date=iso-strict', {
       cwd: projectPath,
@@ -42,9 +55,16 @@ export async function getProjectInfo(
       status: isClean ? 'clean' : 'dirty',
     }
     projectInfo.latestCommit = latestCommit
-  }
 
-  projectInfo.files = getFileIndicators(projectPath)
+    const lastReleaseVersion = getLastReleaseVersion(projectPath)
+    if (lastReleaseVersion) {
+      projectInfo.lastReleaseVersion = lastReleaseVersion
+      projectInfo.commitsSinceLastRelease = getCommitsSinceRelease(
+        projectPath,
+        lastReleaseVersion,
+      )
+    }
+  }
 
   const latestChat = getLatestChatTimestamp(projectPath, worktreesPath)
   if (latestChat) {
@@ -137,6 +157,59 @@ export function extractRelevantConfig(
       Object.keys(relevantCommands).length > 0 && {
         commands: relevantCommands,
       }),
+  }
+}
+
+function getLastReleaseVersion(projectPath: string): string | undefined {
+  try {
+    const lastTag = execSync('git describe --tags --abbrev=0', {
+      cwd: projectPath,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'ignore'],
+    }).trim()
+
+    const versionPattern = /^v?(\d+\.\d+\.\d+(?:-[\w.]+)?(?:\+[\w.]+)?)$/
+    if (versionPattern.test(lastTag)) {
+      return lastTag
+    }
+    return undefined
+  } catch {
+    return undefined
+  }
+}
+
+function getCommitsSinceRelease(
+  projectPath: string,
+  releaseTag: string,
+): number {
+  try {
+    const commitCount = execSync(
+      `git rev-list --count ${JSON.stringify(releaseTag)}..HEAD`,
+      {
+        cwd: projectPath,
+        encoding: 'utf-8',
+      },
+    ).trim()
+    return parseInt(commitCount, 10)
+  } catch {
+    return 0
+  }
+}
+
+function checkHasReleaseScript(projectPath: string): boolean {
+  const packageJsonPath = path.join(projectPath, 'package.json')
+  if (!fs.existsSync(packageJsonPath)) {
+    return false
+  }
+
+  try {
+    const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf-8')
+    const packageJson = JSON.parse(packageJsonContent)
+    const scripts = packageJson.scripts || {}
+
+    return RELEASE_SCRIPT_NAMES.some(scriptName => scriptName in scripts)
+  } catch {
+    return false
   }
 }
 

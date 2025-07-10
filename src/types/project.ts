@@ -13,6 +13,10 @@ export interface ProjectInfo {
   }
   latestCommit?: string
   latestChat?: string
+  hasReleaseScript: boolean
+  lastReleaseVersion?: string
+  commitsSinceLastRelease?: number
+  isGitRepositoryClean: boolean
 }
 
 export interface ProjectsMap {
