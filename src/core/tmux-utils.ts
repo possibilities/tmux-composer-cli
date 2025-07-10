@@ -103,9 +103,22 @@ export function getSessionMode(sessionName: string): 'worktree' | 'project' {
   }
 }
 
+export function getSessionPort(sessionName: string): number | undefined {
+  try {
+    const port = execSync(
+      `tmux show-environment -t ${sessionName} PORT 2>/dev/null | cut -d= -f2`,
+      { encoding: 'utf-8' },
+    ).trim()
+
+    return port ? parseInt(port, 10) : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export function getProjectSessions(
   projectName: string,
-): Array<{ name: string; mode: 'worktree' | 'project' }> {
+): Array<{ name: string; mode: 'worktree' | 'project'; port?: number }> {
   const allSessions = getAllTmuxSessions()
 
   const matchingSessions = allSessions.filter(session => {
@@ -120,5 +133,6 @@ export function getProjectSessions(
   return matchingSessions.map(sessionName => ({
     name: sessionName,
     mode: getSessionMode(sessionName),
+    port: getSessionPort(sessionName),
   }))
 }

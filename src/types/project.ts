@@ -1,6 +1,7 @@
 export interface SessionInfo {
   name: string
   mode: 'worktree' | 'project'
+  port?: number
 }
 
 export interface ProjectInfo {

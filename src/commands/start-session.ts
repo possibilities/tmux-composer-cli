@@ -737,11 +737,19 @@ export class SessionCreator extends EventEmitter {
         duration: Date.now() - portStart,
       })
 
-      const command = `PORT=${port} pnpm run dev`
+      const command = `pnpm run dev`
 
       if (!firstWindowCreated) {
         await createSession('server', command)
+        const socketArgsStr = getTmuxSocketArgs(this.socketOptions).join(' ')
+        execSync(
+          `tmux ${socketArgsStr} set-environment -t ${sessionName} PORT ${port}`,
+        )
       } else {
+        const socketArgsStr = getTmuxSocketArgs(this.socketOptions).join(' ')
+        execSync(
+          `tmux ${socketArgsStr} set-environment -t ${sessionName} PORT ${port}`,
+        )
         await createWindow('server', command, windowIndex, port, 'dev')
       }
 
