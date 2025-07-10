@@ -217,6 +217,23 @@ export async function getProjectData(projectPath: string) {
   const configWithSources = loadConfigWithSources(projectPath)
   const resolvedConfigWithSources = applyDefaults(configWithSources)
   const worktreesPath = resolvedConfigWithSources['worktrees-path']?.value
+  const projectsPath = resolvedConfigWithSources['projects-path']?.value
+
+  const normalizedProjectPath = path.resolve(projectPath)
+  const normalizedProjectsPath = projectsPath
+    ? path.resolve(projectsPath)
+    : null
+
+  const isAtProjectsPath =
+    normalizedProjectsPath && normalizedProjectPath === normalizedProjectsPath
+
+  if (isAtProjectsPath) {
+    resolvedConfigWithSources.worktree = {
+      value: true,
+      source: 'project',
+      sourcePath: undefined as any,
+    }
+  }
 
   const projectInfo = await getProjectInfo(projectPath, worktreesPath)
 
