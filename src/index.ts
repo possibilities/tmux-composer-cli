@@ -11,6 +11,7 @@ import { SessionSyncer } from './commands/sync-session.js'
 import { SessionCloser } from './commands/close-session.js'
 import { ProjectShower } from './commands/show-project.js'
 import { ProjectLister } from './commands/list-projects.js'
+import { SystemStarter } from './commands/start-system.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
 
 async function main() {
@@ -283,6 +284,30 @@ async function main() {
     .action(async () => {
       const lister = new ProjectLister()
       await lister.list()
+    })
+
+  program
+    .command('start-system')
+    .description('start tmux-composer system sessions')
+    .option('--no-attach', 'Do not attach to the sessions after creation')
+    .option('--no-zmq', 'Disable ZeroMQ publishing')
+    .option('--zmq-socket <name>', 'ZeroMQ socket name')
+    .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
+    .action(async options => {
+      const starter = new SystemStarter()
+
+      try {
+        await starter.start({
+          attach: options.attach !== false,
+          zmq: options.zmq,
+          zmqSocket: options.zmqSocket,
+          zmqSocketPath: options.zmqSocketPath,
+        })
+
+        process.exit(0)
+      } catch (error) {
+        process.exit(1)
+      }
     })
 
   try {

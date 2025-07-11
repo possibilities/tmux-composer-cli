@@ -1,0 +1,257 @@
+import { execSync } from 'child_process'
+import { EventEmitter } from 'events'
+import { randomUUID } from 'crypto'
+import { getTmuxSocketArgs } from '../core/tmux-socket.js'
+import type { TmuxSocketOptions } from '../core/tmux-socket.js'
+import { enableZmqPublishing } from '../core/zmq-publisher.js'
+import type {
+  TmuxEventWithOptionalData,
+  EventName,
+  EventDataMap,
+} from '../core/events.js'
+
+interface StartSystemOptions {
+  attach?: boolean
+  zmq?: boolean
+  zmqSocket?: string
+  zmqSocketPath?: string
+}
+
+interface SessionConfig {
+  name: string
+  directory: string
+  command: string
+}
+
+export class SystemStarter extends EventEmitter {
+  private readonly sessionId = randomUUID()
+  private readonly socketOptions: TmuxSocketOptions = {
+    socketName: 'tmux-composer-system',
+  }
+
+  constructor() {
+    super()
+    this.on('event', (event: TmuxEventWithOptionalData) => {
+      console.log(JSON.stringify(event))
+    })
+  }
+
+  protected emitEvent<T extends EventName>(
+    eventName: T,
+    ...args: T extends keyof EventDataMap
+      ? EventDataMap[T] extends undefined
+        ? []
+        : [data: EventDataMap[T]]
+      : []
+  ): void {
+    const event = {
+      event: eventName,
+      timestamp: new Date().toISOString(),
+      sessionId: this.sessionId,
+      ...(args.length > 0 ? { data: args[0] } : {}),
+    } as TmuxEventWithOptionalData<T>
+    this.emit('event', event)
+  }
+
+  async start(options: StartSystemOptions = {}) {
+    const startTime = Date.now()
+
+    await enableZmqPublishing(this, {
+      zmq: options.zmq,
+      socketName: options.zmqSocket,
+      socketPath: options.zmqSocketPath,
+      source: {
+        script: 'start-system',
+        socketPath: getTmuxSocketArgs(this.socketOptions).join(' '),
+      },
+    })
+
+    this.emitEvent('initialize-session-creation:start', {
+      projectPath: process.cwd(),
+      options: {
+        socketName: this.socketOptions.socketName,
+        socketPath: this.socketOptions.socketPath,
+        terminalWidth: undefined,
+        terminalHeight: undefined,
+        attach: options.attach,
+        worktreeMode: false,
+      },
+    })
+
+    const sessions: SessionConfig[] = [
+      {
+        name: 'tmux-composer-ui',
+        directory: '~/code/tmux-composer-ui',
+        command: 'pnpm dev',
+      },
+      {
+        name: 'claude-code-metadata-browser',
+        directory: '~/code/claude-code-metadata-browser',
+        command: 'pnpm dev',
+      },
+      {
+        name: 'tmux-composer-observers',
+        directory: '.',
+        command: 'tmux-composer observe-observers',
+      },
+    ]
+
+    const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
+
+    try {
+      const existingSessions = execSync(
+        `tmux ${socketArgs} list-sessions -F '#{session_name}' 2>/dev/null || true`,
+        { encoding: 'utf-8' },
+      )
+        .trim()
+        .split('\n')
+        .filter(Boolean)
+
+      for (const session of sessions) {
+        if (existingSessions.includes(session.name)) {
+          this.emitEvent('create-tmux-session:fail', {
+            error: `Session '${session.name}' already exists`,
+            errorCode: 'SESSION_EXISTS',
+            duration: Date.now() - startTime,
+          })
+          throw new Error(`Session '${session.name}' already exists`)
+        }
+      }
+    } catch (error) {
+      if (error instanceof Error && !error.message.includes('already exists')) {
+        // No tmux server running on this socket, which is fine
+      } else {
+        throw error
+      }
+    }
+
+    const createdSessions: string[] = []
+
+    for (const session of sessions) {
+      const sessionStartTime = Date.now()
+      this.emitEvent('create-tmux-session:start')
+
+      try {
+        const port = this.findAvailablePort()
+
+        const expandedDirectory = session.directory.replace(
+          '~',
+          process.env.HOME || '',
+        )
+
+        execSync(
+          `tmux ${socketArgs} new-session -d -s ${session.name} -c ${expandedDirectory}`,
+          { stdio: 'ignore' },
+        )
+
+        execSync(
+          `tmux ${socketArgs} set-environment -t ${session.name} PORT ${port}`,
+        )
+
+        execSync(
+          `tmux ${socketArgs} send-keys -t ${session.name} '${session.command}' Enter`,
+        )
+
+        createdSessions.push(session.name)
+
+        this.emitEvent('create-tmux-session:end', {
+          sessionName: session.name,
+          sessionId: execSync(
+            `tmux ${socketArgs} display-message -t ${session.name} -p '#{session_id}'`,
+            { encoding: 'utf-8' },
+          ).trim(),
+          socketPath: getTmuxSocketArgs(this.socketOptions).join(' '),
+          firstWindow: session.name,
+          terminalSize: {
+            width: 80,
+            height: 24,
+          },
+          duration: Date.now() - sessionStartTime,
+        })
+      } catch (error) {
+        this.emitEvent('create-tmux-session:fail', {
+          error: error instanceof Error ? error.message : String(error),
+          errorCode: 'CREATION_FAILED',
+          duration: Date.now() - sessionStartTime,
+        })
+        throw error
+      }
+    }
+
+    this.emitEvent('initialize-session-creation:end', {
+      duration: Date.now() - startTime,
+    })
+
+    if (options.attach !== false && createdSessions.length > 0) {
+      const attachStartTime = Date.now()
+      this.emitEvent('attach-tmux-session:start')
+
+      try {
+        const insideTmux = !!process.env.TMUX
+        const firstSession = createdSessions[0]
+
+        if (insideTmux) {
+          execSync(`tmux ${socketArgs} switch-client -t ${firstSession}`)
+        } else {
+          execSync(`tmux ${socketArgs} attach -t ${firstSession}`, {
+            stdio: 'inherit',
+          })
+        }
+
+        this.emitEvent('attach-tmux-session:end', {
+          sessionName: firstSession,
+          windowsReady: true,
+          attachMethod: insideTmux ? 'switch-client' : 'attach',
+          duration: Date.now() - attachStartTime,
+        })
+      } catch (error) {
+        const attachCommand = process.env.TMUX
+          ? `tmux ${socketArgs} switch-client -t ${createdSessions[0]}`
+          : `tmux ${socketArgs} attach -t ${createdSessions[0]}`
+
+        this.emitEvent('attach-tmux-session:fail', {
+          sessionName: createdSessions[0],
+          error: error instanceof Error ? error.message : String(error),
+          attachCommand,
+          insideTmux: !!process.env.TMUX,
+          duration: Date.now() - attachStartTime,
+        })
+
+        console.error(
+          `\nFailed to attach to session: ${error instanceof Error ? error.message : String(error)}`,
+        )
+        console.error(`Sessions created: ${createdSessions.join(', ')}`)
+        console.error(`To attach manually, use: ${attachCommand}`)
+      }
+    }
+  }
+
+  protected findAvailablePort(): number {
+    const getRandomPort = () =>
+      Math.floor(Math.random() * (65535 - 49152 + 1)) + 49152
+    const isPortAvailable = (port: number): boolean => {
+      try {
+        execSync(`lsof -ti:${port}`, { encoding: 'utf-8' })
+        return false
+      } catch {
+        return true
+      }
+    }
+
+    let port = getRandomPort()
+    let attempts = 0
+    while (!isPortAvailable(port) && attempts < 100) {
+      port = getRandomPort()
+      attempts++
+    }
+    if (attempts >= 100) {
+      this.emitEvent('find-open-port:fail', {
+        attemptedPorts: 100,
+        error: 'Could not find an available port',
+        duration: 0,
+      })
+      throw new Error('Could not find an available port')
+    }
+    return port
+  }
+}
