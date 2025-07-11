@@ -24,6 +24,16 @@ interface SessionConfig {
   port?: number
 }
 
+const SUPPORTED_SHELLS = [
+  'bash',
+  'zsh',
+  'sh',
+  'fish',
+  'ksh',
+  'tcsh',
+  'csh',
+] as const
+
 export class SystemStarter extends EventEmitter {
   private readonly sessionId = randomUUID()
   private readonly socketOptions: TmuxSocketOptions = {
@@ -165,17 +175,21 @@ export class SystemStarter extends EventEmitter {
           process.env.HOME || '',
         )
 
-        execSync(
-          `tmux ${socketArgs} new-session -d -s ${session.name} -c ${expandedDirectory}`,
-          { stdio: 'ignore' },
-        )
-
         const port = this.findAvailablePort()
         sessionPorts[session.name] = port
 
         execSync(
-          `tmux ${socketArgs} set-environment -t ${session.name} PORT ${port}`,
+          `tmux ${socketArgs} new-session -d -s ${session.name} -c ${expandedDirectory} -e PORT=${port}`,
+          { stdio: 'ignore' },
         )
+
+        const isPaneReady = await this.waitForPaneReady(session.name)
+
+        if (!isPaneReady) {
+          throw new Error(
+            `Pane for session '${session.name}' did not become ready within timeout`,
+          )
+        }
 
         execSync(
           `tmux ${socketArgs} send-keys -t ${session.name} '${session.command}' Enter`,
@@ -289,5 +303,40 @@ export class SystemStarter extends EventEmitter {
       throw new Error('Could not find an available port')
     }
     return port
+  }
+
+  protected async waitForPaneReady(
+    sessionName: string,
+    maxWaitMs: number = 5000,
+  ): Promise<boolean> {
+    const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
+    const startTime = Date.now()
+    const checkInterval = 100
+
+    while (Date.now() - startTime < maxWaitMs) {
+      try {
+        const paneInfo = execSync(
+          `tmux ${socketArgs} list-panes -t ${sessionName} -F '#{pane_pid} #{pane_current_command}'`,
+          { encoding: 'utf-8' },
+        ).trim()
+
+        if (paneInfo) {
+          const [pid, currentCommand] = paneInfo.split(' ')
+
+          const isShellReady = SUPPORTED_SHELLS.some(shell =>
+            currentCommand.includes(shell),
+          )
+
+          if (pid && isShellReady) {
+            await new Promise(resolve => setTimeout(resolve, 50))
+            return true
+          }
+        }
+      } catch (error) {}
+
+      await new Promise(resolve => setTimeout(resolve, checkInterval))
+    }
+
+    return false
   }
 }
