@@ -13,7 +13,7 @@ export class EventObserver {
   async start(
     options: {
       ws?: boolean
-      wsPort?: number
+      port?: number
       zmqSocket?: string
       zmqSocketPath?: string
     } = {},
@@ -36,10 +36,24 @@ export class EventObserver {
 
       const wsEnabled = options.ws ?? true
       if (wsEnabled) {
-        const wsPort = options.wsPort || 31337
-        this.wsServer = new WebSocketServer({ port: wsPort })
+        const getPortValue = () => {
+          if (options.port) return options.port
+          if (process.env.PORT) {
+            const envPort = parseInt(process.env.PORT, 10)
+            if (isNaN(envPort) || envPort < 1 || envPort > 65535) {
+              console.error(
+                `[WARN] Invalid PORT environment variable: ${process.env.PORT}. Using default port 31337.`,
+              )
+              return 31337
+            }
+            return envPort
+          }
+          return 31337
+        }
+        const port = getPortValue()
+        this.wsServer = new WebSocketServer({ port })
         console.error(
-          `[INFO] WebSocket server listening on ws://localhost:${wsPort}`,
+          `[INFO] WebSocket server listening on ws://localhost:${port}`,
         )
         this.wsServer.on('connection', (socket: WebSocket) => {
           socket.on('error', (err: Error) => {

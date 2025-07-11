@@ -262,7 +262,7 @@ async function main() {
     .description('observe observers')
     .option('--ws', 'Enable WebSocket server')
     .option('--no-ws', 'Disable WebSocket server')
-    .option('--ws-port <port>', 'WebSocket server port', parseInt, 31337)
+    .option('--port <port>', 'WebSocket server port', parseInt)
     .option('--zmq-socket <name>', 'ZeroMQ socket name')
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .action(async options => {

@@ -108,8 +108,7 @@ export class SystemStarter extends EventEmitter {
       {
         name: 'proxy',
         directory: '~/code/arthack-proxy',
-        command:
-          'sudo ~/.nvm/versions/node/v22.16.0/bin/node dist/cli.js start',
+        command: 'arthack-proxy start --port 4444',
       },
     ]
 
