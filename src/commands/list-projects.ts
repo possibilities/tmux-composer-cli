@@ -2,8 +2,11 @@ import fs from 'fs'
 import path from 'path'
 import { getProjectData } from '../core/project-utils.js'
 import type { ProjectsMap } from '../types/project.js'
+import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 
 export class ProjectLister {
+  constructor(private socketOptions: TmuxSocketOptions = {}) {}
+
   async list() {
     const projectsPath = process.cwd()
 
@@ -31,7 +34,10 @@ export class ProjectLister {
 
     const currentDirName = path.basename(projectsPath)
     try {
-      projectsMap[currentDirName] = await getProjectData(projectsPath)
+      projectsMap[currentDirName] = await getProjectData(
+        projectsPath,
+        this.socketOptions,
+      )
     } catch (error) {
       console.error(`Error processing ${currentDirName}:`, error)
     }
@@ -43,7 +49,7 @@ export class ProjectLister {
       .map(async entry => {
         const projectPath = path.join(projectsPath, entry.name)
         try {
-          const data = await getProjectData(projectPath)
+          const data = await getProjectData(projectPath, this.socketOptions)
           return { name: entry.name, data }
         } catch (error) {
           console.error(`Error processing ${entry.name}:`, error)

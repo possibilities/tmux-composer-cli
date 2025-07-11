@@ -8,6 +8,7 @@ import { getLatestChatTimestamp, getSessionStartTime } from './claude-chats.js'
 import { getProjectSessions } from './tmux-utils.js'
 import type { ConfigWithSources } from './config.js'
 import type { ProjectInfo } from '../types/project.js'
+import type { TmuxSocketOptions } from './tmux-socket.js'
 
 const RELEASE_SCRIPT_NAMES = [
   'release',
@@ -20,6 +21,7 @@ export async function getProjectInfo(
   projectPath: string,
   worktreesPath?: string,
   isProjectsPath: boolean = false,
+  socketOptions: TmuxSocketOptions = {},
 ): Promise<ProjectInfo> {
   const projectName = path.basename(projectPath)
   const projectInfo: ProjectInfo = {
@@ -75,7 +77,7 @@ export async function getProjectInfo(
     projectInfo.latestChat = latestChat
   }
 
-  const activeSessions = getProjectSessions(projectName)
+  const activeSessions = getProjectSessions(projectName, socketOptions)
   if (activeSessions.length > 0) {
     projectInfo.activeSessions = activeSessions.map(session => ({
       ...session,
@@ -255,7 +257,10 @@ function detectProjectType(
   }
 }
 
-export async function getProjectData(projectPath: string) {
+export async function getProjectData(
+  projectPath: string,
+  socketOptions: TmuxSocketOptions = {},
+) {
   const configWithSources = loadConfigWithSources(projectPath)
   const resolvedConfigWithSources = applyDefaults(configWithSources)
   const worktreesPath = resolvedConfigWithSources['worktrees-path']?.value
@@ -281,6 +286,7 @@ export async function getProjectData(projectPath: string) {
     projectPath,
     worktreesPath,
     !!isAtProjectsPath,
+    socketOptions,
   )
 
   return {

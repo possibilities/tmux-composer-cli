@@ -14,6 +14,13 @@ import { ProjectLister } from './commands/list-projects.js'
 import { SystemStarter } from './commands/start-system.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
 
+function createSocketOptions(options: any): TmuxSocketOptions {
+  return {
+    socketName: options.tmuxSocket,
+    socketPath: options.tmuxSocketPath,
+  }
+}
+
 async function main() {
   const program = new Command()
 
@@ -36,10 +43,7 @@ async function main() {
     .option('--zmq-socket <name>', 'ZeroMQ socket name')
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .action(async (projectPath, options) => {
-      const socketOptions: TmuxSocketOptions = {
-        socketName: options.tmuxSocket,
-        socketPath: options.tmuxSocketPath,
-      }
+      const socketOptions = createSocketOptions(options)
 
       const creator = new SessionCreator(socketOptions)
 
@@ -76,10 +80,7 @@ async function main() {
     .option('--zmq-socket <name>', 'ZeroMQ socket name')
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .action(async (projectPath, options) => {
-      const socketOptions: TmuxSocketOptions = {
-        socketName: options.tmuxSocket,
-        socketPath: options.tmuxSocketPath,
-      }
+      const socketOptions = createSocketOptions(options)
 
       const continuer = new SessionContinuer(socketOptions)
 
@@ -116,10 +117,7 @@ async function main() {
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .option('--worktree <worktree>', 'Worktree to resume (number or full name)')
     .action(async (projectPath, options) => {
-      const socketOptions: TmuxSocketOptions = {
-        socketName: options.tmuxSocket,
-        socketPath: options.tmuxSocketPath,
-      }
+      const socketOptions = createSocketOptions(options)
 
       const resumer = new SessionResumer(socketOptions)
 
@@ -154,10 +152,7 @@ async function main() {
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .option('--keep-session', 'Do not kill the session (useful for debugging)')
     .action(async options => {
-      const socketOptions: TmuxSocketOptions = {
-        socketName: options.tmuxSocket,
-        socketPath: options.tmuxSocketPath,
-      }
+      const socketOptions = createSocketOptions(options)
 
       const finisher = new SessionFinisher({
         ...socketOptions,
@@ -184,10 +179,7 @@ async function main() {
     .option('--zmq-socket <name>', 'ZeroMQ socket name')
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .action(async options => {
-      const socketOptions: TmuxSocketOptions = {
-        socketName: options.tmuxSocket,
-        socketPath: options.tmuxSocketPath,
-      }
+      const socketOptions = createSocketOptions(options)
 
       const syncer = new SessionSyncer({
         ...socketOptions,
@@ -213,10 +205,7 @@ async function main() {
     .option('--zmq-socket <name>', 'ZeroMQ socket name')
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
     .action(async options => {
-      const socketOptions: TmuxSocketOptions = {
-        socketName: options.tmuxSocket,
-        socketPath: options.tmuxSocketPath,
-      }
+      const socketOptions = createSocketOptions(options)
 
       const closer = new SessionCloser({
         ...socketOptions,
@@ -273,16 +262,22 @@ async function main() {
   program
     .command('show-project [project-path]')
     .description('show project configuration and information')
-    .action(async projectPath => {
-      const shower = new ProjectShower()
+    .option('--tmux-socket <socket-name>', 'Tmux socket name')
+    .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
+    .action(async (projectPath, options) => {
+      const socketOptions = createSocketOptions(options)
+      const shower = new ProjectShower(socketOptions)
       await shower.show(projectPath)
     })
 
   program
     .command('list-projects')
     .description('list all projects in current directory')
-    .action(async () => {
-      const lister = new ProjectLister()
+    .option('--tmux-socket <socket-name>', 'Tmux socket name')
+    .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
+    .action(async options => {
+      const socketOptions = createSocketOptions(options)
+      const lister = new ProjectLister(socketOptions)
       await lister.list()
     })
 

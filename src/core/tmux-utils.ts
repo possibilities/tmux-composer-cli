@@ -78,22 +78,32 @@ export function switchToSession(
   }
 }
 
-export function getAllTmuxSessions(): string[] {
+export function getAllTmuxSessions(
+  socketOptions: TmuxSocketOptions = {},
+): string[] {
   try {
-    const stdout = execSync(`tmux list-sessions -F "#{session_name}"`, {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore'],
-    })
+    const socketArgs = getTmuxSocketString(socketOptions)
+    const stdout = execSync(
+      `tmux ${socketArgs} list-sessions -F "#{session_name}"`,
+      {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'ignore'],
+      },
+    )
     return stdout.trim() ? stdout.trim().split('\n') : []
   } catch {
     return []
   }
 }
 
-export function getSessionMode(sessionName: string): 'worktree' | 'project' {
+export function getSessionMode(
+  sessionName: string,
+  socketOptions: TmuxSocketOptions = {},
+): 'worktree' | 'project' {
   try {
+    const socketArgs = getTmuxSocketString(socketOptions)
     const mode = execSync(
-      `tmux show-environment -t ${sessionName} TMUX_COMPOSER_MODE 2>/dev/null | cut -d= -f2`,
+      `tmux ${socketArgs} show-environment -t ${sessionName} TMUX_COMPOSER_MODE 2>/dev/null | cut -d= -f2`,
       { encoding: 'utf-8' },
     ).trim()
 
@@ -103,10 +113,14 @@ export function getSessionMode(sessionName: string): 'worktree' | 'project' {
   }
 }
 
-export function getSessionPort(sessionName: string): number | undefined {
+export function getSessionPort(
+  sessionName: string,
+  socketOptions: TmuxSocketOptions = {},
+): number | undefined {
   try {
+    const socketArgs = getTmuxSocketString(socketOptions)
     const port = execSync(
-      `tmux show-environment -t ${sessionName} PORT 2>/dev/null | cut -d= -f2`,
+      `tmux ${socketArgs} show-environment -t ${sessionName} PORT 2>/dev/null | cut -d= -f2`,
       { encoding: 'utf-8' },
     ).trim()
 
@@ -118,8 +132,9 @@ export function getSessionPort(sessionName: string): number | undefined {
 
 export function getProjectSessions(
   projectName: string,
+  socketOptions: TmuxSocketOptions = {},
 ): Array<{ name: string; mode: 'worktree' | 'project'; port?: number }> {
-  const allSessions = getAllTmuxSessions()
+  const allSessions = getAllTmuxSessions(socketOptions)
 
   const matchingSessions = allSessions.filter(session => {
     if (session === projectName) {
@@ -132,7 +147,7 @@ export function getProjectSessions(
 
   return matchingSessions.map(sessionName => ({
     name: sessionName,
-    mode: getSessionMode(sessionName),
-    port: getSessionPort(sessionName),
+    mode: getSessionMode(sessionName, socketOptions),
+    port: getSessionPort(sessionName, socketOptions),
   }))
 }
