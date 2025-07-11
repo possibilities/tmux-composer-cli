@@ -21,6 +21,7 @@ interface SessionConfig {
   name: string
   directory: string
   command: string
+  port?: number
 }
 
 export class SystemStarter extends EventEmitter {
@@ -80,60 +81,85 @@ export class SystemStarter extends EventEmitter {
 
     const sessions: SessionConfig[] = [
       {
-        name: 'tmux-composer-ui',
+        name: 'tmux',
         directory: '~/code/tmux-composer-ui',
         command: 'pnpm dev',
       },
       {
-        name: 'claude-code-metadata-browser',
+        name: 'claude',
         directory: '~/code/claude-code-metadata-browser',
         command: 'pnpm dev',
       },
       {
-        name: 'tmux-composer-observers',
+        name: 'observe',
         directory: '.',
         command: 'tmux-composer observe-observers',
+      },
+      {
+        name: 'proxy',
+        directory: '~/code/arthack-proxy',
+        command:
+          'sudo ~/.nvm/versions/node/v22.16.0/bin/node dist/cli.js start',
       },
     ]
 
     const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
 
+    // Kill existing server if it exists
     try {
-      const existingSessions = execSync(
-        `tmux ${socketArgs} list-sessions -F '#{session_name}' 2>/dev/null || true`,
-        { encoding: 'utf-8' },
-      )
-        .trim()
-        .split('\n')
-        .filter(Boolean)
+      const killStartTime = Date.now()
+      this.emitEvent('kill-existing-server:start')
 
-      for (const session of sessions) {
-        if (existingSessions.includes(session.name)) {
-          this.emitEvent('create-tmux-session:fail', {
-            error: `Session '${session.name}' already exists`,
-            errorCode: 'SESSION_EXISTS',
-            duration: Date.now() - startTime,
+      execSync(`tmux ${socketArgs} kill-server 2>/dev/null || true`, {
+        encoding: 'utf-8',
+      })
+
+      // Wait a moment for the server to fully terminate
+      execSync('sleep 0.5')
+
+      // Verify the server is gone
+      let attempts = 0
+      while (attempts < 10) {
+        try {
+          execSync(`tmux ${socketArgs} list-sessions 2>/dev/null`, {
+            encoding: 'utf-8',
           })
-          throw new Error(`Session '${session.name}' already exists`)
+          // If we get here, server is still running
+          execSync('sleep 0.2')
+          attempts++
+        } catch {
+          // Server is gone, which is what we want
+          break
         }
       }
+
+      if (attempts >= 10) {
+        this.emitEvent('kill-existing-server:fail', {
+          error: 'Failed to kill existing tmux server',
+          errorCode: 'KILL_SERVER_FAILED',
+          duration: Date.now() - killStartTime,
+        })
+        throw new Error('Failed to kill existing tmux server')
+      }
+
+      this.emitEvent('kill-existing-server:end', {
+        duration: Date.now() - killStartTime,
+      })
     } catch (error) {
-      if (error instanceof Error && !error.message.includes('already exists')) {
-        // No tmux server running on this socket, which is fine
-      } else {
+      if (error instanceof Error && error.message.includes('Failed to kill')) {
         throw error
       }
+      // If kill-server fails because no server exists, that's fine
     }
 
     const createdSessions: string[] = []
+    const sessionPorts: Record<string, number> = {}
 
     for (const session of sessions) {
       const sessionStartTime = Date.now()
       this.emitEvent('create-tmux-session:start')
 
       try {
-        const port = this.findAvailablePort()
-
         const expandedDirectory = session.directory.replace(
           '~',
           process.env.HOME || '',
@@ -143,6 +169,9 @@ export class SystemStarter extends EventEmitter {
           `tmux ${socketArgs} new-session -d -s ${session.name} -c ${expandedDirectory}`,
           { stdio: 'ignore' },
         )
+
+        const port = this.findAvailablePort()
+        sessionPorts[session.name] = port
 
         execSync(
           `tmux ${socketArgs} set-environment -t ${session.name} PORT ${port}`,
@@ -166,6 +195,7 @@ export class SystemStarter extends EventEmitter {
             width: 80,
             height: 24,
           },
+          port,
           duration: Date.now() - sessionStartTime,
         })
       } catch (error) {
@@ -180,7 +210,13 @@ export class SystemStarter extends EventEmitter {
 
     this.emitEvent('initialize-session-creation:end', {
       duration: Date.now() - startTime,
+      sessionPorts,
     })
+
+    console.log('\nSessions created with ports:')
+    for (const [sessionName, port] of Object.entries(sessionPorts)) {
+      console.log(`  ${sessionName}: http://localhost:${port}`)
+    }
 
     if (options.attach !== false && createdSessions.length > 0) {
       const attachStartTime = Date.now()

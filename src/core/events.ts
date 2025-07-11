@@ -3,6 +3,9 @@ import type { EventSource } from './zmq-publisher.js'
 export type EventName =
   | 'session-changed'
   | 'pane-changed'
+  | 'kill-existing-server:start'
+  | 'kill-existing-server:end'
+  | 'kill-existing-server:fail'
   | 'initialize-session-creation:start'
   | 'initialize-session-creation:end'
   | 'analyze-project-metadata:start'
@@ -183,6 +186,10 @@ export interface InitializeSessionCreationStartData {
   }
 }
 
+export interface InitializeSessionCreationEndData extends BaseEventData {
+  sessionPorts?: Record<string, number>
+}
+
 export interface AnalyzeProjectMetadataEndData extends BaseEventData {
   projectPath: string
   projectName: string
@@ -253,6 +260,7 @@ export interface CreateTmuxSessionEndData extends BaseEventData {
     width: number
     height: number
   }
+  port?: number
 }
 
 export interface CreateTmuxWindowStartData {
@@ -622,8 +630,11 @@ export interface CreateNewSessionEndData extends BaseEventData {
 export type EventDataMap = {
   'session-changed': SessionChangedData
   'pane-changed': PaneChangedData
+  'kill-existing-server:start': undefined
+  'kill-existing-server:end': BaseEventData
+  'kill-existing-server:fail': ErrorEventData
   'initialize-session-creation:start': InitializeSessionCreationStartData
-  'initialize-session-creation:end': BaseEventData
+  'initialize-session-creation:end': InitializeSessionCreationEndData
   'analyze-project-metadata:start': undefined
   'analyze-project-metadata:end': AnalyzeProjectMetadataEndData
   'analyze-project-metadata:fail': ErrorEventData
