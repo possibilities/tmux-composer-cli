@@ -182,7 +182,6 @@ export class SessionResumer extends SessionContinuer {
               options.terminalHeight,
               { ...options, worktree: false },
               config,
-              inProjectsDir,
             )
           } catch (error) {
             this.emitEvent('resume-session:fail', {

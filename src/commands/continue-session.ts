@@ -138,7 +138,6 @@ export class SessionContinuer extends SessionCreator {
           options.terminalHeight,
           { ...options, worktree: false },
           config,
-          inProjectsDir,
         )
       } catch (error) {
         this.emitEvent('continue-session:fail', {

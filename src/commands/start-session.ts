@@ -324,7 +324,6 @@ export class SessionCreator extends EventEmitter {
           options.terminalHeight,
           options,
           config,
-          inProjectsDir,
         )
       } catch (error) {
         this.emitEvent('create-worktree-session:fail', {
@@ -539,7 +538,6 @@ export class SessionCreator extends EventEmitter {
     terminalHeight?: number,
     options: CreateSessionOptions = {},
     config: ReturnType<typeof loadConfig> = {},
-    inProjectsDir: boolean = false,
   ): Promise<string[]> {
     const sessionStart = Date.now()
     this.emitEvent('create-tmux-session:start')
@@ -547,16 +545,7 @@ export class SessionCreator extends EventEmitter {
 
     let scripts: Record<string, string> = {}
 
-    if (!fs.existsSync(packageJsonPath)) {
-      if (!inProjectsDir) {
-        this.emitEvent('create-tmux-session:fail', {
-          error: 'package.json not found in worktree',
-          errorCode: 'MISSING_PACKAGE_JSON',
-          duration: Date.now() - sessionStart,
-        })
-        throw new Error('package.json not found in worktree')
-      }
-    } else {
+    if (fs.existsSync(packageJsonPath)) {
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
       scripts = packageJson.scripts || {}
     }
