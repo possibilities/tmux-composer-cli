@@ -108,7 +108,7 @@ export class SystemStarter extends EventEmitter {
       {
         name: 'proxy',
         directory: '~/code/arthack-proxy',
-        command: 'arthack-proxy start --port 4444',
+        command: 'pnpm run dev --port 4444',
       },
     ]
 
