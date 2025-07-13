@@ -1,6 +1,10 @@
 import { EventEmitter } from 'events'
 import { randomUUID } from 'crypto'
-import type { EventName, TmuxEventWithOptionalData } from './events.js'
+import type {
+  EventName,
+  TmuxEventWithOptionalData,
+  EventDataMap,
+} from './events.js'
 import type { TmuxSocketOptions } from './tmux-socket.js'
 
 export interface BaseSessionOptions extends TmuxSocketOptions {
@@ -23,28 +27,37 @@ export abstract class BaseSessionCommand extends EventEmitter {
   }
 
   protected emitEvent<T extends EventName>(
-    event: T,
-    data?: TmuxEventWithOptionalData<T>['data'],
+    eventName: T,
+    ...args: T extends keyof EventDataMap
+      ? EventDataMap[T] extends undefined
+        ? []
+        : [data: EventDataMap[T]]
+      : []
   ): void {
-    const eventData: TmuxEventWithOptionalData<T> = {
-      event,
-      data,
+    const event = {
+      event: eventName,
       timestamp: new Date().toISOString(),
       sessionId: this.sessionId,
-    }
+      ...(args.length > 0 ? { data: args[0] } : {}),
+    } as TmuxEventWithOptionalData<T>
 
-    const dataWithoutUndefined = data
-      ? Object.fromEntries(
-          Object.entries(data).filter(([_, v]) => v !== undefined),
-        )
-      : undefined
+    const dataWithoutUndefined =
+      args.length > 0 && args[0]
+        ? Object.fromEntries(
+            Object.entries(args[0] as Record<string, unknown>).filter(
+              ([_, v]) => v !== undefined,
+            ),
+          )
+        : undefined
 
     const finalEventData = {
-      ...eventData,
+      event: eventName,
+      timestamp: event.timestamp,
+      sessionId: event.sessionId,
       ...(dataWithoutUndefined && { data: dataWithoutUndefined }),
     }
 
     console.log(JSON.stringify(finalEventData))
-    this.emit('event', eventData)
+    this.emit('event', event)
   }
 }

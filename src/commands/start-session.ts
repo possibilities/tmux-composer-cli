@@ -1,10 +1,7 @@
 import { execSync, spawn, spawnSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
-import { EventEmitter } from 'events'
-import { randomUUID } from 'crypto'
 import { getTmuxSocketArgs, getTmuxSocketPath } from '../core/tmux-socket.js'
-import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 import {
   isGitRepositoryClean,
   getNextWorktreeNumber,
@@ -17,54 +14,20 @@ import { socketExists, listWindows } from '../core/tmux-utils.js'
 import { TERMINAL_SIZES } from '../core/constants.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
 import { loadConfig } from '../core/config.js'
-import type {
-  TmuxEventWithOptionalData,
-  EventName,
-  EventDataMap,
-  CreateTmuxWindowEndData,
-} from '../core/events.js'
+import { BaseSessionCommand } from '../core/base-session-command.js'
+import type { BaseSessionOptions } from '../core/base-session-command.js'
+import type { CreateTmuxWindowEndData } from '../core/events.js'
 
-interface CreateSessionOptions extends TmuxSocketOptions {
+interface CreateSessionOptions extends BaseSessionOptions {
   terminalWidth?: number
   terminalHeight?: number
   attach?: boolean
   worktree?: boolean
-  zmq?: boolean
-  zmqSocket?: string
-  zmqSocketPath?: string
 }
 
-export class SessionCreator extends EventEmitter {
-  protected socketOptions: TmuxSocketOptions
-  private readonly sessionId = randomUUID()
-
+export class SessionCreator extends BaseSessionCommand {
   constructor(options: CreateSessionOptions = {}) {
-    super()
-    this.socketOptions = {
-      socketName: options.socketName,
-      socketPath: options.socketPath,
-    }
-
-    this.on('event', (event: TmuxEventWithOptionalData) => {
-      console.log(JSON.stringify(event))
-    })
-  }
-
-  protected emitEvent<T extends EventName>(
-    eventName: T,
-    ...args: T extends keyof EventDataMap
-      ? EventDataMap[T] extends undefined
-        ? []
-        : [data: EventDataMap[T]]
-      : []
-  ): void {
-    const event = {
-      event: eventName,
-      timestamp: new Date().toISOString(),
-      sessionId: this.sessionId,
-      ...(args.length > 0 ? { data: args[0] } : {}),
-    } as TmuxEventWithOptionalData<T>
-    this.emit('event', event)
+    super(options)
   }
 
   async create(projectPath: string, options: CreateSessionOptions = {}) {

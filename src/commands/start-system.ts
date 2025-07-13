@@ -1,20 +1,11 @@
 import { execSync } from 'child_process'
-import { EventEmitter } from 'events'
-import { randomUUID } from 'crypto'
 import { getTmuxSocketArgs } from '../core/tmux-socket.js'
-import type { TmuxSocketOptions } from '../core/tmux-socket.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
-import type {
-  TmuxEventWithOptionalData,
-  EventName,
-  EventDataMap,
-} from '../core/events.js'
+import { BaseSessionCommand } from '../core/base-session-command.js'
+import type { BaseSessionOptions } from '../core/base-session-command.js'
 
-interface StartSystemOptions {
+interface StartSystemOptions extends BaseSessionOptions {
   attach?: boolean
-  zmq?: boolean
-  zmqSocket?: string
-  zmqSocketPath?: string
 }
 
 interface SessionConfig {
@@ -34,34 +25,11 @@ const SUPPORTED_SHELLS = [
   'csh',
 ] as const
 
-export class SystemStarter extends EventEmitter {
-  private readonly sessionId = randomUUID()
-  private readonly socketOptions: TmuxSocketOptions = {
-    socketName: 'tmux-composer-system',
-  }
-
+export class SystemStarter extends BaseSessionCommand {
   constructor() {
-    super()
-    this.on('event', (event: TmuxEventWithOptionalData) => {
-      console.log(JSON.stringify(event))
+    super({
+      socketName: 'tmux-composer-system',
     })
-  }
-
-  protected emitEvent<T extends EventName>(
-    eventName: T,
-    ...args: T extends keyof EventDataMap
-      ? EventDataMap[T] extends undefined
-        ? []
-        : [data: EventDataMap[T]]
-      : []
-  ): void {
-    const event = {
-      event: eventName,
-      timestamp: new Date().toISOString(),
-      sessionId: this.sessionId,
-      ...(args.length > 0 ? { data: args[0] } : {}),
-    } as TmuxEventWithOptionalData<T>
-    this.emit('event', event)
   }
 
   async start(options: StartSystemOptions = {}) {

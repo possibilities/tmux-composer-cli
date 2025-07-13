@@ -5,15 +5,12 @@ import { getAllProjectWorktrees, isInProjectsDir } from '../core/git-utils.js'
 import { getTmuxSocketArgs, getTmuxSocketPath } from '../core/tmux-socket.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
 import { loadConfig } from '../core/config.js'
-import type { TmuxSocketOptions } from '../core/tmux-socket.js'
+import type { BaseSessionOptions } from '../core/base-session-command.js'
 
-interface ContinueSessionOptions extends TmuxSocketOptions {
+interface ContinueSessionOptions extends BaseSessionOptions {
   terminalWidth?: number
   terminalHeight?: number
   attach?: boolean
-  zmq?: boolean
-  zmqSocket?: string
-  zmqSocketPath?: string
 }
 
 export class SessionContinuer extends SessionCreator {
