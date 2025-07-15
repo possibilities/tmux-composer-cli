@@ -75,8 +75,8 @@ export class SystemStarter extends BaseSessionCommand {
       },
       {
         name: 'proxy',
-        directory: '~/code/arthack-proxy',
-        command: 'pnpm run dev --port 4444',
+        directory: '.',
+        command: 'arthack-proxy',
       },
     ]
 
