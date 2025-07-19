@@ -26,9 +26,73 @@ The tmux-composer CLI emits JSON-formatted events to stdout and optionally publi
 
 ### 1. observe-session
 
-Monitors tmux session changes including windows and panes.
+Monitors tmux session changes including windows and panes. Emits lifecycle events when starting and exiting.
 
 #### Events
+
+- **`observe-session:start`** - Emitted when observe-session starts monitoring
+
+  ```json
+  {
+    "event": "observe-session:start",
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        },
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        }
+      },
+      "details": {
+        "sessionId": "$0",
+        "sessionName": "my-project-worktree-00001",
+        "socketPath": "/tmp/tmux-1000/default"
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
+  }
+  ```
+
+- **`observe-session:exit`** - Emitted when observe-session exits
+
+  ```json
+  {
+    "event": "observe-session:exit",
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        },
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        }
+      },
+      "details": {
+        "sessionId": "$0",
+        "sessionName": "my-project-worktree-00001",
+        "exitReason": "session-killed",
+        "duration": 45000
+      }
+    },
+    "timestamp": "2023-12-07T10:31:30.456Z",
+    "sessionId": "uuid-v4"
+  }
+  ```
+
+  The `exitReason` can be:
+
+  - `"session-killed"` - The tmux session being monitored was terminated
+  - `"SIGINT"` - User pressed Ctrl+C
+  - `"SIGTERM"` - Process received termination signal (kill)
+  - `"SIGHUP"` - Terminal hangup or parent process died
+  - `"SIGQUIT"` - Quit signal (Ctrl+\)
+  - `"error"` - An error occurred (will include `error` field with message)
 
 - **`session-changed`** - Emitted when the session structure changes (windows/panes added, removed, renamed, resized, or focus changed)
   ```json
@@ -1912,6 +1976,63 @@ Closes the current tmux session, switching to another if available.
   }
   ```
 
+- **`get-project-info:start`** - Getting project information
+
+- **`get-project-info:end`** - Project information retrieved
+
+  ```json
+  {
+    "event": "get-project-info:end",
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001"
+        },
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        }
+      },
+      "details": {
+        "projectName": "my-project",
+        "projectPath": "/path/to/project",
+        "duration": 10
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
+  }
+  ```
+
+- **`get-session-mode:start`** - Getting session mode (worktree/project)
+
+- **`get-session-mode:end`** - Mode retrieved
+
+  ```json
+  {
+    "event": "get-session-mode:end",
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        },
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        }
+      },
+      "details": {
+        "mode": "worktree",
+        "sessionName": "my-project-worktree-00001",
+        "duration": 5
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
+  }
+  ```
+
 - **`list-all-sessions:start`** - Listing all available sessions
 
 - **`list-all-sessions:end`** - Session list retrieved
@@ -1984,6 +2105,26 @@ Closes the current tmux session, switching to another if available.
 
 - **`kill-session:start`** - Killing the session
 
+  ```json
+  {
+    "event": "kill-session:start",
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        },
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        }
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
+  }
+  ```
+
 - **`kill-session:end`** - Session killed
 
   ```json
@@ -1992,7 +2133,12 @@ Closes the current tmux session, switching to another if available.
     "payload": {
       "context": {
         "session": {
-          "name": "my-project-worktree-00001"
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        },
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
         }
       },
       "details": {
@@ -2169,15 +2315,19 @@ Closes the current tmux session, switching to another if available.
 1. `close-session:start`
 2. `get-current-session:start`
 3. `get-current-session:end`
-4. `list-all-sessions:start`
-5. `list-all-sessions:end`
-6. `check-attached-session:start`
-7. `check-attached-session:end`
-8. `switch-before-close:start` (if attached and alternatives exist)
-9. `switch-before-close:end`
-10. `kill-session:start`
-11. `kill-session:end`
-12. `close-session:end`
+4. `get-project-info:start`
+5. `get-project-info:end`
+6. `get-session-mode:start`
+7. `get-session-mode:end`
+8. `list-all-sessions:start`
+9. `list-all-sessions:end`
+10. `check-attached-session:start`
+11. `check-attached-session:end`
+12. `switch-before-close:start` (if attached and alternatives exist)
+13. `switch-before-close:end`
+14. `kill-session:start`
+15. `kill-session:end`
+16. `close-session:end`
 
 ## Error Handling
 
@@ -2200,6 +2350,7 @@ In addition to the explicitly documented fail events above, the following operat
 - `find-highest-worktree:fail` - Highest numbered worktree lookup failed
 - `finish-session:fail` - Session finishing failed
 - `get-current-session:fail` - Current session retrieval failed
+- `get-project-info:fail` - Project information retrieval failed
 - `get-session-mode:fail` - Session mode retrieval failed
 - `kill-current-session:fail` - Current session termination failed
 - `kill-session:fail` - Session termination failed
@@ -2225,13 +2376,15 @@ Common error codes:
 - `NOT_COMPOSER_SESSION`: Command used on non-composer session
 - `INVALID_MODE`: Invalid TMUX_COMPOSER_MODE value
 - `SESSION_NOT_FOUND`: Failed to get current tmux session
+- `PROJECT_NOT_FOUND`: Failed to get project information
+- `MODE_NOT_FOUND`: Failed to get session mode
 - `CONFIG_LOAD_FAILED`: Failed to load configuration
 - `BEFORE_FINISH_FAILED`: Before-finish command failed
 - `SYNC_FAILED`: Failed to sync worktree to main branch
 - `DEPS_INSTALL_FAILED`: Failed to install dependencies
 - `SWITCH_FAILED`: Failed to switch sessions
 - `KILL_FAILED`: Failed to kill session
-- `LIST_SESSIONS_FAILED`: Failed to list tmux sessions
+- `LIST_FAILED`: Failed to list tmux sessions
 - `SET_MODE_FAILED`: Failed to set TMUX_COMPOSER_MODE
 - `MENU_CANCELLED`: User cancelled interactive menu
 

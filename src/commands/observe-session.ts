@@ -6,6 +6,9 @@ import { getTmuxSocketPath, getTmuxSocketArgs } from '../core/tmux-socket.js'
 import { BaseSessionCommand } from '../core/base-session-command.js'
 import type { SessionChangedData, TmuxEvent } from '../core/events.js'
 import type { BaseSessionOptions } from '../core/base-session-command.js'
+import { getMainRepositoryPath } from '../core/git-utils.js'
+import { execSync } from 'child_process'
+import * as path from 'path'
 
 const sleep = promisify(setTimeout)
 
@@ -58,6 +61,14 @@ export class TmuxSessionWatcher extends BaseSessionCommand {
   private forceEmitAfterRefresh = false
   private resizeHandler: (() => void) | null = null
   private throttledRefreshPaneList: () => void
+  private startTime: number = Date.now()
+  private exitReason:
+    | 'session-killed'
+    | 'SIGINT'
+    | 'SIGTERM'
+    | 'SIGHUP'
+    | 'SIGQUIT'
+    | 'error' = 'session-killed'
 
   constructor(options: BaseSessionOptions = {}) {
     super(options)
@@ -96,7 +107,6 @@ export class TmuxSessionWatcher extends BaseSessionCommand {
       this.updateContext({
         session: {
           name: this.currentSessionName,
-          mode: 'project',
         },
       })
     } catch (error) {
@@ -105,6 +115,39 @@ export class TmuxSessionWatcher extends BaseSessionCommand {
       )
       process.exit(1)
     }
+
+    try {
+      const projectPath = getMainRepositoryPath(process.cwd())
+      const projectName = path.basename(projectPath)
+
+      this.updateContext({
+        project: {
+          name: projectName,
+          path: projectPath,
+        },
+      })
+    } catch (error) {}
+
+    const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
+    try {
+      const modeOutput = execSync(
+        `tmux ${socketArgs} show-environment TMUX_COMPOSER_MODE`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+        .trim()
+        .replace('TMUX_COMPOSER_MODE=', '')
+
+      if (modeOutput === 'worktree' || modeOutput === 'project') {
+        this.updateContext({
+          session: {
+            name: this.currentSessionName,
+            mode: modeOutput,
+          },
+        })
+      }
+    } catch (error) {}
 
     const socketPath = getTmuxSocketPath({})
 
@@ -118,6 +161,13 @@ export class TmuxSessionWatcher extends BaseSessionCommand {
         sessionName: this.currentSessionName,
         socketPath,
       },
+    })
+
+    this.startTime = Date.now()
+    this.emitEvent('observe-session:start', {
+      sessionId: this.currentSessionId!,
+      sessionName: this.currentSessionName!,
+      socketPath,
     })
 
     this.setupSignalHandlers()
@@ -139,10 +189,43 @@ export class TmuxSessionWatcher extends BaseSessionCommand {
     })
   }
 
+  private isMonitoringActiveSession(): boolean {
+    return !!(this.currentSessionId && this.currentSessionName)
+  }
+
   private setupSignalHandlers() {
-    const signalHandler = () => this.shutdown()
-    process.on('SIGINT', signalHandler)
-    process.on('SIGTERM', signalHandler)
+    const sigintHandler = () => {
+      this.exitReason = 'SIGINT'
+      this.shutdown()
+    }
+    const sigtermHandler = () => {
+      this.exitReason = 'SIGTERM'
+      this.shutdown()
+    }
+    const sighupHandler = () => {
+      this.exitReason = 'SIGHUP'
+      this.shutdown()
+    }
+    const sigquitHandler = () => {
+      this.exitReason = 'SIGQUIT'
+      this.shutdown()
+    }
+
+    process.on('SIGINT', sigintHandler)
+    process.on('SIGTERM', sigtermHandler)
+    process.on('SIGHUP', sighupHandler)
+    process.on('SIGQUIT', sigquitHandler)
+
+    process.on('exit', () => {
+      if (this.currentSessionId && this.currentSessionName) {
+        this.emitEvent('observe-session:exit', {
+          sessionId: this.currentSessionId,
+          sessionName: this.currentSessionName,
+          exitReason: this.exitReason,
+          duration: Date.now() - this.startTime,
+        })
+      }
+    })
   }
 
   private setupResizeHandler() {
@@ -221,7 +304,11 @@ export class TmuxSessionWatcher extends BaseSessionCommand {
     }
 
     const closeHandler = () => {
-      this.cleanupControlMode()
+      if (this.isMonitoringActiveSession()) {
+        this.shutdown()
+      } else {
+        this.cleanupControlMode()
+      }
     }
 
     const errorHandler = (error: NodeError) => {
@@ -234,6 +321,9 @@ export class TmuxSessionWatcher extends BaseSessionCommand {
       } else if (error.code === 'EACCES') {
         console.error('Permission denied when accessing tmux.')
       }
+
+      this.exitReason = 'error'
+      this.shutdown(error as Error)
     }
 
     this.controlModeProcess!.stdout!.on('data', stdoutHandler)
@@ -617,7 +707,15 @@ export class TmuxSessionWatcher extends BaseSessionCommand {
     }
   }
 
-  private shutdown() {
+  private shutdown(error?: Error) {
+    this.emitEvent('observe-session:exit', {
+      sessionId: this.currentSessionId!,
+      sessionName: this.currentSessionName!,
+      exitReason: this.exitReason,
+      duration: Date.now() - this.startTime,
+      ...(error && { error: error.message }),
+    })
+
     if (this.controlModeProcess) {
       this.controlModeProcess.stdout?.removeAllListeners()
       this.controlModeProcess.stderr?.removeAllListeners()
@@ -644,6 +742,9 @@ export class TmuxSessionWatcher extends BaseSessionCommand {
 
     process.removeAllListeners('SIGINT')
     process.removeAllListeners('SIGTERM')
+    process.removeAllListeners('SIGHUP')
+    process.removeAllListeners('SIGQUIT')
+    process.removeAllListeners('exit')
 
     process.exit(0)
   }

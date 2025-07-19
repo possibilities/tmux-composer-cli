@@ -14,6 +14,7 @@ import {
   getAttachedSession,
   switchToSession,
 } from '../core/tmux-utils.js'
+import * as path from 'path'
 
 interface FinishSessionOptions extends BaseSessionOptions {
   keepSession?: boolean
@@ -64,6 +65,15 @@ export class SessionFinisher extends BaseSessionCommand {
     let projectPath: string
     try {
       projectPath = getMainRepositoryPath(process.cwd())
+      const projectName = path.basename(projectPath)
+
+      this.updateContext({
+        project: {
+          name: projectName,
+          path: projectPath,
+        },
+      })
+
       config = loadConfig(projectPath)
       this.emitEvent('load-configuration:end', {
         hasBeforeFinishCommand: !!config.commands?.['before-finish'],
@@ -92,6 +102,13 @@ export class SessionFinisher extends BaseSessionCommand {
       currentSession = execSync(`tmux ${socketArgs} display-message -p '#S'`, {
         encoding: 'utf-8',
       }).trim()
+
+      this.updateContext({
+        session: {
+          name: currentSession,
+        },
+      })
+
       this.emitEvent('validate-composer-session:end', {
         isValid: true,
         sessionName: currentSession,
@@ -122,6 +139,14 @@ export class SessionFinisher extends BaseSessionCommand {
       )
         .trim()
         .replace('TMUX_COMPOSER_MODE=', '')
+
+      this.updateContext({
+        session: {
+          name: currentSession,
+          mode: mode as 'worktree' | 'project',
+        },
+      })
+
       this.emitEvent('get-session-mode:end', {
         mode: mode as 'worktree' | 'project',
         sessionName: currentSession,
@@ -195,6 +220,12 @@ export class SessionFinisher extends BaseSessionCommand {
 
     if (mode === 'worktree') {
       const currentPath = process.cwd()
+
+      this.updateContext({
+        worktree: {
+          path: currentPath,
+        },
+      })
 
       const syncStart = Date.now()
       this.emitEvent('sync-worktree-to-main:start')

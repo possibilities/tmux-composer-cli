@@ -4,6 +4,8 @@ import type { ProjectInfo, SessionInfo } from '../types/project.js'
 export type EventName =
   | 'session-changed'
   | 'pane-changed'
+  | 'observe-session:start'
+  | 'observe-session:exit'
   | 'kill-existing-server:start'
   | 'kill-existing-server:end'
   | 'kill-existing-server:fail'
@@ -121,6 +123,9 @@ export type EventName =
   | 'get-current-session:start'
   | 'get-current-session:end'
   | 'get-current-session:fail'
+  | 'get-project-info:start'
+  | 'get-project-info:end'
+  | 'get-project-info:fail'
   | 'list-all-sessions:start'
   | 'list-all-sessions:end'
   | 'list-all-sessions:fail'
@@ -193,6 +198,25 @@ export interface PaneChangedData {
   paneIndex: string
   paneId: string
   content: string
+}
+
+export interface ObserveSessionStartData extends BaseEventData {
+  sessionId: string
+  sessionName: string
+  socketPath: string
+}
+
+export interface ObserveSessionExitData extends BaseEventData {
+  sessionId: string
+  sessionName: string
+  exitReason:
+    | 'session-killed'
+    | 'SIGINT'
+    | 'SIGTERM'
+    | 'SIGHUP'
+    | 'SIGQUIT'
+    | 'error'
+  error?: string
 }
 
 export interface InitializeSessionCreationStartData {
@@ -562,6 +586,13 @@ export interface GetCurrentSessionEndData extends BaseEventData {
 
 export interface GetCurrentSessionFailData extends ErrorEventData {}
 
+export interface GetProjectInfoEndData extends BaseEventData {
+  projectName: string
+  projectPath: string
+}
+
+export interface GetProjectInfoFailData extends ErrorEventData {}
+
 export interface ListAllSessionsEndData extends BaseEventData {
   sessions: string[]
   count: number
@@ -651,6 +682,8 @@ export interface CreateNewSessionEndData extends BaseEventData {
 export type EventDataMap = {
   'session-changed': SessionChangedData
   'pane-changed': PaneChangedData
+  'observe-session:start': ObserveSessionStartData
+  'observe-session:exit': ObserveSessionExitData
   'kill-existing-server:start': undefined
   'kill-existing-server:end': BaseEventData
   'kill-existing-server:fail': ErrorEventData
@@ -768,6 +801,9 @@ export type EventDataMap = {
   'get-current-session:start': undefined
   'get-current-session:end': GetCurrentSessionEndData
   'get-current-session:fail': GetCurrentSessionFailData
+  'get-project-info:start': undefined
+  'get-project-info:end': GetProjectInfoEndData
+  'get-project-info:fail': GetProjectInfoFailData
   'list-all-sessions:start': undefined
   'list-all-sessions:end': ListAllSessionsEndData
   'list-all-sessions:fail': ErrorEventData

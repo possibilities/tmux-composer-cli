@@ -8,6 +8,8 @@ import {
   getAttachedSession,
   switchToSession,
 } from '../core/tmux-utils.js'
+import { getMainRepositoryPath } from '../core/git-utils.js'
+import * as path from 'path'
 
 interface CloseSessionOptions extends BaseSessionOptions {}
 
@@ -56,6 +58,13 @@ export class SessionCloser extends BaseSessionCommand {
       currentSession = execSync(`tmux ${socketArgs} display-message -p '#S'`, {
         encoding: 'utf-8',
       }).trim()
+
+      this.updateContext({
+        session: {
+          name: currentSession,
+        },
+      })
+
       this.emitEvent('get-current-session:end', {
         sessionName: currentSession,
         duration: Date.now() - getCurrentStart,
@@ -72,6 +81,79 @@ export class SessionCloser extends BaseSessionCommand {
         duration: Date.now() - startTime,
       })
       throw error
+    }
+
+    const getProjectStart = Date.now()
+    this.emitEvent('get-project-info:start')
+
+    try {
+      const projectPath = getMainRepositoryPath(process.cwd())
+      const projectName = path.basename(projectPath)
+
+      this.updateContext({
+        project: {
+          name: projectName,
+          path: projectPath,
+        },
+      })
+
+      this.emitEvent('get-project-info:end', {
+        projectName,
+        projectPath,
+        duration: Date.now() - getProjectStart,
+      })
+    } catch (error) {
+      this.emitEvent('get-project-info:fail', {
+        error: error instanceof Error ? error.message : String(error),
+        errorCode: 'PROJECT_NOT_FOUND',
+        duration: Date.now() - getProjectStart,
+      })
+    }
+
+    const getModeStart = Date.now()
+    this.emitEvent('get-session-mode:start')
+
+    let mode: 'worktree' | 'project' | undefined
+    try {
+      const modeOutput = execSync(
+        `tmux ${socketArgs} show-environment TMUX_COMPOSER_MODE`,
+        {
+          encoding: 'utf-8',
+        },
+      )
+        .trim()
+        .replace('TMUX_COMPOSER_MODE=', '')
+
+      if (modeOutput === 'worktree' || modeOutput === 'project') {
+        mode = modeOutput
+
+        this.updateContext({
+          session: {
+            name: currentSession,
+            mode: mode,
+          },
+        })
+
+        this.emitEvent('get-session-mode:end', {
+          mode: mode,
+          sessionName: currentSession,
+          duration: Date.now() - getModeStart,
+        })
+      } else {
+        this.emitEvent('get-session-mode:fail', {
+          error: 'Invalid TMUX_COMPOSER_MODE value',
+          errorCode: 'INVALID_MODE',
+          sessionName: currentSession,
+          duration: Date.now() - getModeStart,
+        })
+      }
+    } catch (error) {
+      this.emitEvent('get-session-mode:fail', {
+        error: error instanceof Error ? error.message : String(error),
+        errorCode: 'MODE_NOT_FOUND',
+        sessionName: currentSession,
+        duration: Date.now() - getModeStart,
+      })
     }
 
     const listSessionsStart = Date.now()
