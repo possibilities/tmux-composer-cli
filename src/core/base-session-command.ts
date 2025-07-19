@@ -4,6 +4,8 @@ import type {
   EventName,
   TmuxEventWithOptionalData,
   EventDataMap,
+  EventContext,
+  EventPayload,
 } from './events.js'
 import type { TmuxSocketOptions } from './tmux-socket.js'
 
@@ -16,6 +18,7 @@ export interface BaseSessionOptions extends TmuxSocketOptions {
 export abstract class BaseSessionCommand extends EventEmitter {
   protected sessionId: string
   protected socketOptions: TmuxSocketOptions
+  protected eventContext: EventContext = {}
 
   constructor(options: BaseSessionOptions = {}) {
     super()
@@ -26,6 +29,10 @@ export abstract class BaseSessionCommand extends EventEmitter {
     }
   }
 
+  protected updateContext(context: Partial<EventContext>): void {
+    this.eventContext = { ...this.eventContext, ...context }
+  }
+
   protected emitEvent<T extends EventName>(
     eventName: T,
     ...args: T extends keyof EventDataMap
@@ -34,14 +41,19 @@ export abstract class BaseSessionCommand extends EventEmitter {
         : [data: EventDataMap[T]]
       : []
   ): void {
+    const payload: EventPayload<T> = {
+      context: this.eventContext,
+      ...(args.length > 0 ? { details: args[0] } : {}),
+    } as EventPayload<T>
+
     const event = {
       event: eventName,
+      payload,
       timestamp: new Date().toISOString(),
       sessionId: this.sessionId,
-      ...(args.length > 0 ? { data: args[0] } : {}),
     } as TmuxEventWithOptionalData<T>
 
-    const dataWithoutUndefined =
+    const detailsWithoutUndefined =
       args.length > 0 && args[0]
         ? Object.fromEntries(
             Object.entries(args[0] as Record<string, unknown>).filter(
@@ -54,7 +66,10 @@ export abstract class BaseSessionCommand extends EventEmitter {
       event: eventName,
       timestamp: event.timestamp,
       sessionId: event.sessionId,
-      ...(dataWithoutUndefined && { data: dataWithoutUndefined }),
+      payload: {
+        context: this.eventContext,
+        ...(detailsWithoutUndefined && { details: detailsWithoutUndefined }),
+      },
     }
 
     console.log(JSON.stringify(finalEventData))

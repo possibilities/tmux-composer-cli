@@ -1,10 +1,10 @@
 import { spawn, ChildProcess } from 'child_process'
-import { EventEmitter } from 'events'
-import { randomUUID } from 'crypto'
 import { throttle } from '../core/throttle.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
 import { getTmuxSocketPath, getTmuxSocketArgs } from '../core/tmux-socket.js'
+import { BaseSessionCommand } from '../core/base-session-command.js'
 import type { PaneChangedData, TmuxEvent } from '../core/events.js'
+import type { BaseSessionOptions } from '../core/base-session-command.js'
 
 interface NodeError extends Error {
   code?: string
@@ -14,7 +14,7 @@ function normalizeSessionId(id: string): string {
   return id.startsWith('$') ? id : `$${id}`
 }
 
-export class TmuxPaneWatcher extends EventEmitter {
+export class TmuxPaneWatcher extends BaseSessionCommand {
   private controlModeProcess: ChildProcess | null = null
   private currentSessionId: string | null = null
   private currentSessionName: string | null = null
@@ -22,26 +22,15 @@ export class TmuxPaneWatcher extends EventEmitter {
   private ownWindowId: string | null = null
   private paneThrottlers = new Map<string, (data: PaneChangedData) => void>()
   private paneContents = new Map<string, string>()
-  private readonly sessionId = randomUUID()
 
-  constructor() {
-    super()
+  constructor(options: BaseSessionOptions = {}) {
+    super(options)
 
     this.ownPaneId = process.env.TMUX_PANE || null
 
     this.on('event', (event: TmuxEvent) => {
       console.log(JSON.stringify(event))
     })
-  }
-
-  private emitEvent(eventName: 'pane-changed', data: PaneChangedData): void {
-    const event: TmuxEvent<'pane-changed'> = {
-      event: eventName,
-      data,
-      timestamp: new Date().toISOString(),
-      sessionId: this.sessionId,
-    }
-    this.emit('event', event)
   }
 
   async start(
@@ -67,6 +56,13 @@ export class TmuxPaneWatcher extends EventEmitter {
       this.currentSessionId = normalizeSessionId(sessionId.trim())
       this.currentSessionName = sessionName.trim()
       this.ownWindowId = windowId.trim()
+
+      this.updateContext({
+        session: {
+          name: this.currentSessionName,
+          mode: 'project',
+        },
+      })
 
       console.error(
         `[INFO] Monitoring panes in session ${this.currentSessionName}`,

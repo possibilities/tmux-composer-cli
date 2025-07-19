@@ -1,11 +1,11 @@
 import { spawn, ChildProcess } from 'child_process'
 import { promisify } from 'util'
-import { EventEmitter } from 'events'
-import { randomUUID } from 'crypto'
 import { throttle } from '../core/throttle.js'
 import { enableZmqPublishing } from '../core/zmq-publisher.js'
 import { getTmuxSocketPath, getTmuxSocketArgs } from '../core/tmux-socket.js'
+import { BaseSessionCommand } from '../core/base-session-command.js'
 import type { SessionChangedData, TmuxEvent } from '../core/events.js'
+import type { BaseSessionOptions } from '../core/base-session-command.js'
 
 const sleep = promisify(setTimeout)
 
@@ -45,7 +45,7 @@ function normalizeSessionId(id: string): string {
   return id.startsWith('$') ? id : `$${id}`
 }
 
-export class TmuxSessionWatcher extends EventEmitter {
+export class TmuxSessionWatcher extends BaseSessionCommand {
   private controlModeProcess: ChildProcess | null = null
   private currentSessionName: string | null = null
   private currentSessionId: string | null = null
@@ -58,10 +58,9 @@ export class TmuxSessionWatcher extends EventEmitter {
   private forceEmitAfterRefresh = false
   private resizeHandler: (() => void) | null = null
   private throttledRefreshPaneList: () => void
-  private readonly sessionId = randomUUID()
 
-  constructor() {
-    super()
+  constructor(options: BaseSessionOptions = {}) {
+    super(options)
 
     this.on('event', (event: TmuxEvent) => {
       console.log(JSON.stringify(event))
@@ -72,19 +71,6 @@ export class TmuxSessionWatcher extends EventEmitter {
         console.error('Failed to refresh pane list:', error)
       })
     }, 150)
-  }
-
-  private emitEvent(
-    eventName: 'session-changed',
-    data: SessionChangedData,
-  ): void {
-    const event: TmuxEvent<'session-changed'> = {
-      event: eventName,
-      data,
-      timestamp: new Date().toISOString(),
-      sessionId: this.sessionId,
-    }
-    this.emit('event', event)
   }
 
   async start(
@@ -106,6 +92,13 @@ export class TmuxSessionWatcher extends EventEmitter {
       )
       this.currentSessionId = normalizeSessionId(sessionId.trim())
       this.currentSessionName = sessionName.trim()
+
+      this.updateContext({
+        session: {
+          name: this.currentSessionName,
+          mode: 'project',
+        },
+      })
     } catch (error) {
       console.error(
         'Failed to get current session. Are you running inside tmux?',

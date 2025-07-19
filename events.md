@@ -4,12 +4,19 @@ This document describes all events emitted by the tmux-composer CLI commands.
 
 ## Overview
 
-The tmux-composer CLI emits JSON-formatted events to stdout and optionally publishes them via ZeroMQ. Each event has the following structure:
+The tmux-composer CLI emits JSON-formatted events to stdout and optionally publishes them via ZeroMQ. Each event now includes a `context` object that provides project, session and worktree information when available:
 
 ```json
 {
   "event": "event-name",
-  "data": { ... },
+  "payload": {
+    "context": {
+      "project": { ... },
+      "session": { ... },
+      "worktree": { ... }
+    },
+    "details": { ... }
+  },
   "timestamp": "2023-12-07T10:30:45.123Z",
   "sessionId": "uuid-v4"
 }
@@ -27,29 +34,37 @@ Monitors tmux session changes including windows and panes.
   ```json
   {
     "event": "session-changed",
-    "data": {
-      "sessionId": "$0",
-      "sessionName": "my-project",
-      "focusedWindowId": "@1",
-      "focusedPaneId": "%0",
-      "windows": [
-        {
-          "windowId": "@1",
-          "windowIndex": "0",
-          "windowName": "editor",
-          "isActive": true,
-          "panes": [
-            {
-              "paneId": "%0",
-              "paneIndex": "0",
-              "command": "vim",
-              "width": 120,
-              "height": 40,
-              "isActive": true
-            }
-          ]
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project",
+          "mode": "project"
         }
-      ]
+      },
+      "details": {
+        "sessionId": "$0",
+        "sessionName": "my-project",
+        "focusedWindowId": "@1",
+        "focusedPaneId": "%0",
+        "windows": [
+          {
+            "windowId": "@1",
+            "windowIndex": "0",
+            "windowName": "editor",
+            "isActive": true,
+            "panes": [
+              {
+                "paneId": "%0",
+                "paneIndex": "0",
+                "command": "vim",
+                "width": 120,
+                "height": 40,
+                "isActive": true
+              }
+            ]
+          }
+        ]
+      }
     },
     "timestamp": "2023-12-07T10:30:45.123Z",
     "sessionId": "uuid-v4"
@@ -66,12 +81,21 @@ Monitors pane content changes within the current tmux session.
   ```json
   {
     "event": "pane-changed",
-    "data": {
-      "sessionId": "$0",
-      "paneId": "%1",
-      "windowName": "server",
-      "windowIndex": "1",
-      "content": "Full pane content...\n..."
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project",
+          "mode": "project"
+        }
+      },
+      "details": {
+        "sessionId": "$0",
+        "paneId": "%1",
+        "windowName": "server",
+        "windowIndex": "1",
+        "paneIndex": "0",
+        "content": "Full pane content...\n..."
+      }
     },
     "timestamp": "2023-12-07T10:30:45.123Z",
     "sessionId": "uuid-v4"
@@ -101,17 +125,22 @@ In non-worktree mode:
   ```json
   {
     "event": "initialize-session-creation:start",
-    "data": {
-      "projectPath": "/path/to/project",
-      "options": {
-        "socketName": null,
-        "socketPath": null,
-        "terminalWidth": 120,
-        "terminalHeight": 40,
-        "attach": true,
-        "worktreeMode": true
+    "payload": {
+      "context": {},
+      "details": {
+        "projectPath": "/path/to/project",
+        "options": {
+          "socketName": null,
+          "socketPath": null,
+          "terminalWidth": 120,
+          "terminalHeight": 40,
+          "attach": true,
+          "worktreeMode": true
+        }
       }
-    }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -119,9 +148,14 @@ In non-worktree mode:
   ```json
   {
     "event": "initialize-session-creation:end",
-    "data": {
-      "duration": 15
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "duration": 15
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -134,14 +168,31 @@ In non-worktree mode:
   ```json
   {
     "event": "analyze-project-metadata:end",
-    "data": {
-      "projectPath": "/path/to/project",
-      "projectName": "my-project",
-      "worktreeNumber": 1,
-      "sessionName": "my-project-worktree-1",
-      "worktreeMode": true,
-      "duration": 10
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "number": "1"
+        }
+      },
+      "details": {
+        "projectPath": "/path/to/project",
+        "projectName": "my-project",
+        "worktreeNumber": 1,
+        "sessionName": "my-project-worktree-1",
+        "worktreeMode": true,
+        "duration": 10
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -157,12 +208,30 @@ In non-worktree mode:
   ```json
   {
     "event": "analyze-project-structure:end",
-    "data": {
-      "hasPackageJson": true,
-      "packageJsonPath": "/path/to/project/package.json",
-      "worktreeMode": true,
-      "duration": 5
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree",
+          "number": "1"
+        }
+      },
+      "details": {
+        "hasPackageJson": true,
+        "packageJsonPath": "/path/to/project/package.json",
+        "worktreeMode": true,
+        "duration": 5
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -173,18 +242,36 @@ In non-worktree mode:
   ```json
   {
     "event": "analyze-project-scripts:end",
-    "data": {
-      "availableScripts": [
-        "dev",
-        "build",
-        "test",
-        "lint:watch",
-        "types:watch",
-        "test:watch"
-      ],
-      "plannedWindows": ["server", "lint", "types", "test", "control"],
-      "duration": 8
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree",
+          "number": "1"
+        }
+      },
+      "details": {
+        "availableScripts": [
+          "dev",
+          "build",
+          "test",
+          "lint:watch",
+          "types:watch",
+          "test:watch"
+        ],
+        "plannedWindows": ["server", "lint", "types", "test", "control"],
+        "duration": 8
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -204,14 +291,31 @@ In non-worktree mode:
   ```json
   {
     "event": "ensure-clean-repository:end",
-    "data": {
-      "isClean": true,
-      "branch": "main",
-      "commitHash": "abc123...",
-      "uncommittedFiles": [],
-      "stagedFiles": [],
-      "duration": 20
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "number": "1"
+        }
+      },
+      "details": {
+        "isClean": true,
+        "branch": "main",
+        "commitHash": "abc123...",
+        "uncommittedFiles": [],
+        "stagedFiles": [],
+        "duration": 20
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -219,12 +323,29 @@ In non-worktree mode:
   ```json
   {
     "event": "ensure-clean-repository:fail",
-    "data": {
-      "isClean": false,
-      "error": "Repository has uncommitted changes",
-      "errorCode": "DIRTY_REPOSITORY",
-      "duration": 20
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "number": "1"
+        }
+      },
+      "details": {
+        "isClean": false,
+        "error": "Repository has uncommitted changes",
+        "errorCode": "DIRTY_REPOSITORY",
+        "duration": 20
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -237,13 +358,31 @@ In non-worktree mode:
   ```json
   {
     "event": "create-project-worktree:end",
-    "data": {
-      "sourcePath": "/path/to/project",
-      "worktreePath": "/home/user/code/.worktrees/my-project-worktree-1",
-      "branch": "main",
-      "worktreeNumber": 1,
-      "duration": 150
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/home/user/code/.worktrees/my-project-worktree-1",
+          "number": "1"
+        }
+      },
+      "details": {
+        "sourcePath": "/path/to/project",
+        "worktreePath": "/home/user/code/.worktrees/my-project-worktree-1",
+        "branch": "main",
+        "worktreeNumber": 1,
+        "duration": 150
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -254,11 +393,25 @@ In non-worktree mode:
   ```json
   {
     "event": "skip-worktree-creation",
-    "data": {
-      "reason": "Non-worktree mode",
-      "currentPath": "/path/to/project",
-      "duration": 0
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project",
+          "mode": "project"
+        }
+      },
+      "details": {
+        "reason": "Non-worktree mode",
+        "currentPath": "/path/to/project",
+        "duration": 0
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -271,13 +424,31 @@ In non-worktree mode:
   ```json
   {
     "event": "install-project-dependencies:end",
-    "data": {
-      "packageManager": "pnpm",
-      "worktreePath": "/path/to/worktree",
-      "hasPackageJson": true,
-      "hasLockfile": true,
-      "duration": 5000
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree",
+          "number": "1"
+        }
+      },
+      "details": {
+        "packageManager": "pnpm",
+        "worktreePath": "/path/to/worktree",
+        "hasPackageJson": true,
+        "hasLockfile": true,
+        "duration": 5000
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -292,17 +463,35 @@ In non-worktree mode:
   ```json
   {
     "event": "create-tmux-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-1",
-      "sessionId": "$0",
-      "socketPath": "/tmp/tmux-1000/default",
-      "firstWindow": "server",
-      "terminalSize": {
-        "width": 120,
-        "height": 40
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree",
+          "number": "1"
+        }
       },
-      "duration": 50
-    }
+      "details": {
+        "sessionName": "my-project-worktree-1",
+        "sessionId": "$0",
+        "socketPath": "/tmp/tmux-1000/default",
+        "firstWindow": "server",
+        "terminalSize": {
+          "width": 120,
+          "height": 40
+        },
+        "duration": 50
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -324,9 +513,27 @@ Window events now use a generic structure to support unlimited dynamic window na
   ```json
   {
     "event": "create-tmux-window:start",
-    "data": {
-      "windowName": "server"
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree",
+          "number": "1"
+        }
+      },
+      "details": {
+        "windowName": "server"
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -335,15 +542,33 @@ Window events now use a generic structure to support unlimited dynamic window na
   ```json
   {
     "event": "create-tmux-window:end",
-    "data": {
-      "windowName": "server",
-      "windowIndex": 1,
-      "windowId": "@2",
-      "command": "PORT=3000 pnpm run dev",
-      "port": 3000,
-      "script": "dev",
-      "duration": 100
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree",
+          "number": "1"
+        }
+      },
+      "details": {
+        "windowName": "server",
+        "windowIndex": 1,
+        "windowId": "@2",
+        "command": "PORT=3000 pnpm run dev",
+        "port": 3000,
+        "script": "dev",
+        "duration": 100
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -352,12 +577,30 @@ Window events now use a generic structure to support unlimited dynamic window na
   ```json
   {
     "event": "create-tmux-window:fail",
-    "data": {
-      "windowName": "agent",
-      "error": "Pane did not become ready within timeout",
-      "errorCode": "PANE_NOT_READY",
-      "duration": 5000
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree",
+          "number": "1"
+        }
+      },
+      "details": {
+        "windowName": "agent",
+        "error": "Pane did not become ready within timeout",
+        "errorCode": "PANE_NOT_READY",
+        "duration": 5000
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -366,14 +609,32 @@ Window events now use a generic structure to support unlimited dynamic window na
   ```json
   {
     "event": "create-tmux-window:end",
-    "data": {
-      "windowName": "foo",
-      "windowIndex": 3,
-      "windowId": "@4",
-      "command": "pnpm run foo:watch",
-      "script": "foo:watch",
-      "duration": 100
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree",
+          "number": "1"
+        }
+      },
+      "details": {
+        "windowName": "foo",
+        "windowIndex": 3,
+        "windowId": "@4",
+        "command": "pnpm run foo:watch",
+        "script": "foo:watch",
+        "duration": 100
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -386,11 +647,29 @@ Window events now use a generic structure to support unlimited dynamic window na
   ```json
   {
     "event": "find-open-port:end",
-    "data": {
-      "port": 52341,
-      "windowName": "server",
-      "duration": 5
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree",
+          "number": "1"
+        }
+      },
+      "details": {
+        "port": 52341,
+        "windowName": "server",
+        "duration": 5
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -404,15 +683,33 @@ Window events now use a generic structure to support unlimited dynamic window na
   ```json
   {
     "event": "finalize-tmux-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-1",
-      "selectedWindow": "server",
-      "totalWindows": 6,
-      "worktreePath": "/path/to/worktree",
-      "worktreeMode": true,
-      "duration": 10,
-      "totalDuration": 7500
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree",
+          "number": "1"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-1",
+        "selectedWindow": "server",
+        "totalWindows": 6,
+        "worktreePath": "/path/to/worktree",
+        "worktreeMode": true,
+        "duration": 10,
+        "totalDuration": 7500
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -425,14 +722,32 @@ Window events now use a generic structure to support unlimited dynamic window na
   ```json
   {
     "event": "create-worktree-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-1",
-      "worktreePath": "/path/to/worktree",
-      "windows": ["server", "lint", "types", "test", "control"],
-      "worktreeMode": true,
-      "duration": 7450,
-      "totalDuration": 7500
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree",
+          "number": "1"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-1",
+        "worktreePath": "/path/to/worktree",
+        "windows": ["server", "lint", "types", "test", "control"],
+        "worktreeMode": true,
+        "duration": 7450,
+        "totalDuration": 7500
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -449,13 +764,31 @@ Window events now use a generic structure to support unlimited dynamic window na
   ```json
   {
     "event": "attach-tmux-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-1",
-      "windowsReady": true,
-      "waitDuration": 150,
-      "attachMethod": "switch-client",
-      "duration": 200
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree",
+          "number": "1"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-1",
+        "windowsReady": true,
+        "waitDuration": 150,
+        "attachMethod": "switch-client",
+        "duration": 200
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -466,10 +799,28 @@ Window events now use a generic structure to support unlimited dynamic window na
   ```json
   {
     "event": "switch-tmux-session:start",
-    "data": {
-      "sessionName": "my-project-worktree-1",
-      "fromInsideTmux": true
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-1",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree",
+          "number": "1"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-1",
+        "fromInsideTmux": true
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -490,9 +841,14 @@ Continues the highest numbered worktree session, creating it if it doesn't exist
   ```json
   {
     "event": "initialize-continue-session:end",
-    "data": {
-      "duration": 10
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "duration": 10
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -500,16 +856,21 @@ Continues the highest numbered worktree session, creating it if it doesn't exist
   ```json
   {
     "event": "continue-session:start",
-    "data": {
-      "projectPath": "/path/to/project",
-      "options": {
-        "socketName": null,
-        "socketPath": null,
-        "terminalWidth": 120,
-        "terminalHeight": 40,
-        "attach": true
+    "payload": {
+      "context": {},
+      "details": {
+        "projectPath": "/path/to/project",
+        "options": {
+          "socketName": null,
+          "socketPath": null,
+          "terminalWidth": 120,
+          "terminalHeight": 40,
+          "attach": true
+        }
       }
-    }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -522,11 +883,28 @@ Continues the highest numbered worktree session, creating it if it doesn't exist
   ```json
   {
     "event": "validate-existing-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-00001",
-      "exists": false,
-      "duration": 15
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "number": "00001"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00001",
+        "exists": false,
+        "duration": 15
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -541,15 +919,33 @@ Continues the highest numbered worktree session, creating it if it doesn't exist
   ```json
   {
     "event": "find-highest-worktree:end",
-    "data": {
-      "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00001",
-      "projectName": "my-project",
-      "worktreeNumber": "00001",
-      "sessionName": "my-project-worktree-00001",
-      "branch": "main",
-      "commit": "abc123...",
-      "duration": 10
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/home/user/code/.worktrees/my-project-worktree-00001",
+          "number": "00001"
+        }
+      },
+      "details": {
+        "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00001",
+        "projectName": "my-project",
+        "worktreeNumber": "00001",
+        "sessionName": "my-project-worktree-00001",
+        "branch": "main",
+        "commit": "abc123...",
+        "duration": 10
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -564,11 +960,21 @@ Continues the highest numbered worktree session, creating it if it doesn't exist
   ```json
   {
     "event": "set-tmux-composer-mode:end",
-    "data": {
-      "mode": "worktree",
-      "sessionName": "my-project-worktree-00001",
-      "duration": 5
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        }
+      },
+      "details": {
+        "mode": "worktree",
+        "sessionName": "my-project-worktree-00001",
+        "duration": 5
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -581,14 +987,32 @@ Continues the highest numbered worktree session, creating it if it doesn't exist
   ```json
   {
     "event": "continue-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-00001",
-      "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00001",
-      "windows": ["server", "lint", "types", "test", "control"],
-      "worktreeNumber": "00001",
-      "branch": "main",
-      "duration": 100
-    }
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project",
+          "path": "/path/to/project"
+        },
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/home/user/code/.worktrees/my-project-worktree-00001",
+          "number": "00001"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00001",
+        "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00001",
+        "windows": ["server", "lint", "types", "test", "control"],
+        "worktreeNumber": "00001",
+        "branch": "main",
+        "duration": 100
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -613,17 +1037,22 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "resume-session:start",
-    "data": {
-      "projectPath": "/path/to/project",
-      "options": {
-        "socketName": null,
-        "socketPath": null,
-        "terminalWidth": 120,
-        "terminalHeight": 40,
-        "attach": true,
-        "worktree": "3"
+    "payload": {
+      "context": {},
+      "details": {
+        "projectPath": "/path/to/project",
+        "options": {
+          "socketName": null,
+          "socketPath": null,
+          "terminalWidth": 120,
+          "terminalHeight": 40,
+          "attach": true,
+          "worktree": "3"
+        }
       }
-    }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -634,9 +1063,14 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "find-worktree:start",
-    "data": {
-      "worktreeInput": "3"
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "worktreeInput": "3"
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -645,16 +1079,29 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "find-worktree:end",
-    "data": {
-      "worktreeInput": "3",
-      "worktree": {
-        "number": 3,
-        "path": "/home/user/code/.worktrees/my-project-worktree-00003",
-        "branch": "feature-branch",
-        "projectName": "my-project"
+    "payload": {
+      "context": {
+        "project": {
+          "name": "my-project"
+        },
+        "worktree": {
+          "path": "/home/user/code/.worktrees/my-project-worktree-00003",
+          "number": "00003"
+        }
       },
-      "duration": 10
-    }
+      "details": {
+        "worktreeInput": "3",
+        "worktree": {
+          "number": 3,
+          "path": "/home/user/code/.worktrees/my-project-worktree-00003",
+          "branch": "feature-branch",
+          "projectName": "my-project"
+        },
+        "duration": 10
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -663,11 +1110,16 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "find-worktree:fail",
-    "data": {
-      "error": "Worktree '999' not found",
-      "errorCode": "WORKTREE_NOT_FOUND",
-      "duration": 10
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "error": "Worktree '999' not found",
+        "errorCode": "WORKTREE_NOT_FOUND",
+        "duration": 10
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -676,9 +1128,18 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "check-session-exists:start",
-    "data": {
-      "sessionName": "my-project-worktree-00003"
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00003"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00003"
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -687,11 +1148,20 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "check-session-exists:end",
-    "data": {
-      "sessionName": "my-project-worktree-00003",
-      "exists": false,
-      "duration": 15
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00003"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00003",
+        "exists": false,
+        "duration": 15
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -700,9 +1170,18 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "switch-to-existing-session:start",
-    "data": {
-      "sessionName": "my-project-worktree-00003"
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00003"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00003"
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -711,10 +1190,19 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "switch-to-existing-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-00003",
-      "duration": 20
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00003"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00003",
+        "duration": 20
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -723,10 +1211,22 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "create-new-session:start",
-    "data": {
-      "sessionName": "my-project-worktree-00003",
-      "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00003"
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00003"
+        },
+        "worktree": {
+          "path": "/home/user/code/.worktrees/my-project-worktree-00003"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00003",
+        "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00003"
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -734,11 +1234,23 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "create-new-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-00003",
-      "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00003",
-      "duration": 5000
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00003"
+        },
+        "worktree": {
+          "path": "/home/user/code/.worktrees/my-project-worktree-00003"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00003",
+        "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00003",
+        "duration": 5000
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -751,10 +1263,15 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "find-all-worktrees:end",
-    "data": {
-      "worktreeCount": 3,
-      "duration": 15
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "worktreeCount": 3,
+        "duration": 15
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -768,17 +1285,22 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "check-existing-sessions:end",
-    "data": {
-      "sessionsWithWorktrees": [
-        {
-          "sessionName": "my-project-worktree-00001",
-          "worktreeNumber": "00001",
-          "worktreePath": "/path/to/worktree",
-          "exists": true
-        }
-      ],
-      "duration": 50
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "sessionsWithWorktrees": [
+          {
+            "sessionName": "my-project-worktree-00001",
+            "worktreeNumber": "00001",
+            "worktreePath": "/path/to/worktree",
+            "exists": true
+          }
+        ],
+        "duration": 50
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -790,12 +1312,17 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "analyze-worktree-sessions:end",
-    "data": {
-      "totalWorktrees": 3,
-      "activeSessions": 1,
-      "worktreesWithoutSessions": 2,
-      "duration": 10
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "totalWorktrees": 3,
+        "activeSessions": 1,
+        "worktreesWithoutSessions": 2,
+        "duration": 10
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -807,10 +1334,15 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "prepare-menu-items:end",
-    "data": {
-      "menuItemCount": 3,
-      "duration": 20
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "menuItemCount": 3,
+        "duration": 20
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -821,9 +1353,14 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "display-menu:start",
-    "data": {
-      "worktreeCount": 3
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "worktreeCount": 3
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -832,9 +1369,14 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "display-menu:end",
-    "data": {
-      "duration": 5000
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "duration": 5000
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -843,9 +1385,14 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "display-menu:cancel",
-    "data": {
-      "duration": 3000
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "duration": 3000
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -853,10 +1400,15 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "display-menu:fail",
-    "data": {
-      "error": "Failed to display menu: Error message",
-      "duration": 100
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "error": "Failed to display menu: Error message",
+        "duration": 100
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -866,12 +1418,17 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "select-worktree-session:fail",
-    "data": {
-      "error": "Menu cancelled",
-      "errorCode": "MENU_CANCELLED",
-      "cancelled": true,
-      "duration": 5000
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "error": "Menu cancelled",
+        "errorCode": "MENU_CANCELLED",
+        "cancelled": true,
+        "duration": 5000
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -882,12 +1439,24 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "resume-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-00003",
-      "action": "switched",
-      "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00003",
-      "duration": 100
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00003"
+        },
+        "worktree": {
+          "path": "/home/user/code/.worktrees/my-project-worktree-00003"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00003",
+        "action": "switched",
+        "worktreePath": "/home/user/code/.worktrees/my-project-worktree-00003",
+        "duration": 100
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -901,11 +1470,16 @@ Displays an interactive menu to select and resume or create worktree sessions. S
   ```json
   {
     "event": "resume-session:fail",
-    "data": {
-      "error": "Worktree '999' not found",
-      "errorCode": "WORKTREE_NOT_FOUND",
-      "duration": 50
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "error": "Worktree '999' not found",
+        "errorCode": "WORKTREE_NOT_FOUND",
+        "duration": 50
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -921,12 +1495,17 @@ Finishes a tmux-composer session, syncing changes and cleaning up.
   ```json
   {
     "event": "finish-session:start",
-    "data": {
-      "options": {
-        "socketName": null,
-        "socketPath": null
+    "payload": {
+      "context": {},
+      "details": {
+        "options": {
+          "socketName": null,
+          "socketPath": null
+        }
       }
-    }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -938,10 +1517,15 @@ Finishes a tmux-composer session, syncing changes and cleaning up.
   ```json
   {
     "event": "load-configuration:end",
-    "data": {
-      "hasBeforeFinishCommand": true,
-      "duration": 10
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "hasBeforeFinishCommand": true,
+        "duration": 10
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -954,11 +1538,20 @@ Finishes a tmux-composer session, syncing changes and cleaning up.
   ```json
   {
     "event": "validate-composer-session:end",
-    "data": {
-      "isValid": true,
-      "sessionName": "my-project-worktree-00001",
-      "duration": 5
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001"
+        }
+      },
+      "details": {
+        "isValid": true,
+        "sessionName": "my-project-worktree-00001",
+        "duration": 5
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -968,11 +1561,21 @@ Finishes a tmux-composer session, syncing changes and cleaning up.
   ```json
   {
     "event": "get-session-mode:end",
-    "data": {
-      "mode": "worktree",
-      "sessionName": "my-project-worktree-00001",
-      "duration": 5
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        }
+      },
+      "details": {
+        "mode": "worktree",
+        "sessionName": "my-project-worktree-00001",
+        "duration": 5
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -984,11 +1587,21 @@ Finishes a tmux-composer session, syncing changes and cleaning up.
   ```json
   {
     "event": "run-before-finish-command:end",
-    "data": {
-      "command": "npm run test",
-      "exitCode": 0,
-      "duration": 3000
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        }
+      },
+      "details": {
+        "command": "npm run test",
+        "exitCode": 0,
+        "duration": 3000
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1001,12 +1614,25 @@ Finishes a tmux-composer session, syncing changes and cleaning up.
   ```json
   {
     "event": "sync-worktree-to-main:end",
-    "data": {
-      "worktreePath": "/path/to/worktree",
-      "mainBranch": "main",
-      "commitsMerged": 5,
-      "duration": 2000
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree"
+        }
+      },
+      "details": {
+        "worktreePath": "/path/to/worktree",
+        "mainBranch": "main",
+        "commitsMerged": 5,
+        "duration": 2000
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1016,12 +1642,25 @@ Finishes a tmux-composer session, syncing changes and cleaning up.
   ```json
   {
     "event": "check-install-dependencies:end",
-    "data": {
-      "worktreePath": "/path/to/worktree",
-      "dependenciesInstalled": true,
-      "packageManager": "npm",
-      "duration": 5000
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        },
+        "worktree": {
+          "path": "/path/to/worktree"
+        }
+      },
+      "details": {
+        "worktreePath": "/path/to/worktree",
+        "dependenciesInstalled": true,
+        "packageManager": "npm",
+        "duration": 5000
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1034,12 +1673,21 @@ Finishes a tmux-composer session, syncing changes and cleaning up.
   ```json
   {
     "event": "find-alternative-session:end",
-    "data": {
-      "currentSession": "my-project-worktree-00001",
-      "alternativeSession": "my-project-worktree-00002",
-      "hasAlternative": true,
-      "duration": 10
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001"
+        }
+      },
+      "details": {
+        "currentSession": "my-project-worktree-00001",
+        "alternativeSession": "my-project-worktree-00002",
+        "hasAlternative": true,
+        "duration": 10
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1050,11 +1698,20 @@ Finishes a tmux-composer session, syncing changes and cleaning up.
   ```json
   {
     "event": "switch-before-kill:end",
-    "data": {
-      "fromSession": "my-project-worktree-00001",
-      "toSession": "my-project-worktree-00002",
-      "duration": 50
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001"
+        }
+      },
+      "details": {
+        "fromSession": "my-project-worktree-00001",
+        "toSession": "my-project-worktree-00002",
+        "duration": 50
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1065,10 +1722,19 @@ Finishes a tmux-composer session, syncing changes and cleaning up.
   ```json
   {
     "event": "kill-current-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-00001",
-      "duration": 20
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00001",
+        "duration": 20
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1076,11 +1742,22 @@ Finishes a tmux-composer session, syncing changes and cleaning up.
   ```json
   {
     "event": "finish-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-00001",
-      "mode": "worktree",
-      "duration": 10500
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00001",
+        "mode": "worktree",
+        "sessionKept": false,
+        "duration": 10500
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1096,12 +1773,17 @@ Syncs a tmux-composer session (same as finish-session but keeps the session aliv
   ```json
   {
     "event": "sync-session:start",
-    "data": {
-      "options": {
-        "socketName": null,
-        "socketPath": null
+    "payload": {
+      "context": {},
+      "details": {
+        "options": {
+          "socketName": null,
+          "socketPath": null
+        }
       }
-    }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1144,11 +1826,21 @@ Same as finish-session:
   ```json
   {
     "event": "sync-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-00001",
-      "mode": "worktree",
-      "duration": 10500
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001",
+          "mode": "worktree"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00001",
+        "mode": "worktree",
+        "duration": 10500
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1156,11 +1848,16 @@ Same as finish-session:
   ```json
   {
     "event": "sync-session:fail",
-    "data": {
-      "error": "Failed to sync worktree to main branch",
-      "errorCode": "SYNC_FAILED",
-      "duration": 5000
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "error": "Failed to sync worktree to main branch",
+        "errorCode": "SYNC_FAILED",
+        "duration": 5000
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1176,12 +1873,17 @@ Closes the current tmux session, switching to another if available.
   ```json
   {
     "event": "close-session:start",
-    "data": {
-      "options": {
-        "socketName": null,
-        "socketPath": null
+    "payload": {
+      "context": {},
+      "details": {
+        "options": {
+          "socketName": null,
+          "socketPath": null
+        }
       }
-    }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1194,10 +1896,19 @@ Closes the current tmux session, switching to another if available.
   ```json
   {
     "event": "get-current-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-00001",
-      "duration": 5
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00001",
+        "duration": 5
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1207,11 +1918,16 @@ Closes the current tmux session, switching to another if available.
   ```json
   {
     "event": "list-all-sessions:end",
-    "data": {
-      "sessions": ["my-project-worktree-00001", "my-project-worktree-00002"],
-      "count": 2,
-      "duration": 10
-    }
+    "payload": {
+      "context": {},
+      "details": {
+        "sessions": ["my-project-worktree-00001", "my-project-worktree-00002"],
+        "count": 2,
+        "duration": 10
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1224,12 +1940,21 @@ Closes the current tmux session, switching to another if available.
   ```json
   {
     "event": "check-attached-session:end",
-    "data": {
-      "attachedSession": "my-project-worktree-00001",
-      "isAttachedToCurrent": true,
-      "currentSession": "my-project-worktree-00001",
-      "duration": 5
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001"
+        }
+      },
+      "details": {
+        "attachedSession": "my-project-worktree-00001",
+        "isAttachedToCurrent": true,
+        "currentSession": "my-project-worktree-00001",
+        "duration": 5
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1240,11 +1965,20 @@ Closes the current tmux session, switching to another if available.
   ```json
   {
     "event": "switch-before-close:end",
-    "data": {
-      "fromSession": "my-project-worktree-00001",
-      "toSession": "my-project-worktree-00002",
-      "duration": 50
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001"
+        }
+      },
+      "details": {
+        "fromSession": "my-project-worktree-00001",
+        "toSession": "my-project-worktree-00002",
+        "duration": 50
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1255,10 +1989,19 @@ Closes the current tmux session, switching to another if available.
   ```json
   {
     "event": "kill-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-00001",
-      "duration": 20
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00001",
+        "duration": 20
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 
@@ -1266,10 +2009,19 @@ Closes the current tmux session, switching to another if available.
   ```json
   {
     "event": "close-session:end",
-    "data": {
-      "sessionName": "my-project-worktree-00001",
-      "duration": 100
-    }
+    "payload": {
+      "context": {
+        "session": {
+          "name": "my-project-worktree-00001"
+        }
+      },
+      "details": {
+        "sessionName": "my-project-worktree-00001",
+        "duration": 100
+      }
+    },
+    "timestamp": "2023-12-07T10:30:45.123Z",
+    "sessionId": "uuid-v4"
   }
   ```
 

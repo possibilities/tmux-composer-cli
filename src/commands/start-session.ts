@@ -77,6 +77,14 @@ export class SessionCreator extends BaseSessionCommand {
     this.emitEvent('analyze-project-metadata:start')
     const projectName = path.basename(projectPath)
 
+    this.updateContext({
+      project: {
+        name: projectName,
+        path: projectPath,
+        isProjectsPath: inProjectsDir,
+      },
+    })
+
     const isWorktreeMode = forceNonWorktreeMode
       ? false
       : (options.worktree ?? config.worktree ?? true)
@@ -119,6 +127,16 @@ export class SessionCreator extends BaseSessionCommand {
         }
       }
     }
+
+    this.updateContext({
+      session: {
+        name: sessionName,
+        mode: isWorktreeMode ? 'worktree' : 'project',
+      },
+      ...(isWorktreeMode
+        ? { worktree: { path: '', number: worktreeNum } }
+        : {}),
+    })
 
     this.emitEvent('analyze-project-metadata:end', {
       projectPath,
@@ -247,6 +265,13 @@ export class SessionCreator extends BaseSessionCommand {
           duration: 0,
         })
       }
+
+      this.updateContext({
+        worktree: {
+          path: worktreePath,
+          number: worktreeNum,
+        },
+      })
 
       const structureStart = Date.now()
       this.emitEvent('analyze-project-structure:start')

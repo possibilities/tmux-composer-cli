@@ -1,4 +1,5 @@
 import type { EventSource } from './zmq-publisher.js'
+import type { ProjectInfo, SessionInfo } from '../types/project.js'
 
 export type EventName =
   | 'session-changed'
@@ -134,6 +135,26 @@ export type EventName =
   | 'sync-session:start'
   | 'sync-session:end'
   | 'sync-session:fail'
+
+export interface WorktreeInfo {
+  path: string
+  number?: string
+  branch?: string
+}
+
+export interface EventContext {
+  project?: Partial<ProjectInfo>
+  session?: Partial<SessionInfo>
+  worktree?: WorktreeInfo
+}
+
+export type EventPayload<T extends EventName> = {
+  context: EventContext
+} & (T extends keyof EventDataMap
+  ? EventDataMap[T] extends undefined
+    ? {}
+    : { details: EventDataMap[T] }
+  : {})
 
 export interface BaseEventData {
   duration?: number
@@ -765,11 +786,7 @@ export type EventDataMap = {
 
 export interface TmuxEvent<T extends EventName = EventName> {
   event: T
-  data: T extends keyof EventDataMap
-    ? EventDataMap[T] extends undefined
-      ? never
-      : EventDataMap[T]
-    : never
+  payload: EventPayload<T>
   timestamp: string
   sessionId: string
   source?: EventSource
@@ -777,7 +794,7 @@ export interface TmuxEvent<T extends EventName = EventName> {
 
 export type TmuxEventWithOptionalData<T extends EventName = EventName> = {
   event: T
-  data?: T extends keyof EventDataMap ? EventDataMap[T] : never
+  payload?: EventPayload<T>
   timestamp: string
   sessionId: string
   source?: EventSource
