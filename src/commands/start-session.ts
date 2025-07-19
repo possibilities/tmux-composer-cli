@@ -92,6 +92,33 @@ export class SessionCreator extends BaseSessionCommand {
     let sessionName: string
 
     if (isWorktreeMode) {
+      const packageJsonPath = path.join(projectPath, 'package.json')
+      if (fs.existsSync(packageJsonPath)) {
+        try {
+          const packageJson = JSON.parse(
+            fs.readFileSync(packageJsonPath, 'utf-8'),
+          )
+          if (packageJson.pnpm?.overrides) {
+            this.emitEvent('analyze-project-metadata:fail', {
+              error: 'Cannot use worktree mode with pnpm overrides',
+              errorCode: 'PNPM_OVERRIDES_DETECTED',
+              duration: Date.now() - metadataStartTime,
+            })
+            console.error(
+              '\nError: Cannot use worktree mode with pnpm overrides.',
+            )
+            console.error(
+              "The project contains pnpm overrides which may include relative paths that won't work in worktrees.",
+            )
+            console.error('Please either:')
+            console.error('  - Remove pnpm.overrides from package.json, or')
+            console.error(
+              '  - Use --no-worktree flag to create a session without worktrees\n',
+            )
+            process.exit(1)
+          }
+        } catch (error) {}
+      }
       worktreeNum = getNextWorktreeNumber(projectPath)
       sessionName = `${projectName}-worktree-${worktreeNum}`
     } else {

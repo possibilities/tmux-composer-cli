@@ -82,7 +82,6 @@ export class SystemStarter extends BaseSessionCommand {
 
     const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
 
-    // Kill existing server if it exists
     try {
       const killStartTime = Date.now()
       this.emitEvent('kill-existing-server:start')
@@ -91,21 +90,18 @@ export class SystemStarter extends BaseSessionCommand {
         encoding: 'utf-8',
       })
 
-      // Wait a moment for the server to fully terminate
       execSync('sleep 0.5')
 
-      // Verify the server is gone
       let attempts = 0
       while (attempts < 10) {
         try {
           execSync(`tmux ${socketArgs} list-sessions 2>/dev/null`, {
             encoding: 'utf-8',
           })
-          // If we get here, server is still running
+
           execSync('sleep 0.2')
           attempts++
         } catch {
-          // Server is gone, which is what we want
           break
         }
       }
@@ -126,7 +122,6 @@ export class SystemStarter extends BaseSessionCommand {
       if (error instanceof Error && error.message.includes('Failed to kill')) {
         throw error
       }
-      // If kill-server fails because no server exists, that's fine
     }
 
     const createdSessions: string[] = []
