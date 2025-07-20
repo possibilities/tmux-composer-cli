@@ -2,6 +2,7 @@ import { execSync, exec } from 'child_process'
 import { promisify } from 'util'
 import { getTmuxSocketString } from './tmux-socket.js'
 import type { TmuxSocketOptions } from './tmux-socket.js'
+import type { WindowInfo, PaneInfo } from '../types/project.js'
 
 const execAsync = promisify(exec)
 
@@ -130,10 +131,81 @@ export function getSessionPort(
   }
 }
 
+export function getSessionPaneInfo(
+  sessionName: string,
+  socketOptions: TmuxSocketOptions = {},
+): WindowInfo[] {
+  try {
+    const socketArgs = getTmuxSocketString(socketOptions)
+
+    const windowsOutput = execSync(
+      `tmux ${socketArgs} list-windows -t ${sessionName} -F "#{window_index}|#{window_name}|#{window_active}"`,
+      { encoding: 'utf-8' },
+    )
+
+    const windows: WindowInfo[] = []
+
+    if (!windowsOutput.trim()) return windows
+
+    const windowLines = windowsOutput.trim().split('\n')
+
+    for (const windowLine of windowLines) {
+      const [indexStr, name, activeStr] = windowLine.split('|')
+      const windowIndex = parseInt(indexStr, 10)
+
+      const panesOutput = execSync(
+        `tmux ${socketArgs} list-panes -t ${sessionName}:${windowIndex} -F "#{pane_index}|#{pane_width}|#{pane_height}|#{pane_current_command}|#{pane_current_path}"`,
+        { encoding: 'utf-8' },
+      )
+
+      const panes: PaneInfo[] = []
+
+      if (panesOutput.trim()) {
+        const paneLines = panesOutput.trim().split('\n')
+
+        for (const paneLine of paneLines) {
+          const parts = paneLine.split('|')
+          if (parts.length >= 5) {
+            const index = parts[0]
+            const width = parseInt(parts[1], 10)
+            const height = parseInt(parts[2], 10)
+            const currentCommand = parts[3]
+            const currentPath = parts.slice(4).join('|')
+
+            panes.push({
+              index,
+              width,
+              height,
+              currentCommand,
+              currentPath,
+            })
+          }
+        }
+      }
+
+      windows.push({
+        index: windowIndex,
+        name,
+        active: activeStr === '1',
+        panes,
+      })
+    }
+
+    return windows
+  } catch {
+    return []
+  }
+}
+
 export function getProjectSessions(
   projectName: string,
   socketOptions: TmuxSocketOptions = {},
-): Array<{ name: string; mode: 'worktree' | 'project'; port?: number }> {
+): Array<{
+  name: string
+  mode: 'worktree' | 'project'
+  port?: number
+  windows?: WindowInfo[]
+}> {
   const allSessions = getAllTmuxSessions(socketOptions)
 
   const matchingSessions = allSessions.filter(session => {
@@ -149,5 +221,6 @@ export function getProjectSessions(
     name: sessionName,
     mode: getSessionMode(sessionName, socketOptions),
     port: getSessionPort(sessionName, socketOptions),
+    windows: getSessionPaneInfo(sessionName, socketOptions),
   }))
 }

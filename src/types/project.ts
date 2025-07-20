@@ -1,8 +1,24 @@
+export interface PaneInfo {
+  index: string
+  width: number
+  height: number
+  currentCommand: string
+  currentPath: string
+}
+
+export interface WindowInfo {
+  index: number
+  name: string
+  active: boolean
+  panes: PaneInfo[]
+}
+
 export interface SessionInfo {
   name: string
   mode: 'worktree' | 'project'
   port?: number
   startTime?: string
+  windows?: WindowInfo[]
 }
 
 export interface ProjectInfo {
