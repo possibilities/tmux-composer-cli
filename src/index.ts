@@ -10,6 +10,7 @@ import { SessionFinisher } from './commands/finish-session.js'
 import { SessionSyncer } from './commands/sync-session.js'
 import { SessionCloser } from './commands/close-session.js'
 import { ProjectShower } from './commands/show-project.js'
+import { SessionShower } from './commands/show-session.js'
 import { ProjectLister } from './commands/list-projects.js'
 import { SystemStarter } from './commands/start-system.js'
 import type { TmuxSocketOptions } from './core/tmux-socket.js'
@@ -268,6 +269,17 @@ async function main() {
       const socketOptions = createSocketOptions(options)
       const shower = new ProjectShower(socketOptions)
       await shower.show(projectPath)
+    })
+
+  program
+    .command('show-session <session-name>')
+    .description('show session information with pane content')
+    .option('--tmux-socket <socket-name>', 'Tmux socket name')
+    .option('--tmux-socket-path <socket-path>', 'Tmux socket path')
+    .action(async (sessionName, options) => {
+      const socketOptions = createSocketOptions(options)
+      const shower = new SessionShower(socketOptions)
+      await shower.show(sessionName)
     })
 
   program
