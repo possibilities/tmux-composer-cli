@@ -4,6 +4,9 @@ export interface PaneInfo {
   height: number
   currentCommand: string
   currentPath: string
+  active: boolean
+  cursorX?: number
+  cursorY?: number
 }
 
 export interface PaneInfoWithContent extends PaneInfo {
