@@ -6,22 +6,11 @@ export interface PaneInfo {
   currentPath: string
 }
 
-export interface PaneInfoWithContent extends PaneInfo {
-  content: string
-}
-
 export interface WindowInfo {
   index: number
   name: string
   active: boolean
   panes: PaneInfo[]
-}
-
-export interface WindowInfoWithContent {
-  index: number
-  name: string
-  active: boolean
-  panes: PaneInfoWithContent[]
 }
 
 export interface SessionInfo {
@@ -54,13 +43,6 @@ export interface ProjectInfo {
   isGitRepositoryClean: boolean
   activeSessions?: SessionInfo[]
   isProjectsPath: boolean
-}
-
-export interface SessionData {
-  name: string
-  mode: 'worktree' | 'project'
-  port?: number
-  windows: WindowInfoWithContent[]
 }
 
 export interface ProjectsMap {
