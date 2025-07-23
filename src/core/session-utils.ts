@@ -69,7 +69,7 @@ function capturePaneContent(
   try {
     const socketArgs = getTmuxSocketString(socketOptions)
     const content = execSync(
-      `tmux ${socketArgs} capture-pane -p -e -t ${paneTarget}`,
+      `tmux ${socketArgs} capture-pane -p -t ${paneTarget}`,
       { encoding: 'utf-8' },
     )
     return content
