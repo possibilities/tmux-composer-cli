@@ -154,7 +154,7 @@ export function getSessionPaneInfo(
       const windowIndex = parseInt(indexStr, 10)
 
       const panesOutput = execSync(
-        `tmux ${socketArgs} list-panes -t ${sessionName}:${windowIndex} -F "#{pane_index}|#{pane_width}|#{pane_height}|#{pane_current_command}|#{pane_current_path}|#{pane_active}|#{cursor_x}|#{cursor_y}"`,
+        `tmux ${socketArgs} list-panes -t ${sessionName}:${windowIndex} -F "#{pane_index}|#{pane_width}|#{pane_height}|#{pane_current_command}|#{pane_current_path}"`,
         { encoding: 'utf-8' },
       )
 
@@ -165,31 +165,20 @@ export function getSessionPaneInfo(
 
         for (const paneLine of paneLines) {
           const parts = paneLine.split('|')
-          if (parts.length >= 8) {
+          if (parts.length >= 5) {
             const index = parts[0]
             const width = parseInt(parts[1], 10)
             const height = parseInt(parts[2], 10)
             const currentCommand = parts[3]
-            const currentPath = parts[4]
-            const active = parts[5] === '1'
-            const cursorX = parseInt(parts[6], 10)
-            const cursorY = parseInt(parts[7], 10)
+            const currentPath = parts.slice(4).join('|')
 
-            const paneInfo: PaneInfo = {
+            panes.push({
               index,
               width,
               height,
               currentCommand,
               currentPath,
-              active,
-            }
-
-            if (active) {
-              paneInfo.cursorX = cursorX
-              paneInfo.cursorY = cursorY
-            }
-
-            panes.push(paneInfo)
+            })
           }
         }
       }
