@@ -1,6 +1,6 @@
 {
   "name": "tmux-composer",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "author": "Mike Bannister <notimpossiblemike@gmail.com>",
   "license": "MIT",
   "description": "Tmux Composer CLI",
