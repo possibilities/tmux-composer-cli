@@ -78,6 +78,11 @@ export class SystemStarter extends BaseSessionCommand {
         directory: '.',
         command: 'arthack-proxy',
       },
+      {
+        name: 'upgrade-watch',
+        directory: '.',
+        command: 'claude-code-upgrade-watcher',
+      },
     ]
 
     const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
