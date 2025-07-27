@@ -23,6 +23,7 @@ interface CreateSessionOptions extends BaseSessionOptions {
   terminalHeight?: number
   attach?: boolean
   worktree?: boolean
+  allowDirtyNonWorktreeSession?: boolean
 }
 
 export class SessionCreator extends BaseSessionCommand {
@@ -188,7 +189,10 @@ export class SessionCreator extends BaseSessionCommand {
       if (!inProjectsDir) {
         isClean = isGitRepositoryClean(projectPath)
 
-        if (!isClean) {
+        if (
+          !isClean &&
+          (isWorktreeMode || !options.allowDirtyNonWorktreeSession)
+        ) {
           this.emitEvent('ensure-clean-repository:fail', {
             isClean: false,
             error: 'Repository has uncommitted changes',

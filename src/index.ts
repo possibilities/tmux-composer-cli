@@ -42,6 +42,10 @@ async function main() {
     .option('--no-zmq', 'Disable ZeroMQ publishing')
     .option('--zmq-socket <name>', 'ZeroMQ socket name')
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
+    .option(
+      '--allow-dirty-non-worktree-session',
+      'Allow starting session with dirty repository in non-worktree mode',
+    )
     .action(async (projectPath, options) => {
       const socketOptions = createSocketOptions(options)
 
@@ -59,6 +63,7 @@ async function main() {
           zmq: options.zmq,
           zmqSocket: options.zmqSocket,
           zmqSocketPath: options.zmqSocketPath,
+          allowDirtyNonWorktreeSession: options.allowDirtyNonWorktreeSession,
           ...socketOptions,
         })
 
