@@ -120,12 +120,19 @@ export type EventName =
   | 'close-session:start'
   | 'close-session:end'
   | 'close-session:fail'
+  | 'close-session:cancel'
   | 'get-current-session:start'
   | 'get-current-session:end'
   | 'get-current-session:fail'
   | 'get-project-info:start'
   | 'get-project-info:end'
   | 'get-project-info:fail'
+  | 'check-repository-status:start'
+  | 'check-repository-status:end'
+  | 'check-repository-status:fail'
+  | 'confirm-close-dirty:start'
+  | 'confirm-close-dirty:end'
+  | 'confirm-close-dirty:cancel'
   | 'list-all-sessions:start'
   | 'list-all-sessions:end'
   | 'list-all-sessions:fail'
@@ -580,6 +587,25 @@ export interface CloseSessionEndData extends BaseEventData {
   sessionName: string
 }
 
+export interface CloseSessionCancelData extends BaseEventData {
+  reason: string
+}
+
+export interface CheckRepositoryStatusEndData extends BaseEventData {
+  isClean: boolean
+  projectPath: string
+}
+
+export interface CheckRepositoryStatusFailData extends ErrorEventData {
+  projectPath?: string
+}
+
+export interface ConfirmCloseDirtyEndData extends BaseEventData {
+  confirmed: boolean
+}
+
+export interface ConfirmCloseDirtyCancelData extends BaseEventData {}
+
 export interface GetCurrentSessionEndData extends BaseEventData {
   sessionName: string
 }
@@ -798,12 +824,19 @@ export type EventDataMap = {
   'close-session:start': CloseSessionStartData
   'close-session:end': CloseSessionEndData
   'close-session:fail': ErrorEventData
+  'close-session:cancel': CloseSessionCancelData
   'get-current-session:start': undefined
   'get-current-session:end': GetCurrentSessionEndData
   'get-current-session:fail': GetCurrentSessionFailData
   'get-project-info:start': undefined
   'get-project-info:end': GetProjectInfoEndData
   'get-project-info:fail': GetProjectInfoFailData
+  'check-repository-status:start': undefined
+  'check-repository-status:end': CheckRepositoryStatusEndData
+  'check-repository-status:fail': CheckRepositoryStatusFailData
+  'confirm-close-dirty:start': undefined
+  'confirm-close-dirty:end': ConfirmCloseDirtyEndData
+  'confirm-close-dirty:cancel': ConfirmCloseDirtyCancelData
   'list-all-sessions:start': undefined
   'list-all-sessions:end': ListAllSessionsEndData
   'list-all-sessions:fail': ErrorEventData

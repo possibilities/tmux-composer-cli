@@ -8,14 +8,23 @@ import {
   getAttachedSession,
   switchToSession,
 } from '../core/tmux-utils.js'
-import { getMainRepositoryPath } from '../core/git-utils.js'
+import {
+  getMainRepositoryPath,
+  isGitRepositoryClean,
+} from '../core/git-utils.js'
+import { confirmAction } from '../core/prompt-utils.js'
 import * as path from 'path'
 
-interface CloseSessionOptions extends BaseSessionOptions {}
+interface CloseSessionOptions extends BaseSessionOptions {
+  force?: boolean
+}
 
 export class SessionCloser extends BaseSessionCommand {
+  private force: boolean
+
   constructor(options: CloseSessionOptions = {}) {
     super(options)
+    this.force = options.force ?? false
   }
 
   async close(): Promise<void> {
@@ -86,9 +95,12 @@ export class SessionCloser extends BaseSessionCommand {
     const getProjectStart = Date.now()
     this.emitEvent('get-project-info:start')
 
+    let projectPath: string | undefined
+    let projectName: string | undefined
+
     try {
-      const projectPath = getMainRepositoryPath(process.cwd())
-      const projectName = path.basename(projectPath)
+      projectPath = getMainRepositoryPath(process.cwd())
+      projectName = path.basename(projectPath)
 
       this.updateContext({
         project: {
@@ -108,6 +120,55 @@ export class SessionCloser extends BaseSessionCommand {
         errorCode: 'PROJECT_NOT_FOUND',
         duration: Date.now() - getProjectStart,
       })
+    }
+
+    if (projectPath && !this.force) {
+      const checkRepoStart = Date.now()
+      this.emitEvent('check-repository-status:start')
+
+      try {
+        const isClean = isGitRepositoryClean(projectPath)
+        this.emitEvent('check-repository-status:end', {
+          isClean,
+          projectPath,
+          duration: Date.now() - checkRepoStart,
+        })
+
+        if (!isClean) {
+          const confirmStart = Date.now()
+          this.emitEvent('confirm-close-dirty:start')
+
+          const confirmed = await confirmAction(
+            'Warning: Repository has uncommitted changes. Close session anyway? (y/N) ',
+          )
+
+          if (!confirmed) {
+            this.emitEvent('confirm-close-dirty:cancel', {
+              duration: Date.now() - confirmStart,
+            })
+            this.emitEvent('close-session:cancel', {
+              reason: 'User cancelled due to dirty repository',
+              duration: Date.now() - startTime,
+            })
+            console.log('Session close cancelled.')
+            return
+          }
+
+          this.emitEvent('confirm-close-dirty:end', {
+            confirmed: true,
+            duration: Date.now() - confirmStart,
+          })
+        }
+      } catch (error) {
+        this.emitEvent('check-repository-status:fail', {
+          error: error instanceof Error ? error.message : String(error),
+          errorCode: 'REPO_CHECK_FAILED',
+          duration: Date.now() - checkRepoStart,
+        })
+        console.warn(
+          'Warning: Unable to check repository status. Proceeding with close.',
+        )
+      }
     }
 
     const getModeStart = Date.now()

@@ -209,6 +209,10 @@ async function main() {
     .option('--no-zmq', 'Disable ZeroMQ publishing')
     .option('--zmq-socket <name>', 'ZeroMQ socket name')
     .option('--zmq-socket-path <path>', 'ZeroMQ socket full path')
+    .option(
+      '--force',
+      'Force close session without confirmation for dirty repository',
+    )
     .action(async options => {
       const socketOptions = createSocketOptions(options)
 
@@ -217,6 +221,7 @@ async function main() {
         zmq: options.zmq,
         zmqSocket: options.zmqSocket,
         zmqSocketPath: options.zmqSocketPath,
+        force: options.force,
       })
 
       try {
