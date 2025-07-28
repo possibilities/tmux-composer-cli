@@ -37,7 +37,7 @@ async function main() {
     .option('--terminal-width <width>', 'Terminal width', parseInt)
     .option('--terminal-height <height>', 'Terminal height', parseInt)
     .option('--no-attach', 'Do not attach to the session after creation')
-    .option('--worktree', 'Create session with worktree (default: true)')
+    .option('--worktree', 'Create session with worktree (default: false)')
     .option('--no-worktree', 'Create session without worktree')
     .option('--no-zmq', 'Disable ZeroMQ publishing')
     .option('--zmq-socket <name>', 'ZeroMQ socket name')

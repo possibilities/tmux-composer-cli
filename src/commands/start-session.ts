@@ -88,7 +88,7 @@ export class SessionCreator extends BaseSessionCommand {
 
     const isWorktreeMode = forceNonWorktreeMode
       ? false
-      : (options.worktree ?? config.worktree ?? true)
+      : (options.worktree ?? config.worktree ?? false)
     let worktreeNum: string | undefined
     let sessionName: string
 
