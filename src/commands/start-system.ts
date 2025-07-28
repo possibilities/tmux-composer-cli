@@ -12,7 +12,7 @@ interface SessionConfig {
   name: string
   directory: string
   command: string
-  port?: number
+  exposePort?: boolean
 }
 
 const SUPPORTED_SHELLS = [
@@ -59,34 +59,40 @@ export class SystemStarter extends BaseSessionCommand {
 
     const sessions: SessionConfig[] = [
       {
-        name: 'tmux',
+        name: 'tmux-composer',
         directory: '~/code/tmux-composer-ui',
         command: 'pnpm dev',
+        exposePort: true,
       },
       {
-        name: 'claude',
+        name: 'claude-code-metadata-browser',
         directory: '~/code/claude-code-metadata-browser',
         command: 'pnpm dev',
+        exposePort: true,
       },
       {
-        name: 'observe',
+        name: 'tmux-composer-observe-observers',
         directory: '.',
         command: 'tmux-composer observe-observers',
+        exposePort: true,
       },
       {
-        name: 'proxy',
+        name: 'arthack-proxy',
         directory: '.',
         command: 'arthack-proxy',
+        exposePort: false,
       },
       {
-        name: 'upgrade-watch',
+        name: 'claude-code-upgrade-watcher',
         directory: '.',
         command: 'claude-code-upgrade-watcher',
+        exposePort: false,
       },
       {
-        name: 'api-wrapper',
+        name: 'claude-code-openai-wrapper',
         directory: '~/src/claude-code-openai-wrapper',
         command: 'docker compose up',
+        exposePort: true,
       },
     ]
 
@@ -147,11 +153,16 @@ export class SystemStarter extends BaseSessionCommand {
           process.env.HOME || '',
         )
 
-        const port = this.findAvailablePort()
-        sessionPorts[session.name] = port
+        let port: number | undefined
+        if (session.exposePort) {
+          port = this.findAvailablePort()
+          sessionPorts[session.name] = port
+        }
 
         execSync(
-          `tmux ${socketArgs} new-session -d -s ${session.name} -c ${expandedDirectory} -e PORT=${port}`,
+          session.exposePort
+            ? `tmux ${socketArgs} new-session -d -s ${session.name} -c ${expandedDirectory} -e PORT=${port}`
+            : `tmux ${socketArgs} new-session -d -s ${session.name} -c ${expandedDirectory}`,
           { stdio: 'ignore' },
         )
 
