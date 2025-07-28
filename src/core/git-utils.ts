@@ -28,6 +28,20 @@ export function getWorktreesPath(projectPath?: string): string {
   return path.join(os.homedir(), 'worktrees')
 }
 
+export function getSessionsPath(projectPath?: string): string {
+  const envPath = process.env.TMUX_COMPOSER_SESSIONS_PATH
+  if (envPath) {
+    return path.resolve(envPath.replace(/^~/, os.homedir()))
+  }
+
+  const config = loadConfig(projectPath)
+  if (config['sessions-path']) {
+    return path.resolve(config['sessions-path'].replace(/^~/, os.homedir()))
+  }
+
+  return path.join(os.homedir(), 'sessions')
+}
+
 export function getMainRepositoryPath(worktreePath: string): string {
   try {
     const gitCommonDir = execSync(
@@ -63,7 +77,7 @@ export function isGitRepositoryClean(projectPath: string): boolean {
   }
 }
 
-export function getNextWorktreeNumber(projectPath: string): string {
+export function getNextSessionNumber(projectPath: string): string {
   const projectName = path.basename(projectPath)
   const usedNumbers = new Set<number>()
 
@@ -97,10 +111,23 @@ export function getNextWorktreeNumber(projectPath: string): string {
   const worktreesPath = getWorktreesPath(projectPath)
   if (fs.existsSync(worktreesPath)) {
     const dirs = fs.readdirSync(worktreesPath)
-    const pattern = new RegExp(`^${projectName}-worktree-(\\d{5})$`)
+    const worktreePattern = new RegExp(`^${projectName}-worktree-(\\d{5})$`)
 
     dirs.forEach(dir => {
-      const match = dir.match(pattern)
+      const match = dir.match(worktreePattern)
+      if (match) {
+        usedNumbers.add(parseInt(match[1], 10))
+      }
+    })
+  }
+
+  const sessionsPath = getSessionsPath(projectPath)
+  if (fs.existsSync(sessionsPath)) {
+    const dirs = fs.readdirSync(sessionsPath)
+    const sessionPattern = new RegExp(`^${projectName}-session-(\\d{5})$`)
+
+    dirs.forEach(dir => {
+      const match = dir.match(sessionPattern)
       if (match) {
         usedNumbers.add(parseInt(match[1], 10))
       }
@@ -113,7 +140,7 @@ export function getNextWorktreeNumber(projectPath: string): string {
     }
   }
 
-  throw new Error('No available worktree numbers')
+  throw new Error('No available session numbers')
 }
 
 export function createWorktree(
@@ -170,6 +197,28 @@ export function createWorktree(
   }
 
   return worktreePath
+}
+
+export function createSessionSymlink(
+  projectPath: string,
+  projectName: string,
+  sessionNum: string,
+): string {
+  const sessionsPath = getSessionsPath(projectPath)
+  const sessionLinkPath = path.join(
+    sessionsPath,
+    `${projectName}-session-${sessionNum}`,
+  )
+
+  fs.mkdirSync(sessionsPath, { recursive: true })
+
+  if (fs.existsSync(sessionLinkPath)) {
+    fs.unlinkSync(sessionLinkPath)
+  }
+
+  fs.symlinkSync(projectPath, sessionLinkPath, 'dir')
+
+  return sessionLinkPath
 }
 
 export function installDependencies(worktreePath: string) {

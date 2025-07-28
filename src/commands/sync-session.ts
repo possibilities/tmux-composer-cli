@@ -131,12 +131,12 @@ export class SessionSyncer extends BaseSessionCommand {
       this.updateContext({
         session: {
           name: currentSession,
-          mode: mode as 'worktree' | 'project',
+          mode: mode as 'worktree' | 'project' | 'session',
         },
       })
 
       this.emitEvent('get-session-mode:end', {
-        mode: mode as 'worktree' | 'project',
+        mode: mode as 'worktree' | 'project' | 'session',
         sessionName: currentSession,
         duration: Date.now() - getModeStart,
       })
@@ -274,7 +274,7 @@ export class SessionSyncer extends BaseSessionCommand {
 
     this.emitEvent('sync-session:end', {
       sessionName: currentSession,
-      mode: mode as 'worktree' | 'project',
+      mode: mode as 'worktree' | 'project' | 'session',
       duration: Date.now() - startTime,
     })
   }

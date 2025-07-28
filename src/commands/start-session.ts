@@ -4,8 +4,9 @@ import path from 'path'
 import { getTmuxSocketArgs, getTmuxSocketPath } from '../core/tmux-socket.js'
 import {
   isGitRepositoryClean,
-  getNextWorktreeNumber,
+  getNextSessionNumber,
   createWorktree,
+  createSessionSymlink,
   installDependencies,
   getWorktreesPath,
   isInProjectsDir,
@@ -89,7 +90,7 @@ export class SessionCreator extends BaseSessionCommand {
     const isWorktreeMode = forceNonWorktreeMode
       ? false
       : (options.worktree ?? config.worktree ?? false)
-    let worktreeNum: string | undefined
+    let sessionNum: string | undefined
     let sessionName: string
 
     if (isWorktreeMode) {
@@ -120,56 +121,25 @@ export class SessionCreator extends BaseSessionCommand {
           }
         } catch (error) {}
       }
-      worktreeNum = getNextWorktreeNumber(projectPath)
-      sessionName = `${projectName}-worktree-${worktreeNum}`
+      sessionNum = getNextSessionNumber(projectPath)
+      sessionName = `${projectName}-worktree-${sessionNum}`
     } else {
-      sessionName = projectName
-
-      try {
-        const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
-        const sessions = execSync(
-          `tmux ${socketArgs} list-sessions -F '#{session_name}'`,
-          {
-            encoding: 'utf-8',
-            stdio: ['pipe', 'pipe', 'ignore'],
-          },
-        )
-          .trim()
-          .split('\n')
-
-        if (sessions.includes(sessionName)) {
-          this.emitEvent('analyze-project-metadata:fail', {
-            error: `Session '${sessionName}' already exists`,
-            errorCode: 'SESSION_EXISTS',
-            duration: Date.now() - metadataStartTime,
-          })
-          throw new Error(`Session '${sessionName}' already exists`)
-        }
-      } catch (error) {
-        if (
-          error instanceof Error &&
-          !error.message.includes('already exists')
-        ) {
-        } else {
-          throw error
-        }
-      }
+      sessionNum = getNextSessionNumber(projectPath)
+      sessionName = `${projectName}-session-${sessionNum}`
     }
 
     this.updateContext({
       session: {
         name: sessionName,
-        mode: isWorktreeMode ? 'worktree' : 'project',
+        mode: isWorktreeMode ? 'worktree' : 'session',
       },
-      ...(isWorktreeMode
-        ? { worktree: { path: '', number: worktreeNum } }
-        : {}),
+      ...(isWorktreeMode ? { worktree: { path: '', number: sessionNum } } : {}),
     })
 
     this.emitEvent('analyze-project-metadata:end', {
       projectPath,
       projectName,
-      worktreeNumber: worktreeNum,
+      worktreeNumber: sessionNum,
       sessionName,
       worktreeMode: isWorktreeMode,
       duration: Date.now() - metadataStartTime,
@@ -238,19 +208,19 @@ export class SessionCreator extends BaseSessionCommand {
         const worktreeStart = Date.now()
         this.emitEvent('create-project-worktree:start')
         try {
-          worktreePath = createWorktree(projectPath, projectName, worktreeNum!)
+          worktreePath = createWorktree(projectPath, projectName, sessionNum!)
           this.emitEvent('create-project-worktree:end', {
             sourcePath: projectPath,
             worktreePath,
             branch,
-            worktreeNumber: worktreeNum,
+            worktreeNumber: sessionNum,
             duration: Date.now() - worktreeStart,
           })
         } catch (error) {
           this.emitEvent('create-project-worktree:fail', {
             error: error instanceof Error ? error.message : String(error),
             sourcePath: projectPath,
-            worktreeNumber: worktreeNum,
+            worktreeNumber: sessionNum,
             duration: Date.now() - worktreeStart,
           })
           this.emitEvent('create-worktree-session:fail', {
@@ -289,18 +259,39 @@ export class SessionCreator extends BaseSessionCommand {
           throw error
         }
       } else {
-        worktreePath = projectPath
-        this.emitEvent('skip-worktree-creation', {
-          reason: 'Non-worktree mode',
-          currentPath: projectPath,
-          duration: 0,
-        })
+        const sessionStart = Date.now()
+        this.emitEvent('create-session-symlink:start')
+        try {
+          worktreePath = createSessionSymlink(
+            projectPath,
+            projectName,
+            sessionNum!,
+          )
+          this.emitEvent('create-session-symlink:end', {
+            sourcePath: projectPath,
+            sessionPath: worktreePath,
+            sessionNumber: sessionNum,
+            duration: Date.now() - sessionStart,
+          })
+        } catch (error) {
+          this.emitEvent('create-session-symlink:fail', {
+            error: error instanceof Error ? error.message : String(error),
+            sourcePath: projectPath,
+            sessionNumber: sessionNum,
+            duration: Date.now() - sessionStart,
+          })
+          this.emitEvent('create-worktree-session:fail', {
+            error: `Failed to create session symlink: ${error instanceof Error ? error.message : String(error)}`,
+            duration: Date.now() - sessionStartTime,
+          })
+          throw error
+        }
       }
 
       this.updateContext({
         worktree: {
           path: worktreePath,
-          number: worktreeNum,
+          number: sessionNum,
         },
       })
 
@@ -627,7 +618,10 @@ export class SessionCreator extends BaseSessionCommand {
         { encoding: 'utf-8' },
       ).trim()
 
-      const mode = options.worktree === false ? 'project' : 'worktree'
+      const mode =
+        options.worktree !== false && config.worktree !== false
+          ? 'worktree'
+          : 'session'
       execSync(
         `tmux ${socketArgs.join(' ')} set-environment -t ${sessionName} TMUX_COMPOSER_MODE ${mode}`,
       )
