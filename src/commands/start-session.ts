@@ -6,7 +6,6 @@ import {
   isGitRepositoryClean,
   getNextSessionNumber,
   createWorktree,
-  createSessionSymlink,
   installDependencies,
   getWorktreesPath,
   isInProjectsDir,
@@ -259,33 +258,8 @@ export class SessionCreator extends BaseSessionCommand {
           throw error
         }
       } else {
-        const sessionStart = Date.now()
-        this.emitEvent('create-session-symlink:start')
-        try {
-          worktreePath = createSessionSymlink(
-            projectPath,
-            projectName,
-            sessionNum!,
-          )
-          this.emitEvent('create-session-symlink:end', {
-            sourcePath: projectPath,
-            sessionPath: worktreePath,
-            sessionNumber: sessionNum,
-            duration: Date.now() - sessionStart,
-          })
-        } catch (error) {
-          this.emitEvent('create-session-symlink:fail', {
-            error: error instanceof Error ? error.message : String(error),
-            sourcePath: projectPath,
-            sessionNumber: sessionNum,
-            duration: Date.now() - sessionStart,
-          })
-          this.emitEvent('create-worktree-session:fail', {
-            error: `Failed to create session symlink: ${error instanceof Error ? error.message : String(error)}`,
-            duration: Date.now() - sessionStartTime,
-          })
-          throw error
-        }
+        // In session mode, use the project directory directly without creating a symlink
+        worktreePath = projectPath
       }
 
       this.updateContext({
