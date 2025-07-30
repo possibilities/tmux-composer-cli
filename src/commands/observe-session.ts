@@ -139,11 +139,7 @@ export class TmuxSessionWatcher extends BaseSessionCommand {
         .trim()
         .replace('TMUX_COMPOSER_MODE=', '')
 
-      if (
-        modeOutput === 'worktree' ||
-        modeOutput === 'project' ||
-        modeOutput === 'session'
-      ) {
+      if (modeOutput === 'worktree' || modeOutput === 'session') {
         this.updateContext({
           session: {
             name: this.currentSessionName,

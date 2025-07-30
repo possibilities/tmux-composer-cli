@@ -100,7 +100,7 @@ export function getAllTmuxSessions(
 export function getSessionMode(
   sessionName: string,
   socketOptions: TmuxSocketOptions = {},
-): 'worktree' | 'project' | 'session' {
+): 'worktree' | 'session' {
   try {
     const socketArgs = getTmuxSocketString(socketOptions)
     const mode = execSync(
@@ -108,9 +108,9 @@ export function getSessionMode(
       { encoding: 'utf-8' },
     ).trim()
 
-    return mode === 'worktree' || mode === 'session' ? mode : 'project'
+    return mode === 'worktree' || mode === 'session' ? mode : 'session'
   } catch {
-    return 'project'
+    return 'session'
   }
 }
 
@@ -202,7 +202,7 @@ export function getProjectSessions(
   socketOptions: TmuxSocketOptions = {},
 ): Array<{
   name: string
-  mode: 'worktree' | 'project' | 'session'
+  mode: 'worktree' | 'session'
   port?: number
   windows?: WindowInfo[]
 }> {

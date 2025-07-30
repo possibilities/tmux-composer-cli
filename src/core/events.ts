@@ -510,7 +510,7 @@ export interface FinishSessionStartData {
 
 export interface FinishSessionEndData extends BaseEventData {
   sessionName: string
-  mode: 'worktree' | 'project' | 'session'
+  mode: 'worktree' | 'session'
   sessionKept: boolean
 }
 
@@ -528,7 +528,7 @@ export interface ValidateComposerSessionFailData extends ErrorEventData {
 }
 
 export interface GetSessionModeEndData extends BaseEventData {
-  mode: 'worktree' | 'project' | 'session'
+  mode: 'worktree' | 'session'
   sessionName: string
 }
 
@@ -671,7 +671,7 @@ export interface SyncSessionStartData {
 
 export interface SyncSessionEndData extends BaseEventData {
   sessionName: string
-  mode: 'worktree' | 'project' | 'session'
+  mode: 'worktree' | 'session'
 }
 
 export interface FindWorktreeStartData {

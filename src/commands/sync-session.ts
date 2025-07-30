@@ -131,12 +131,12 @@ export class SessionSyncer extends BaseSessionCommand {
       this.updateContext({
         session: {
           name: currentSession,
-          mode: mode as 'worktree' | 'project' | 'session',
+          mode: mode as 'worktree' | 'session',
         },
       })
 
       this.emitEvent('get-session-mode:end', {
-        mode: mode as 'worktree' | 'project' | 'session',
+        mode: mode as 'worktree' | 'session',
         sessionName: currentSession,
         duration: Date.now() - getModeStart,
       })
@@ -160,7 +160,7 @@ export class SessionSyncer extends BaseSessionCommand {
       process.exit(1)
     }
 
-    if (!['worktree', 'project'].includes(mode)) {
+    if (!['worktree', 'session'].includes(mode)) {
       this.emitEvent('sync-session:fail', {
         error: 'Invalid TMUX_COMPOSER_MODE value',
         errorCode: 'INVALID_MODE',
@@ -274,7 +274,7 @@ export class SessionSyncer extends BaseSessionCommand {
 
     this.emitEvent('sync-session:end', {
       sessionName: currentSession,
-      mode: mode as 'worktree' | 'project' | 'session',
+      mode: mode as 'worktree' | 'session',
       duration: Date.now() - startTime,
     })
   }

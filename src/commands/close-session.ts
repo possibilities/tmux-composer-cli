@@ -174,7 +174,7 @@ export class SessionCloser extends BaseSessionCommand {
     const getModeStart = Date.now()
     this.emitEvent('get-session-mode:start')
 
-    let mode: 'worktree' | 'project' | 'session' | undefined
+    let mode: 'worktree' | 'session' | undefined
     try {
       const modeOutput = execSync(
         `tmux ${socketArgs} show-environment TMUX_COMPOSER_MODE`,
@@ -185,11 +185,7 @@ export class SessionCloser extends BaseSessionCommand {
         .trim()
         .replace('TMUX_COMPOSER_MODE=', '')
 
-      if (
-        modeOutput === 'worktree' ||
-        modeOutput === 'project' ||
-        modeOutput === 'session'
-      ) {
+      if (modeOutput === 'worktree' || modeOutput === 'session') {
         mode = modeOutput
 
         this.updateContext({

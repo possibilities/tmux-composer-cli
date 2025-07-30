@@ -60,7 +60,7 @@ export class TmuxPaneWatcher extends BaseSessionCommand {
       this.updateContext({
         session: {
           name: this.currentSessionName,
-          mode: 'project',
+          mode: 'session',
         },
       })
 
