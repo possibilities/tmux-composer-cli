@@ -88,12 +88,6 @@ export class SystemStarter extends BaseSessionCommand {
         command: 'claude-code-upgrade-watcher',
         exposePort: false,
       },
-      {
-        name: 'claude-code-openai-wrapper',
-        directory: '~/src/claude-code-openai-wrapper',
-        command: 'docker compose up',
-        exposePort: true,
-      },
     ]
 
     const socketArgs = getTmuxSocketArgs(this.socketOptions).join(' ')
