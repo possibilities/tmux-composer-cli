@@ -2,6 +2,7 @@ import Database from 'better-sqlite3'
 import os from 'os'
 import path from 'path'
 import fs from 'fs'
+import { execSync } from 'child_process'
 
 const CLAUDE_CHATS_DB_PATH = path.join(os.homedir(), '.claude', 'chats.db')
 
@@ -96,6 +97,38 @@ export function getLatestChatTimestamps(
 }
 
 export function getSessionStartTime(
+  sessionName: string,
+  projectPath: string,
+  worktreesPath?: string,
+): string | undefined {
+  const tmuxSessionTimestamp = getTmuxSessionCreationTime(sessionName)
+  if (tmuxSessionTimestamp) {
+    return tmuxSessionTimestamp
+  }
+
+  return getFirstChatTimestamp(sessionName, projectPath, worktreesPath)
+}
+
+function getTmuxSessionCreationTime(sessionName: string): string | undefined {
+  try {
+    const tmuxOutput = execSync(
+      `tmux ls -F "#{session_name}:#{session_created}" 2>/dev/null | grep "^${sessionName}:" | head -1`,
+      { encoding: 'utf-8', shell: '/bin/bash' },
+    ).trim()
+
+    if (tmuxOutput) {
+      const [, createdTimestamp] = tmuxOutput.split(':')
+      if (createdTimestamp) {
+        return new Date(parseInt(createdTimestamp) * 1000).toISOString()
+      }
+    }
+    return undefined
+  } catch (error) {
+    return undefined
+  }
+}
+
+function getFirstChatTimestamp(
   sessionName: string,
   projectPath: string,
   worktreesPath?: string,
