@@ -29,9 +29,6 @@ export type EventName =
   | 'create-project-worktree:start'
   | 'create-project-worktree:end'
   | 'create-project-worktree:fail'
-  | 'create-session-symlink:start'
-  | 'create-session-symlink:end'
-  | 'create-session-symlink:fail'
   | 'install-project-dependencies:start'
   | 'install-project-dependencies:end'
   | 'install-project-dependencies:fail'
@@ -294,17 +291,6 @@ export interface CreateProjectWorktreeFailData extends ErrorEventData {
   worktreeNumber?: string
 }
 
-export interface CreateSessionSymlinkEndData extends BaseEventData {
-  sourcePath: string
-  sessionPath: string
-  sessionNumber: string
-}
-
-export interface CreateSessionSymlinkFailData extends ErrorEventData {
-  sourcePath: string
-  sessionNumber: string
-}
-
 export interface InstallProjectDependenciesEndData extends BaseEventData {
   packageManager: string
   worktreePath: string
@@ -510,7 +496,7 @@ export interface FinishSessionStartData {
 
 export interface FinishSessionEndData extends BaseEventData {
   sessionName: string
-  mode: 'worktree' | 'session'
+  mode: 'worktree' | 'project'
   sessionKept: boolean
 }
 
@@ -528,7 +514,7 @@ export interface ValidateComposerSessionFailData extends ErrorEventData {
 }
 
 export interface GetSessionModeEndData extends BaseEventData {
-  mode: 'worktree' | 'session'
+  mode: 'worktree' | 'project'
   sessionName: string
 }
 
@@ -671,7 +657,7 @@ export interface SyncSessionStartData {
 
 export interface SyncSessionEndData extends BaseEventData {
   sessionName: string
-  mode: 'worktree' | 'session'
+  mode: 'worktree' | 'project'
 }
 
 export interface FindWorktreeStartData {
@@ -747,9 +733,6 @@ export type EventDataMap = {
   'create-project-worktree:start': undefined
   'create-project-worktree:end': CreateProjectWorktreeEndData
   'create-project-worktree:fail': CreateProjectWorktreeFailData
-  'create-session-symlink:start': undefined
-  'create-session-symlink:end': CreateSessionSymlinkEndData
-  'create-session-symlink:fail': CreateSessionSymlinkFailData
   'install-project-dependencies:start': undefined
   'install-project-dependencies:end': InstallProjectDependenciesEndData
   'install-project-dependencies:fail': InstallProjectDependenciesFailData

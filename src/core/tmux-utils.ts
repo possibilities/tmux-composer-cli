@@ -100,7 +100,7 @@ export function getAllTmuxSessions(
 export function getSessionMode(
   sessionName: string,
   socketOptions: TmuxSocketOptions = {},
-): 'worktree' | 'session' {
+): 'worktree' | 'project' {
   try {
     const socketArgs = getTmuxSocketString(socketOptions)
     const mode = execSync(
@@ -108,9 +108,9 @@ export function getSessionMode(
       { encoding: 'utf-8' },
     ).trim()
 
-    return mode === 'worktree' || mode === 'session' ? mode : 'session'
+    return mode === 'worktree' || mode === 'project' ? mode : 'project'
   } catch {
-    return 'session'
+    return 'project'
   }
 }
 
@@ -202,19 +202,17 @@ export function getProjectSessions(
   socketOptions: TmuxSocketOptions = {},
 ): Array<{
   name: string
-  mode: 'worktree' | 'session'
+  mode: 'worktree' | 'project'
   port?: number
   windows?: WindowInfo[]
 }> {
   const allSessions = getAllTmuxSessions(socketOptions)
 
   const matchingSessions = allSessions.filter(session => {
-    if (session === projectName) {
-      return true
-    }
-
+    const sessionPattern = new RegExp(`^${projectName}-session-\\d+$`)
     const worktreePattern = new RegExp(`^${projectName}-worktree-\\d+$`)
-    return worktreePattern.test(session)
+
+    return sessionPattern.test(session) || worktreePattern.test(session)
   })
 
   return matchingSessions.map(sessionName => ({

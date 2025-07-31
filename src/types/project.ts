@@ -15,7 +15,7 @@ export interface WindowInfo {
 
 export interface SessionInfo {
   name: string
-  mode: 'worktree' | 'session'
+  mode: 'worktree' | 'project'
   port?: number
   startTime?: string
   windows?: WindowInfo[]

@@ -102,7 +102,7 @@ Monitors tmux session changes including windows and panes. Emits lifecycle event
       "context": {
         "session": {
           "name": "my-project",
-          "mode": "session"
+          "mode": "project"
         }
       },
       "details": {
@@ -149,7 +149,7 @@ Monitors pane content changes within the current tmux session.
       "context": {
         "session": {
           "name": "my-project",
-          "mode": "session"
+          "mode": "project"
         }
       },
       "details": {
@@ -171,10 +171,10 @@ Monitors pane content changes within the current tmux session.
 Creates a new tmux session with multiple windows based on project configuration. Supports two modes:
 
 - **Worktree mode**: Creates a new git worktree for the session
-- **Session mode (default)**: Creates a symlink to the project directory
-- **Non-worktree mode (`--no-worktree`)**: Creates session in the current directory
+- **Project mode (default)**: Uses the project directory directly
+- **Project mode (`--no-worktree`)**: Creates session in the current directory
 
-In non-worktree mode:
+In project mode:
 
 - Session name is just the project name (no worktree number)
 - Always fails if repository has uncommitted changes (no prompt)
@@ -466,11 +466,11 @@ In non-worktree mode:
         },
         "session": {
           "name": "my-project",
-          "mode": "session"
+          "mode": "project"
         }
       },
       "details": {
-        "reason": "Non-worktree mode",
+        "reason": "Project mode",
         "currentPath": "/path/to/project",
         "duration": 0
       }
@@ -1620,7 +1620,7 @@ Finishes a tmux-composer session, syncing changes and cleaning up.
   }
   ```
 
-- **`get-session-mode:start`** - Getting session mode (worktree/session)
+- **`get-session-mode:start`** - Getting session mode (worktree/project)
 
 - **`get-session-mode:end`** - Mode retrieved
   ```json
@@ -1865,7 +1865,7 @@ Same as finish-session:
 
 - **`validate-composer-session:start`** - Validating this is a composer session
 - **`validate-composer-session:end`** - Validation complete
-- **`get-session-mode:start`** - Getting session mode (worktree/session)
+- **`get-session-mode:start`** - Getting session mode (worktree/project)
 - **`get-session-mode:end`** - Mode retrieved
 
 ##### Hook Events
@@ -2005,7 +2005,7 @@ Closes the current tmux session, switching to another if available.
   }
   ```
 
-- **`get-session-mode:start`** - Getting session mode (worktree/session)
+- **`get-session-mode:start`** - Getting session mode (worktree/project)
 
 - **`get-session-mode:end`** - Mode retrieved
 

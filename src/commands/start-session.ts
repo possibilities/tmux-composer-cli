@@ -130,7 +130,7 @@ export class SessionCreator extends BaseSessionCommand {
     this.updateContext({
       session: {
         name: sessionName,
-        mode: isWorktreeMode ? 'worktree' : 'session',
+        mode: isWorktreeMode ? 'worktree' : 'project',
       },
       ...(isWorktreeMode ? { worktree: { path: '', number: sessionNum } } : {}),
     })
@@ -258,7 +258,7 @@ export class SessionCreator extends BaseSessionCommand {
           throw error
         }
       } else {
-        // In session mode, use the project directory directly without creating a symlink
+        // In project mode, use the project directory directly without creating a symlink
         worktreePath = projectPath
       }
 

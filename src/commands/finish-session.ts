@@ -143,12 +143,12 @@ export class SessionFinisher extends BaseSessionCommand {
       this.updateContext({
         session: {
           name: currentSession,
-          mode: mode as 'worktree' | 'session',
+          mode: mode as 'worktree' | 'project',
         },
       })
 
       this.emitEvent('get-session-mode:end', {
-        mode: mode as 'worktree' | 'session',
+        mode: mode as 'worktree' | 'project',
         sessionName: currentSession,
         duration: Date.now() - getModeStart,
       })
@@ -353,7 +353,7 @@ export class SessionFinisher extends BaseSessionCommand {
 
     this.emitEvent('finish-session:end', {
       sessionName: currentSession,
-      mode: mode as 'worktree' | 'session',
+      mode: mode as 'worktree' | 'project',
       sessionKept: this.keepSession,
       duration: Date.now() - startTime,
     })

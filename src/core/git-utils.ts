@@ -28,20 +28,6 @@ export function getWorktreesPath(projectPath?: string): string {
   return path.join(os.homedir(), 'worktrees')
 }
 
-export function getSessionsPath(projectPath?: string): string {
-  const envPath = process.env.TMUX_COMPOSER_SESSIONS_PATH
-  if (envPath) {
-    return path.resolve(envPath.replace(/^~/, os.homedir()))
-  }
-
-  const config = loadConfig(projectPath)
-  if (config['sessions-path']) {
-    return path.resolve(config['sessions-path'].replace(/^~/, os.homedir()))
-  }
-
-  return path.join(os.homedir(), 'sessions')
-}
-
 export function getMainRepositoryPath(worktreePath: string): string {
   try {
     const gitCommonDir = execSync(
@@ -121,19 +107,6 @@ export function getNextSessionNumber(projectPath: string): string {
     })
   }
 
-  const sessionsPath = getSessionsPath(projectPath)
-  if (fs.existsSync(sessionsPath)) {
-    const dirs = fs.readdirSync(sessionsPath)
-    const sessionPattern = new RegExp(`^${projectName}-session-(\\d{5})$`)
-
-    dirs.forEach(dir => {
-      const match = dir.match(sessionPattern)
-      if (match) {
-        usedNumbers.add(parseInt(match[1], 10))
-      }
-    })
-  }
-
   for (let i = 1; i < 1000; i++) {
     if (!usedNumbers.has(i)) {
       return i.toString().padStart(5, '0')
@@ -197,28 +170,6 @@ export function createWorktree(
   }
 
   return worktreePath
-}
-
-export function createSessionSymlink(
-  projectPath: string,
-  projectName: string,
-  sessionNum: string,
-): string {
-  const sessionsPath = getSessionsPath(projectPath)
-  const sessionLinkPath = path.join(
-    sessionsPath,
-    `${projectName}-session-${sessionNum}`,
-  )
-
-  fs.mkdirSync(sessionsPath, { recursive: true })
-
-  if (fs.existsSync(sessionLinkPath)) {
-    fs.unlinkSync(sessionLinkPath)
-  }
-
-  fs.symlinkSync(projectPath, sessionLinkPath, 'dir')
-
-  return sessionLinkPath
 }
 
 export function installDependencies(worktreePath: string) {

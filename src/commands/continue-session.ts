@@ -149,7 +149,7 @@ export class SessionContinuer extends SessionCreator {
 
       try {
         execSync(
-          `tmux ${socketArgs} set-environment -t ${sessionName} TMUX_COMPOSER_MODE session`,
+          `tmux ${socketArgs} set-environment -t ${sessionName} TMUX_COMPOSER_MODE project`,
         )
       } catch (error) {
         this.emitEvent('set-tmux-composer-mode:fail', {

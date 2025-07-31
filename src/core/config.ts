@@ -8,7 +8,6 @@ const ConfigSchema = z
   .object({
     worktree: z.boolean().optional(),
     'worktrees-path': z.string().optional(),
-    'sessions-path': z.string().optional(),
     'projects-path': z.string().optional(),
     commands: z
       .object({
@@ -30,7 +29,6 @@ export interface ConfigValue<T> {
 export interface ConfigWithSources {
   worktree?: ConfigValue<boolean>
   'worktrees-path'?: ConfigValue<string>
-  'sessions-path'?: ConfigValue<string>
   'projects-path'?: ConfigValue<string>
   commands?: {
     'run-agent'?: ConfigValue<string>
@@ -110,14 +108,6 @@ export function loadConfigWithSources(projectPath?: string): ConfigWithSources {
         if (validatedConfig['worktrees-path'] !== undefined) {
           configWithSources['worktrees-path'] = {
             value: validatedConfig['worktrees-path'],
-            source: isGlobal ? 'global' : 'project',
-            sourcePath: configPath,
-          }
-        }
-
-        if (validatedConfig['sessions-path'] !== undefined) {
-          configWithSources['sessions-path'] = {
-            value: validatedConfig['sessions-path'],
             source: isGlobal ? 'global' : 'project',
             sourcePath: configPath,
           }
