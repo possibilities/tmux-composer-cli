@@ -18,6 +18,8 @@ import { BaseSessionCommand } from '../core/base-session-command.js'
 import type { BaseSessionOptions } from '../core/base-session-command.js'
 import type { CreateTmuxWindowEndData } from '../core/events.js'
 
+const WORKTREE_PATTERN = /^(.+)-worktree-(\d{5})$/
+
 interface CreateSessionOptions extends BaseSessionOptions {
   terminalWidth?: number
   terminalHeight?: number
@@ -528,10 +530,13 @@ export class SessionCreator extends BaseSessionCommand {
     const packageJsonPath = path.join(worktreePath, 'package.json')
 
     let scripts: Record<string, string> = {}
+    let isNextJsProject = false
 
     if (fs.existsSync(packageJsonPath)) {
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
       scripts = packageJson.scripts || {}
+
+      isNextJsProject = packageJson.dependencies?.next !== undefined
     }
 
     let firstWindowCreated = false
@@ -760,6 +765,21 @@ export class SessionCreator extends BaseSessionCommand {
       const controlStart = Date.now()
       this.emitEvent('create-tmux-window:start', { windowName: 'control' })
 
+      let attachmentName: string | undefined
+
+      if (isNextJsProject) {
+        const baseProjectName = path.basename(worktreePath)
+        const pathWorktreeMatch = baseProjectName.match(WORKTREE_PATTERN)
+        const extractedProjectName = pathWorktreeMatch
+          ? pathWorktreeMatch[1]
+          : baseProjectName
+
+        const sessionWorktreeMatch = sessionName.match(WORKTREE_PATTERN)
+        attachmentName = sessionWorktreeMatch
+          ? `${extractedProjectName}-${sessionWorktreeMatch[2]}`
+          : extractedProjectName
+      }
+
       try {
         const zmqSocketArgs = options.zmqSocket
           ? ` --zmq-socket ${options.zmqSocket}`
@@ -794,8 +814,18 @@ export class SessionCreator extends BaseSessionCommand {
         execSync(
           `tmux ${socketArgs} send-keys -t ${sessionName}:control 'claude-code-chat-stream --to-db ~/.claude/chats.db | jq .' Enter`,
         )
+
+        if (isNextJsProject && attachmentName) {
+          execSync(
+            `tmux ${socketArgs} split-window -t ${sessionName}:control -h -c ${worktreePath}`,
+          )
+          execSync(
+            `tmux ${socketArgs} send-keys -t ${sessionName}:control 'npx browser-composer start-browser --attach ${attachmentName}' Enter`,
+          )
+        }
+
         execSync(
-          `tmux ${socketArgs} select-layout -t ${sessionName}:control even-horizontal`,
+          `tmux ${socketArgs} select-layout -t ${sessionName}:control ${isNextJsProject ? 'tiled' : 'even-horizontal'}`,
         )
 
         const windowId = execSync(
@@ -808,11 +838,19 @@ export class SessionCreator extends BaseSessionCommand {
           windowIndex: windowIndex,
           windowId,
           command: `tmux-composer observe-session${zmqSocketArgs} | jq .`,
-          commands: [
-            `tmux-composer observe-session${zmqSocketArgs} | jq .`,
-            `tmux-composer observe-panes${zmqSocketArgs} | jq .`,
-            `claude-code-chat-stream --to-db ~/.claude/chats.db | jq .`,
-          ],
+          commands:
+            isNextJsProject && attachmentName
+              ? [
+                  `tmux-composer observe-session${zmqSocketArgs} | jq .`,
+                  `tmux-composer observe-panes${zmqSocketArgs} | jq .`,
+                  `claude-code-chat-stream --to-db ~/.claude/chats.db | jq .`,
+                  `npx browser-composer start-browser --attach ${attachmentName}`,
+                ]
+              : [
+                  `tmux-composer observe-session${zmqSocketArgs} | jq .`,
+                  `tmux-composer observe-panes${zmqSocketArgs} | jq .`,
+                  `claude-code-chat-stream --to-db ~/.claude/chats.db | jq .`,
+                ],
           duration: Date.now() - controlStart,
         })
 
